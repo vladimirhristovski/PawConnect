@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: pawconnect
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/pawconnect
+    username: pawconnect
+    password: pawconnect
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate.format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
