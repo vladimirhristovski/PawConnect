@@ -1,33 +1,31 @@
 package com.sorsix.pawconnect.model
 
-import com.sorsix.pawconnect.model.enums.BookingStatus
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.UpdateTimestamp
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "bookings")
-class Booking(
+@Table(name = "listings")
+class Listing(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "business_id", nullable = false)
-    var business: Business,
+    @JoinColumn(name = "pet_id", nullable = false)
+    var pet: Pet,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @JoinColumn(name = "posted_by", nullable = false)
+    var postedBy: User,
 
-    @Column(name = "start_time", nullable = false)
-    var startTime: LocalDateTime,
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "municipality_id", nullable = false)
+    var municipality: Municipality,
 
-    @Column(name = "end_time", nullable = false)
-    var endTime: LocalDateTime,
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "status_id", nullable = false)
+    var status: ListingStatus,
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    var status: BookingStatus = BookingStatus.PENDING,
-
-    var notes: String? = null,
+    @Column(columnDefinition = "text")
+    var description: String? = null,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

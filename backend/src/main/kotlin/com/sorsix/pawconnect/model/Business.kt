@@ -1,6 +1,5 @@
 package com.sorsix.pawconnect.model
 
-import com.sorsix.pawconnect.model.enums.BusinessType
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.UpdateTimestamp
@@ -9,8 +8,8 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "businesses")
 class Business(
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "type_id", nullable = false)
     var type: BusinessType,
 
     @Column(nullable = false)
@@ -38,9 +37,6 @@ class Business(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null
-
-    @OneToMany(mappedBy = "business", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var hours: MutableList<BusinessHours> = mutableListOf()
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
