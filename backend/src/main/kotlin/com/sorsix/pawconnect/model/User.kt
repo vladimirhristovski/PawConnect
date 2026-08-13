@@ -1,9 +1,7 @@
 package com.sorsix.pawconnect.model
 
+import com.sorsix.pawconnect.model.base.SoftDeletableEntity
 import jakarta.persistence.*
-import org.hibernate.annotations.CreationTimestamp
-import org.hibernate.annotations.UpdateTimestamp
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "users")
@@ -16,10 +14,16 @@ class User(
 
     @Column(nullable = false)
     var password: String,
-) {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
+
+    @Column(name = "first_name")
+    var firstName: String? = null,
+
+    @Column(name = "last_name")
+    var lastName: String? = null,
+
+    var phone: String? = null,
+
+    ) : SoftDeletableEntity() {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -29,11 +33,6 @@ class User(
     )
     var roles: MutableSet<Role> = mutableSetOf()
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now()
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    @Column(name = "is_active", nullable = false)
+    var isActive: Boolean = true
 }

@@ -1,5 +1,6 @@
 package com.sorsix.pawconnect.model
 
+import com.sorsix.pawconnect.model.base.BaseEntity
 import jakarta.persistence.*
 
 @Entity
@@ -14,8 +15,5 @@ class PetBreed(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "species_id", nullable = false)
     var species: PetSpecies
-) {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
-}
+
+    ) : BaseEntity()

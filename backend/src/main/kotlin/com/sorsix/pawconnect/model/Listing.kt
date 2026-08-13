@@ -1,9 +1,9 @@
 package com.sorsix.pawconnect.model
 
+import com.sorsix.pawconnect.model.base.SoftDeletableEntity
 import jakarta.persistence.*
-import org.hibernate.annotations.CreationTimestamp
-import org.hibernate.annotations.UpdateTimestamp
-import java.time.LocalDateTime
+import java.math.BigDecimal
+import java.time.Instant
 
 @Entity
 @Table(name = "listings")
@@ -24,18 +24,23 @@ class Listing(
     @JoinColumn(name = "status_id", nullable = false)
     var status: ListingStatus,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "business_id")
+    var business: Business? = null,
+
+    var title: String? = null,
+
     @Column(columnDefinition = "text")
     var description: String? = null,
-) {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now()
+    @Column(name = "adoption_fee", nullable = false)
+    var adoptionFee: BigDecimal = BigDecimal.ZERO,
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-}
+    var latitude: BigDecimal? = null,
+
+    var longitude: BigDecimal? = null,
+
+    @Column(name = "expires_at")
+    var expiresAt: Instant? = null,
+
+    ) : SoftDeletableEntity()

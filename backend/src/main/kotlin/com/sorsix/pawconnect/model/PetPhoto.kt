@@ -1,5 +1,6 @@
 package com.sorsix.pawconnect.model
 
+import com.sorsix.pawconnect.model.base.BaseEntity
 import jakarta.persistence.*
 
 @Entity
@@ -14,8 +15,8 @@ class PetPhoto(
 
     @Column(name = "is_primary", nullable = false)
     var isPrimary: Boolean = false,
-) {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
-}
+
+    @Column(name = "display_order", nullable = false)
+    var displayOrder: Int = 0,
+
+    ) : BaseEntity()

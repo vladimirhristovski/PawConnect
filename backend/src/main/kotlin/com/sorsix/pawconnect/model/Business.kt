@@ -1,9 +1,8 @@
 package com.sorsix.pawconnect.model
 
+import com.sorsix.pawconnect.model.base.SoftDeletableEntity
 import jakarta.persistence.*
-import org.hibernate.annotations.CreationTimestamp
-import org.hibernate.annotations.UpdateTimestamp
-import java.time.LocalDateTime
+import java.math.BigDecimal
 
 @Entity
 @Table(name = "businesses")
@@ -33,16 +32,9 @@ class Business(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
     var owner: User? = null,
-) {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now()
+    var latitude: BigDecimal? = null,
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
-}
+    var longitude: BigDecimal? = null,
+
+    ) : SoftDeletableEntity()

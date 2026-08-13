@@ -1,5 +1,6 @@
 package com.sorsix.pawconnect.model
 
+import com.sorsix.pawconnect.model.base.BaseEntity
 import jakarta.persistence.*
 
 @Entity
@@ -11,10 +12,8 @@ class Municipality(
     @Column(nullable = false)
     val name: String,
 
-    @Column(nullable = false)
-    var city: String = "Skopje",
-) {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
-}
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "city_id")
+    var city: City? = null,
+
+    ) : BaseEntity()

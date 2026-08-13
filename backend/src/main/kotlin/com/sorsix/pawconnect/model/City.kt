@@ -1,17 +1,19 @@
 package com.sorsix.pawconnect.model
 
 import com.sorsix.pawconnect.model.base.BaseEntity
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Table
+import jakarta.persistence.*
 
 @Entity
-@Table(name = "listing_statuses")
-class ListingStatus(
+@Table(name = "cities")
+class City(
     @Column(nullable = false, unique = true)
     val code: String,
 
     @Column(nullable = false)
     val name: String,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "country_id")
+    var country: Country? = null
 
     ) : BaseEntity()

@@ -1,12 +1,11 @@
 package com.sorsix.pawconnect.model
 
+import com.sorsix.pawconnect.model.base.BaseEntity
 import com.sorsix.pawconnect.model.enums.Gender
 import com.sorsix.pawconnect.model.enums.Size
 import jakarta.persistence.*
-import org.hibernate.annotations.CreationTimestamp
-import org.hibernate.annotations.UpdateTimestamp
+import java.math.BigDecimal
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "pets")
@@ -25,18 +24,24 @@ class Pet(
     @Enumerated(EnumType.STRING)
     var size: Size? = null,
 
+    var age: Long? = null,
+
     @Column(name = "birth_date")
     var birthDate: LocalDate? = null,
+
+    @Column(name = "weight_kg")
+    var weightKg: BigDecimal? = null,
+
+    @Column(columnDefinition = "text")
+    var description: String? = null,
 
     @Column(name = "good_with_kids", nullable = false)
     var goodWithKids: Boolean = false,
 
     @Column(name = "good_with_other_pets", nullable = false)
     var goodWithOtherPets: Boolean = false,
-) {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null
+
+    ) : BaseEntity() {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -48,12 +53,4 @@ class Pet(
 
     @OneToMany(mappedBy = "pet", cascade = [CascadeType.ALL], orphanRemoval = true)
     var photos: MutableList<PetPhoto> = mutableListOf()
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now()
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
 }

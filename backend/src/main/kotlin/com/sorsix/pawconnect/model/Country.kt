@@ -6,8 +6,8 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "listing_statuses")
-class ListingStatus(
+@Table(name = "countries")
+class Country(
     @Column(nullable = false, unique = true)
     val code: String,
 
