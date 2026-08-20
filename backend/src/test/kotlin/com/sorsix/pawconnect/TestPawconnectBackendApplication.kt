@@ -5,5 +5,5 @@ import org.springframework.boot.with
 
 
 fun main(args: Array<String>) {
-    fromApplication<PawconnectBackendApplication>().with(TestcontainersConfiguration::class).run(*args)
+    fromApplication<PawConnectBackendApplication>().with(TestcontainersConfiguration::class).run(*args)
 }
