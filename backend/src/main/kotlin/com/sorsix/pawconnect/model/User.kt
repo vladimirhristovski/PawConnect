@@ -2,9 +2,11 @@ package com.sorsix.pawconnect.model
 
 import com.sorsix.pawconnect.model.base.SoftDeletableEntity
 import jakarta.persistence.*
+import org.hibernate.annotations.SQLRestriction
 
 @Entity
 @Table(name = "users")
+@SQLRestriction("deleted_at IS NULL")
 class User(
     @Column(nullable = false, unique = true)
     var username: String,

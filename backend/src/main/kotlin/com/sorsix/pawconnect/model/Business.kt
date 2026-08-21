@@ -3,9 +3,11 @@ package com.sorsix.pawconnect.model
 import com.sorsix.pawconnect.model.base.SoftDeletableEntity
 import jakarta.persistence.*
 import java.math.BigDecimal
+import org.hibernate.annotations.SQLRestriction
 
 @Entity
 @Table(name = "businesses")
+@SQLRestriction("deleted_at IS NULL")
 class Business(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "type_id", nullable = false)

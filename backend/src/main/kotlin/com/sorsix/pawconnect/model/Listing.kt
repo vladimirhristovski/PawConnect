@@ -2,11 +2,13 @@ package com.sorsix.pawconnect.model
 
 import com.sorsix.pawconnect.model.base.SoftDeletableEntity
 import jakarta.persistence.*
+import org.hibernate.annotations.SQLRestriction
 import java.math.BigDecimal
 import java.time.Instant
 
 @Entity
 @Table(name = "listings")
+@SQLRestriction("deleted_at IS NULL")
 class Listing(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "pet_id", nullable = false)

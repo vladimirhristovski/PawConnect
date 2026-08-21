@@ -2,10 +2,12 @@ package com.sorsix.pawconnect.model
 
 import com.sorsix.pawconnect.model.base.SoftDeletableEntity
 import jakarta.persistence.*
+import org.hibernate.annotations.SQLRestriction
 import java.time.Instant
 
 @Entity
 @Table(name = "adoption_applications")
+@SQLRestriction("deleted_at IS NULL")
 class AdoptionApplication(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "listing_id", nullable = false)
