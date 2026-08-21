@@ -3,6 +3,7 @@ package com.sorsix.pawconnect.config
 import com.sorsix.pawconnect.security.JwtAuthenticationFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -26,22 +27,15 @@ class SecurityConfig(
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http
-            .cors { it.configurationSource(corsConfigurationSource()) }
-            .csrf { it.disable() }
-            .sessionManagement {
-                it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            }
-            .authorizeHttpRequests {
-                it.requestMatchers(
-                    "/api/auth/**",
-                    "/actuator/health",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**"
-                ).permitAll()
-                it.anyRequest().authenticated()
-            }
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+        http.cors { it.configurationSource(corsConfigurationSource()) }.csrf { it.disable() }.sessionManagement {
+            it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        }.authorizeHttpRequests {
+            it.requestMatchers(
+                "/api/auth/**", "/actuator/health", "/swagger-ui/**", "/v3/api-docs/**"
+            ).permitAll()
+            it.requestMatchers(HttpMethod.GET, "/api/lookups/**").permitAll()
+            it.anyRequest().authenticated()
+        }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 
         return http.build()
     }
