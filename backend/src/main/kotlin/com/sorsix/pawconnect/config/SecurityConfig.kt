@@ -34,6 +34,7 @@ class SecurityConfig(
                 "/api/auth/**", "/actuator/health", "/swagger-ui/**", "/v3/api-docs/**"
             ).permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/lookups/**").permitAll()
+            it.requestMatchers(HttpMethod.GET, "/api/pets/**").permitAll()
             it.anyRequest().authenticated()
         }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 
