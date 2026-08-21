@@ -51,4 +51,28 @@ class GlobalExceptionHandler {
         pd.instance = URI.create(request.getDescription(false))
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(pd)
     }
+
+    @ExceptionHandler(ResourceNotFoundException::class)
+    fun handleResourceNotFound(ex: ResourceNotFoundException, request: WebRequest): ResponseEntity<ProblemDetail> {
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found")
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(pd)
+    }
+
+    @ExceptionHandler(ForbiddenOperationException::class)
+    fun handleForbidden(ex: ForbiddenOperationException, request: WebRequest): ResponseEntity<ProblemDetail> {
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.message ?: "Access denied")
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(pd)
+    }
+
+    @ExceptionHandler(ConflictException::class)
+    fun handleConflict(ex: ConflictException, request: WebRequest): ResponseEntity<ProblemDetail> {
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Conflict")
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(pd)
+    }
 }

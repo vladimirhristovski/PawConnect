@@ -35,4 +35,8 @@ class User(
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true
+
+    fun hasRole(roleName: String): Boolean = roles.any { it.name.equals(roleName, ignoreCase = true) }
+    fun isAdmin(): Boolean = hasRole("ADMIN")
+
 }

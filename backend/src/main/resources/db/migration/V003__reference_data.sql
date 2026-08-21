@@ -41,11 +41,18 @@ DO
 $$
 DECLARE
 dog_id BIGINT;
+    cat_id
+BIGINT;
 BEGIN
 SELECT id
 INTO dog_id
 FROM pet_species
 WHERE code = 'DOG';
+SELECT id
+INTO cat_id
+FROM pet_species
+WHERE code = 'CAT';
+
 IF
 dog_id IS NOT NULL THEN
         INSERT INTO pet_breeds (code, name, species_id) VALUES
@@ -57,19 +64,15 @@ dog_id IS NOT NULL THEN
             ('MIXED', 'Mixed Breed', dog_id)
         ON CONFLICT (code) DO NOTHING;
 END IF;
+
+    IF
+cat_id IS NOT NULL THEN
+        INSERT INTO pet_breeds (code, name, species_id) VALUES
+            ('PERSIAN', 'Persian', cat_id),
+            ('SIAMESE', 'Siamese', cat_id),
+            ('MAINE_COON', 'Maine Coon', cat_id),
+            ('RAGDOLL', 'Ragdoll', cat_id),
+            ('MIXED_CAT', 'Mixed Breed', cat_id)
+        ON CONFLICT (code) DO NOTHING;
+END IF;
 END $$;
-
-INSERT INTO users (username, email, password, first_name, last_name, is_active)
-SELECT 'admin',
-       'admin@pawconnect.com',
-       '$2a$10$7Z9p5JNlXwOqK7VZ4r5nA.jxXUvW3YmLnWqEfJtR8sNQo2P6J0K9e',
-       'Admin',
-       'User',
-       true WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
-
-INSERT INTO user_roles (user_id, role_id)
-SELECT u.id, r.id
-FROM users u,
-     roles r
-WHERE u.username = 'admin'
-  AND r.name = 'ADMIN' ON CONFLICT (user_id, role_id) DO NOTHING;

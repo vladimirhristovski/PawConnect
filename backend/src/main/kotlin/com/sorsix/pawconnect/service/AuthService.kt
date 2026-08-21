@@ -187,4 +187,8 @@ class AuthService(
         val user = getCurrentUser() ?: return null
         return UserResponse.from(user)
     }
+
+    fun requireCurrentUser(): User {
+        return getCurrentUser() ?: throw IllegalStateException("No authenticated user in security context")
+    }
 }
