@@ -57,7 +57,9 @@ class PetService(
             savedPet.photos.add(photo)
         }
         normalizePrimaryPhoto(savedPet.photos)
-        return petRepository.save(savedPet)
+        val saved = petRepository.save(pet)
+        return petRepository.findByIdWithAllAssociations(saved.id!!)
+            ?: throw IllegalStateException("Pet not found after save")
     }
 
     @Transactional(readOnly = true)
@@ -98,7 +100,9 @@ class PetService(
         request.goodWithKids?.let { pet.goodWithKids = it }
         request.goodWithOtherPets?.let { pet.goodWithOtherPets = it }
 
-        return petRepository.save(pet)
+        val saved = petRepository.save(pet)
+        return petRepository.findByIdWithAllAssociations(saved.id!!)
+            ?: throw ResourceNotFoundException("Pet not found after update")
     }
 
     @Transactional
@@ -106,16 +110,20 @@ class PetService(
         val pet = getPetOrThrow(petId)
         ensureCanManagePet(pet, currentUser)
 
-        val photo = PetPhoto(
-            pet = pet, url = request.url, isPrimary = request.isPrimary, displayOrder = request.displayOrder
-        )
         if (request.isPrimary) {
             pet.photos.filter { it.isPrimary }.forEach { it.isPrimary = false }
         }
+
+        val photo = PetPhoto(
+            pet = pet, url = request.url, isPrimary = request.isPrimary, displayOrder = request.displayOrder
+        )
         pet.photos.add(photo)
         normalizePrimaryPhoto(pet.photos)
+
+        val savedPhoto = petPhotoRepository.save(photo)
         petRepository.save(pet)
-        return photo
+
+        return savedPhoto
     }
 
     @Transactional

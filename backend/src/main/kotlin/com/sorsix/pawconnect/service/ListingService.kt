@@ -6,10 +6,11 @@ import com.sorsix.pawconnect.exception.ConflictException
 import com.sorsix.pawconnect.exception.ForbiddenOperationException
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.model.*
-import com.sorsix.pawconnect.repository.*
-import com.sorsix.pawconnect.util.ListingStatusCodes
 import com.sorsix.pawconnect.model.enums.Gender
 import com.sorsix.pawconnect.model.enums.Size
+import com.sorsix.pawconnect.repository.*
+import com.sorsix.pawconnect.util.ApplicationStatusCodes
+import com.sorsix.pawconnect.util.ListingStatusCodes
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -24,14 +25,15 @@ class ListingService(
     private val businessRepository: BusinessRepository,
     private val municipalityRepository: MunicipalityRepository,
     private val listingStatusRepository: ListingStatusRepository,
-    private val petRepository: PetRepository
+    private val petRepository: PetRepository,
+    private val adoptionApplicationRepository: AdoptionApplicationRepository,
+    private val applicationStatusRepository: ApplicationStatusRepository
 ) {
 
     private fun getListingOrThrow(id: Long): Listing {
         return listingRepository.findByIdWithAllAssociations(id)
             ?: throw ResourceNotFoundException("Listing not found: $id")
     }
-
 
     @Transactional
     fun createListing(request: CreateListingRequest, currentUser: User): Listing {
@@ -171,6 +173,22 @@ class ListingService(
         val cancelledStatus = listingStatusRepository.findByCode(ListingStatusCodes.CANCELLED)
             ?: throw IllegalStateException("CANCELLED status not found")
         listing.status = cancelledStatus
+
+        val pendingApps = adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
+            listing.id!!, ApplicationStatusCodes.PENDING_STATUSES
+        )
+        if (pendingApps.isNotEmpty()) {
+            val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
+                ?: throw IllegalStateException("REJECTED status not found")
+            val now = Instant.now()
+            pendingApps.forEach { app ->
+                app.status = rejectedStatus
+                app.reviewedBy = currentUser
+                app.reviewedAt = now
+            }
+            adoptionApplicationRepository.saveAll(pendingApps)
+        }
+
         val saved = listingRepository.save(listing)
         return getListingWithAssociationsOrThrow(saved.id!!)
     }
@@ -203,5 +221,4 @@ class ListingService(
             throw ForbiddenOperationException("You do not own this listing")
         }
     }
-
 }
