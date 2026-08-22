@@ -36,6 +36,7 @@ class SecurityConfig(
             it.requestMatchers(HttpMethod.GET, "/api/lookups/**").permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/pets/**").permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/businesses/**").permitAll()
+            it.requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id}").permitAll()
             it.anyRequest().authenticated()
         }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 

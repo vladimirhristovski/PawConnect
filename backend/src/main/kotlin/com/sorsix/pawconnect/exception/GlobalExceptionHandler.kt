@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import java.net.URI
 
 @RestControllerAdvice
@@ -19,6 +20,17 @@ class GlobalExceptionHandler {
         val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.message ?: "Invalid request")
         pd.type = URI.create("about:blank")
         pd.instance = URI.create(request.getDescription(false))
+        return ResponseEntity.badRequest().body(pd)
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleTypeMismatch(ex: MethodArgumentTypeMismatchException, request: WebRequest): ResponseEntity<ProblemDetail> {
+        val message = "Failed to convert parameter '${ex.name}' with value '${ex.value}' to required type '${ex.requiredType?.simpleName}'"
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message)
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
+        pd.setProperty("parameter", ex.name)
+        pd.setProperty("value", ex.value)
         return ResponseEntity.badRequest().body(pd)
     }
 
