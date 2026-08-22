@@ -64,7 +64,7 @@ class PetService(
 
     @Transactional(readOnly = true)
     fun getPetOrThrow(id: Long): Pet {
-        return petRepository.findById(id).orElseThrow { ResourceNotFoundException("Pet not found: $id") }
+        return petRepository.findByIdWithAllAssociations(id) ?: throw ResourceNotFoundException("Pet not found: $id")
     }
 
     @Transactional
