@@ -4,7 +4,9 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpStatus
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.validation.BindingResult
 import org.springframework.validation.FieldError
@@ -43,7 +45,7 @@ class GlobalExceptionHandlerTest {
             every { allErrors } returns listOf(fieldError)
         }
         val ex = mockk<MethodArgumentNotValidException> {
-            every { getBindingResult() } returns bindingResult
+            every { bindingResult } returns bindingResult
         }
         val response = handler.handleValidation(ex, request)
 
@@ -54,6 +56,16 @@ class GlobalExceptionHandlerTest {
         val first = errors.first() as Map<*, *>
         assertEquals("username", first["field"])
         assertEquals("must not be blank", first["message"])
+    }
+
+    @Test
+    fun `handleHttpMessageNotReadable returns BAD_REQUEST`() {
+        val httpInputMessage = mockk<HttpInputMessage>()
+        val ex = HttpMessageNotReadableException("Malformed JSON", httpInputMessage)
+        val response = handler.handleHttpMessageNotReadable(ex, request)
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals("Malformed JSON request", response.body?.detail)
+        assertEquals(URI.create("about:blank"), response.body?.type)
     }
 
     @Test

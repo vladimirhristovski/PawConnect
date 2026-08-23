@@ -3,6 +3,7 @@ package com.sorsix.pawconnect.exception
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -24,8 +25,11 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
-    fun handleTypeMismatch(ex: MethodArgumentTypeMismatchException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val message = "Failed to convert parameter '${ex.name}' with value '${ex.value}' to required type '${ex.requiredType?.simpleName}'"
+    fun handleTypeMismatch(
+        ex: MethodArgumentTypeMismatchException, request: WebRequest
+    ): ResponseEntity<ProblemDetail> {
+        val message =
+            "Failed to convert parameter '${ex.name}' with value '${ex.value}' to required type '${ex.requiredType?.simpleName}'"
         val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message)
         pd.type = URI.create("about:blank")
         pd.instance = URI.create(request.getDescription(false))
@@ -52,6 +56,16 @@ class GlobalExceptionHandler {
         pd.type = URI.create("about:blank")
         pd.instance = URI.create(request.getDescription(false))
         pd.setProperty("errors", errors)
+        return ResponseEntity.badRequest().body(pd)
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleHttpMessageNotReadable(
+        ex: HttpMessageNotReadableException, request: WebRequest
+    ): ResponseEntity<ProblemDetail> {
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Malformed JSON request")
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
         return ResponseEntity.badRequest().body(pd)
     }
 
