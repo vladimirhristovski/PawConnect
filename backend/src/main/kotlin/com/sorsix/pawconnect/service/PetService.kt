@@ -9,6 +9,7 @@ import com.sorsix.pawconnect.model.User
 import com.sorsix.pawconnect.repository.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 
 @Service
 class PetService(
@@ -16,7 +17,8 @@ class PetService(
     private val petPhotoRepository: PetPhotoRepository,
     private val petSpeciesRepository: PetSpeciesRepository,
     private val petBreedRepository: PetBreedRepository,
-    private val listingRepository: ListingRepository
+    private val listingRepository: ListingRepository,
+    private val blobStorageService: BlobStorageService
 ) {
 
     @Transactional
@@ -126,6 +128,19 @@ class PetService(
         return savedPhoto
     }
 
+    fun uploadAndAddPhoto(
+        petId: Long, file: MultipartFile, isPrimary: Boolean, displayOrder: Int, currentUser: User
+    ): PetPhoto {
+        val pet = getPetOrThrow(petId)
+        ensureCanManagePet(pet, currentUser)
+
+        val url = blobStorageService.upload(file, "pets/$petId")
+
+        return addPhoto(
+            petId, PetPhotoRequest(url = url, isPrimary = isPrimary, displayOrder = displayOrder), currentUser
+        )
+    }
+
     @Transactional
     fun removePhoto(petId: Long, photoId: Long, currentUser: User) {
         val pet = getPetOrThrow(petId)
@@ -134,6 +149,7 @@ class PetService(
         val photo = pet.photos.find { it.id == photoId } ?: throw ResourceNotFoundException("Photo not found: $photoId")
         pet.photos.remove(photo)
         petPhotoRepository.delete(photo)
+        runCatching { blobStorageService.delete(photo.url) }
     }
 
     private fun ensureCanManagePet(pet: Pet, currentUser: User) {

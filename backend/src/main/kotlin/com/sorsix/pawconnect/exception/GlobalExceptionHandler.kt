@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import java.net.URI
 
 @RestControllerAdvice
@@ -67,6 +68,25 @@ class GlobalExceptionHandler {
         pd.type = URI.create("about:blank")
         pd.instance = URI.create(request.getDescription(false))
         return ResponseEntity.badRequest().body(pd)
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleMaxUploadSize(
+        ex: MaxUploadSizeExceededException, request: WebRequest
+    ): ResponseEntity<ProblemDetail> {
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size")
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(pd)
+    }
+
+    @ExceptionHandler(BlobStorageException::class)
+    fun handleBlobStorage(ex: BlobStorageException, request: WebRequest): ResponseEntity<ProblemDetail> {
+        ex.printStackTrace()
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "File storage error")
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(pd)
     }
 
     @ExceptionHandler(Exception::class)

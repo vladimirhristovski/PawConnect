@@ -42,6 +42,7 @@ dependencies {
     kapt("org.mapstruct:mapstruct-processor:1.6.0")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0")
     implementation("org.springframework.boot:spring-boot-starter-mail")
+    implementation("com.azure:azure-storage-blob:12.27.1")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.security:spring-security-test")

@@ -8,7 +8,9 @@ import com.sorsix.pawconnect.service.AuthService
 import com.sorsix.pawconnect.service.PetService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/pets")
@@ -34,6 +36,19 @@ class PetController(
     fun addPhoto(@PathVariable id: Long, @Valid @RequestBody request: PetPhotoRequest): PetPhotoResponse {
         val currentUser = authService.requireCurrentUser()
         val photo = petService.addPhoto(id, request, currentUser)
+        return PetPhotoResponse.from(photo)
+    }
+
+    @PostMapping("/{id}/photos/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @ResponseStatus(HttpStatus.CREATED)
+    fun uploadPhoto(
+        @PathVariable id: Long,
+        @RequestPart("file") file: MultipartFile,
+        @RequestParam(defaultValue = "false") isPrimary: Boolean,
+        @RequestParam(defaultValue = "0") displayOrder: Int
+    ): PetPhotoResponse {
+        val currentUser = authService.requireCurrentUser()
+        val photo = petService.uploadAndAddPhoto(id, file, isPrimary, displayOrder, currentUser)
         return PetPhotoResponse.from(photo)
     }
 

@@ -30,6 +30,12 @@ spring:
           auth: true
           starttls:
             enable: true
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
 app:
   jwt:
     secret: ${JWT_SECRET:your-256-bit-secret-key-here-change-in-production}
@@ -39,3 +45,8 @@ app:
 
   email:
     enabled: false
+
+azure:
+  storage:
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
+    container-name: ${AZURE_STORAGE_CONTAINER_NAME:pet-photos}
