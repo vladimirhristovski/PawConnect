@@ -54,6 +54,8 @@ dependencies {
     testImplementation("io.rest-assured:rest-assured:6.0.1")
     testImplementation("io.rest-assured:kotlin-extensions:6.0.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("com.github.ben-manes.caffeine:caffeine")
 }
 
 kotlin {

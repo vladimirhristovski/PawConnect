@@ -1,17 +1,8 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.model.BusinessType
-import com.sorsix.pawconnect.model.City
-import com.sorsix.pawconnect.model.Country
-import com.sorsix.pawconnect.model.Municipality
-import com.sorsix.pawconnect.model.PetBreed
-import com.sorsix.pawconnect.model.PetSpecies
-import com.sorsix.pawconnect.repository.BusinessTypeRepository
-import com.sorsix.pawconnect.repository.CityRepository
-import com.sorsix.pawconnect.repository.CountryRepository
-import com.sorsix.pawconnect.repository.MunicipalityRepository
-import com.sorsix.pawconnect.repository.PetBreedRepository
-import com.sorsix.pawconnect.repository.PetSpeciesRepository
+import com.sorsix.pawconnect.model.*
+import com.sorsix.pawconnect.repository.*
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 
 @Service
@@ -24,16 +15,22 @@ class LookupService(
     private val municipalityRepository: MunicipalityRepository
 ) {
 
+    @Cacheable("species")
     fun getAllSpecies(): List<PetSpecies> = speciesRepository.findAll()
 
+    @Cacheable("breeds")
     fun getBreeds(speciesCode: String?): List<PetBreed> = breedRepository.findWithSpeciesBySpeciesCode(speciesCode)
 
+    @Cacheable("businessTypes")
     fun getAllBusinessTypes(): List<BusinessType> = businessTypeRepository.findAll()
 
+    @Cacheable("countries")
     fun getAllCountries(): List<Country> = countryRepository.findAll()
 
+    @Cacheable("cities")
     fun getCities(countryCode: String?): List<City> = cityRepository.findWithCountryByCountryCode(countryCode)
 
+    @Cacheable("municipalities")
     fun getMunicipalities(cityCode: String?): List<Municipality> =
         municipalityRepository.findWithCityByCityCode(cityCode)
 }
