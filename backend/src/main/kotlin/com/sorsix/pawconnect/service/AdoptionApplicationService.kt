@@ -25,6 +25,7 @@ class AdoptionApplicationService(
     private val applicationStatusRepository: ApplicationStatusRepository,
     private val listingService: ListingService
 ) {
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun submitApplication(listingId: Long, request: CreateApplicationRequest, currentUser: User): AdoptionApplication {
@@ -59,6 +60,7 @@ class AdoptionApplicationService(
         )
 
         val saved = applicationRepository.save(application)
+        log.info("Application {} submitted by user {} for listing {}", saved.id, currentUser.id, listingId)
         return applicationRepository.findByIdWithAllAssociations(saved.id!!)
             ?: throw IllegalStateException("Application not found after save")
     }
@@ -114,11 +116,19 @@ class AdoptionApplicationService(
                 other.reviewedAt = now
             }
             applicationRepository.saveAll(otherPending)
+            log.info(
+                "Application {} approved by {}; listing {} marked adopted, {} other application(s) auto-rejected",
+                app.id,
+                currentUser.id,
+                listing.id,
+                otherPending.size
+            )
 
         } else {
             val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
                 ?: throw IllegalStateException("REJECTED status not found")
             app.status = rejectedStatus
+            log.info("Application {} rejected by {}", app.id, currentUser.id)
         }
 
         return applicationRepository.save(app)
@@ -140,6 +150,8 @@ class AdoptionApplicationService(
         val withdrawnStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.WITHDRAWN)
             ?: throw IllegalStateException("WITHDRAWN status not found")
         app.status = withdrawnStatus
-        return applicationRepository.save(app)
+        val saved = applicationRepository.save(app)
+        log.info("Application {} withdrawn by applicant {}", saved.id, currentUser.id)
+        return saved
     }
 }

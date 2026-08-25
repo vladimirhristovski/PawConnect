@@ -1,6 +1,8 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.dto.request.*
+import com.sorsix.pawconnect.dto.request.CreatePetRequest
+import com.sorsix.pawconnect.dto.request.PetPhotoRequest
+import com.sorsix.pawconnect.dto.request.UpdatePetRequest
 import com.sorsix.pawconnect.exception.ForbiddenOperationException
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.model.Pet
@@ -20,6 +22,7 @@ class PetService(
     private val listingRepository: ListingRepository,
     private val blobStorageService: BlobStorageService
 ) {
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun createPet(request: CreatePetRequest): Pet {
@@ -60,6 +63,7 @@ class PetService(
         }
         normalizePrimaryPhoto(savedPet.photos)
         val saved = petRepository.save(pet)
+        log.info("Pet {} created ({} photo(s))", saved.id, saved.photos.size)
         return petRepository.findByIdWithAllAssociations(saved.id!!)
             ?: throw IllegalStateException("Pet not found after save")
     }
@@ -103,6 +107,7 @@ class PetService(
         request.goodWithOtherPets?.let { pet.goodWithOtherPets = it }
 
         val saved = petRepository.save(pet)
+        log.info("Pet {} updated by user {}", saved.id, currentUser.id)
         return petRepository.findByIdWithAllAssociations(saved.id!!)
             ?: throw ResourceNotFoundException("Pet not found after update")
     }
@@ -124,7 +129,7 @@ class PetService(
 
         val savedPhoto = petPhotoRepository.save(photo)
         petRepository.save(pet)
-
+        log.info("Photo {} added to pet {} by user {}", savedPhoto.id, pet.id, currentUser.id)
         return savedPhoto
     }
 
@@ -135,7 +140,7 @@ class PetService(
         ensureCanManagePet(pet, currentUser)
 
         val url = blobStorageService.upload(file, "pets/$petId")
-
+        log.info("Photo uploaded to blob for pet {} by user {}", petId, currentUser.id)
         return addPhoto(
             petId, PetPhotoRequest(url = url, isPrimary = isPrimary, displayOrder = displayOrder), currentUser
         )
@@ -149,7 +154,9 @@ class PetService(
         val photo = pet.photos.find { it.id == photoId } ?: throw ResourceNotFoundException("Photo not found: $photoId")
         pet.photos.remove(photo)
         petPhotoRepository.delete(photo)
+        log.info("Photo {} removed from pet {} by user {}", photoId, petId, currentUser.id)
         runCatching { blobStorageService.delete(photo.url) }
+            .onFailure { log.warn("Failed to delete blob for photo {} (pet {}): {}", photoId, petId, it.message) }
     }
 
     private fun ensureCanManagePet(pet: Pet, currentUser: User) {

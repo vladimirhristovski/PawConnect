@@ -16,6 +16,7 @@ import java.net.URI
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    private val log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(ex: IllegalArgumentException, request: WebRequest): ResponseEntity<ProblemDetail> {
@@ -82,7 +83,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(BlobStorageException::class)
     fun handleBlobStorage(ex: BlobStorageException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        ex.printStackTrace()
+        log.error("Blob storage operation failed", ex)
         val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "File storage error")
         pd.type = URI.create("about:blank")
         pd.instance = URI.create(request.getDescription(false))

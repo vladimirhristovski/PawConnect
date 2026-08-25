@@ -40,6 +40,17 @@ spring:
     caffeine:
       spec: maximumSize=500,expireAfterWrite=1h
 
+logging:
+  level:
+    root: INFO
+    com.sorsix.pawconnect: DEBUG
+    org.springframework.web: INFO
+
+management:
+  health:
+    mail:
+      enabled: false
+
 app:
   jwt:
     secret: ${JWT_SECRET:your-256-bit-secret-key-here-change-in-production}

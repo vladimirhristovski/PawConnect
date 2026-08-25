@@ -25,6 +25,7 @@ class BusinessService(
     private val businessTypeRepository: BusinessTypeRepository,
     private val municipalityRepository: MunicipalityRepository
 ) {
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun createBusiness(request: CreateBusinessRequest, currentUser: User): BusinessResponse {
@@ -46,6 +47,7 @@ class BusinessService(
             longitude = request.longitude
         )
         val saved = businessRepository.save(business)
+        log.info("Business {} created by user {}", saved.id, currentUser.id)
         return BusinessResponse.from(saved)
     }
 
@@ -100,6 +102,7 @@ class BusinessService(
         request.longitude?.let { business.longitude = it }
 
         val updated = businessRepository.save(business)
+        log.info("Business {} updated by user {}", updated.id, currentUser.id)
         return BusinessResponse.from(updated)
     }
 
@@ -110,6 +113,7 @@ class BusinessService(
         ensureCanManage(business, currentUser)
         business.deletedAt = Instant.now()
         businessRepository.save(business)
+        log.info("Business {} soft-deleted by user {}", business.id, currentUser.id)
     }
 
     private fun ensureCanManage(business: Business, currentUser: User) {

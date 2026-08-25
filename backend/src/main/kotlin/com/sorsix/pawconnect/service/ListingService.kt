@@ -29,6 +29,7 @@ class ListingService(
     private val adoptionApplicationRepository: AdoptionApplicationRepository,
     private val applicationStatusRepository: ApplicationStatusRepository
 ) {
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
 
     private fun getListingOrThrow(id: Long): Listing {
         return listingRepository.findByIdWithAllAssociations(id)
@@ -85,6 +86,7 @@ class ListingService(
         )
 
         val saved = listingRepository.save(listing)
+        log.info("Listing {} created by user {} (status {})", saved.id, currentUser.id, status.code)
         return getListingWithAssociationsOrThrow(saved.id!!)
     }
 
@@ -137,6 +139,7 @@ class ListingService(
         )
         listing.status = activeStatus
         val saved = listingRepository.save(listing)
+        log.info("Listing {} published by user {}", saved.id, currentUser.id)
         return getListingWithAssociationsOrThrow(saved.id!!)
     }
 
@@ -160,6 +163,7 @@ class ListingService(
         request.expiresAt?.let { listing.expiresAt = it }
 
         val saved = listingRepository.save(listing)
+        log.info("Listing {} updated by user {}", saved.id, currentUser.id)
         return getListingWithAssociationsOrThrow(saved.id!!)
     }
 
@@ -190,6 +194,7 @@ class ListingService(
         }
 
         val saved = listingRepository.save(listing)
+        log.info("Listing {} cancelled by user {}; {} pending application(s) rejected", listing.id, currentUser.id, pendingApps.size)
         return getListingWithAssociationsOrThrow(saved.id!!)
     }
 
@@ -200,6 +205,7 @@ class ListingService(
         if (listing.deletedAt != null) return
         listing.deletedAt = Instant.now()
         listingRepository.save(listing)
+        log.info("Listing {} soft-deleted by user {}", listing.id, currentUser.id)
     }
 
     @Transactional
@@ -208,6 +214,7 @@ class ListingService(
             ?: throw IllegalStateException("ADOPTED status not found")
         listing.status = adoptedStatus
         listingRepository.save(listing)
+        log.info("Listing {} marked adopted", listing.id)
     }
 
     private fun getListingWithAssociationsOrThrow(id: Long): Listing {

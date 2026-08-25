@@ -40,6 +40,7 @@ class AuthService(
     @Value("\${app.jwt.access-token-ttl}") private val accessTokenTtl: Long,
     @Value("\${app.reset-token-ttl}") private val resetTokenTtl: Long
 ) {
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
 
     private fun hashToken(token: String): String {
         val digest = MessageDigest.getInstance("SHA-256")
@@ -69,6 +70,7 @@ class AuthService(
         user.roles.add(userRole)
 
         val saved = userRepository.save(user)
+        log.info("User registered: {}", saved.username)
         return UserResponse.from(saved)
     }
 
@@ -84,6 +86,8 @@ class AuthService(
         val accessToken = jwtService.generateAccessToken(auth.principal as UserDetails)
         val (rawRefresh, refreshEntity) = jwtService.generateRefreshToken(user)
         refreshTokenRepository.save(refreshEntity)
+
+        log.info("User logged in: {}", user.username)
 
         return AuthResponse(
             accessToken = accessToken,
@@ -106,6 +110,8 @@ class AuthService(
         val (newRawRefresh, newRefreshEntity) = jwtService.generateRefreshToken(user)
         refreshTokenRepository.save(newRefreshEntity)
 
+        log.info("Refresh token rotated for user {}", user.id)
+
         return AuthResponse(
             accessToken = newAccess,
             refreshToken = newRawRefresh,
@@ -115,7 +121,9 @@ class AuthService(
 
     @Transactional
     fun logout(refreshToken: String): Boolean {
-        return jwtService.revokeRefreshToken(refreshToken)
+        val revoked = jwtService.revokeRefreshToken(refreshToken)
+        log.info("Logout requested; refresh token revoked: {}", revoked)
+        return revoked
     }
 
     @Transactional
@@ -137,6 +145,8 @@ class AuthService(
             expiresAt = expiry
         )
         passwordResetTokenRepository.save(resetToken)
+
+        log.info("Password reset requested for user {}", user.id)
 
         val resetLink = "http://localhost:8080/api/auth/reset-password?token=$rawToken"
         val emailBody = """
@@ -170,6 +180,8 @@ class AuthService(
 
         resetToken.usedAt = Instant.now()
         passwordResetTokenRepository.save(resetToken)
+
+        log.info("Password reset completed for user {}", user.id)
 
         return true
     }
