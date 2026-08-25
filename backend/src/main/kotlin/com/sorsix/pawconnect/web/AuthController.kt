@@ -3,6 +3,7 @@ package com.sorsix.pawconnect.web
 import com.sorsix.pawconnect.dto.request.*
 import com.sorsix.pawconnect.dto.response.AuthResponse
 import com.sorsix.pawconnect.dto.response.UserResponse
+import com.sorsix.pawconnect.exception.UnauthorizedException
 import com.sorsix.pawconnect.service.AuthService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -54,7 +55,7 @@ class AuthController(
     @GetMapping("/me")
     fun me(): ResponseEntity<UserResponse> {
         val user = authService.getCurrentUserResponse()
-            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+            ?: throw UnauthorizedException("Not authenticated")
         return ResponseEntity.ok(user)
     }
 }

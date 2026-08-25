@@ -9,6 +9,7 @@ import com.sorsix.pawconnect.model.Pet
 import com.sorsix.pawconnect.model.PetPhoto
 import com.sorsix.pawconnect.model.User
 import com.sorsix.pawconnect.repository.*
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -22,7 +23,7 @@ class PetService(
     private val listingRepository: ListingRepository,
     private val blobStorageService: BlobStorageService
 ) {
-    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun createPet(request: CreatePetRequest): Pet {

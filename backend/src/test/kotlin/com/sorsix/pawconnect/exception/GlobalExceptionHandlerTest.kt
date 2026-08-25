@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.springframework.core.MethodParameter
 import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -44,9 +45,8 @@ class GlobalExceptionHandlerTest {
         val bindingResult = mockk<BindingResult> {
             every { allErrors } returns listOf(fieldError)
         }
-        val ex = mockk<MethodArgumentNotValidException> {
-            every { bindingResult } returns bindingResult
-        }
+        val parameter = mockk<MethodParameter>(relaxed = true)
+        val ex = MethodArgumentNotValidException(parameter, bindingResult)
         val response = handler.handleValidation(ex, request)
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)

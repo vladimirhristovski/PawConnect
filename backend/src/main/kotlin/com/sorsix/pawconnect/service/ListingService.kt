@@ -11,6 +11,7 @@ import com.sorsix.pawconnect.model.enums.Size
 import com.sorsix.pawconnect.repository.*
 import com.sorsix.pawconnect.util.ApplicationStatusCodes
 import com.sorsix.pawconnect.util.ListingStatusCodes
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -29,7 +30,7 @@ class ListingService(
     private val adoptionApplicationRepository: AdoptionApplicationRepository,
     private val applicationStatusRepository: ApplicationStatusRepository
 ) {
-    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     private fun getListingOrThrow(id: Long): Listing {
         return listingRepository.findByIdWithAllAssociations(id)

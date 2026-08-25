@@ -12,6 +12,7 @@ import com.sorsix.pawconnect.repository.ApplicationStatusRepository
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.util.ApplicationStatusCodes
 import com.sorsix.pawconnect.util.ListingStatusCodes
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -25,7 +26,7 @@ class AdoptionApplicationService(
     private val applicationStatusRepository: ApplicationStatusRepository,
     private val listingService: ListingService
 ) {
-    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun submitApplication(listingId: Long, request: CreateApplicationRequest, currentUser: User): AdoptionApplication {
@@ -116,22 +117,25 @@ class AdoptionApplicationService(
                 other.reviewedAt = now
             }
             applicationRepository.saveAll(otherPending)
+
+            val saved = applicationRepository.save(app)
             log.info(
                 "Application {} approved by {}; listing {} marked adopted, {} other application(s) auto-rejected",
-                app.id,
+                saved.id,
                 currentUser.id,
                 listing.id,
                 otherPending.size
             )
-
+            return saved
         } else {
             val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
                 ?: throw IllegalStateException("REJECTED status not found")
             app.status = rejectedStatus
-            log.info("Application {} rejected by {}", app.id, currentUser.id)
-        }
 
-        return applicationRepository.save(app)
+            val saved = applicationRepository.save(app)
+            log.info("Application {} rejected by {}", saved.id, currentUser.id)
+            return saved
+        }
     }
 
     @Transactional

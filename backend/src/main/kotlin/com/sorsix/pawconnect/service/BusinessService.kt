@@ -12,6 +12,7 @@ import com.sorsix.pawconnect.model.User
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.domain.Specification
@@ -25,7 +26,7 @@ class BusinessService(
     private val businessTypeRepository: BusinessTypeRepository,
     private val municipalityRepository: MunicipalityRepository
 ) {
-    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun createBusiness(request: CreateBusinessRequest, currentUser: User): BusinessResponse {

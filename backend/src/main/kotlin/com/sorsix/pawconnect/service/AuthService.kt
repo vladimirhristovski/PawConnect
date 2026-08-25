@@ -12,6 +12,7 @@ import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
 import jakarta.mail.internet.MimeMessage
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
@@ -40,7 +41,7 @@ class AuthService(
     @Value("\${app.jwt.access-token-ttl}") private val accessTokenTtl: Long,
     @Value("\${app.reset-token-ttl}") private val resetTokenTtl: Long
 ) {
-    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     private fun hashToken(token: String): String {
         val digest = MessageDigest.getInstance("SHA-256")
@@ -70,7 +71,7 @@ class AuthService(
         user.roles.add(userRole)
 
         val saved = userRepository.save(user)
-        log.info("User registered: {}", saved.username)
+        log.info("User registered: {}", saved.id)
         return UserResponse.from(saved)
     }
 
@@ -87,7 +88,7 @@ class AuthService(
         val (rawRefresh, refreshEntity) = jwtService.generateRefreshToken(user)
         refreshTokenRepository.save(refreshEntity)
 
-        log.info("User logged in: {}", user.username)
+        log.info("User logged in: {}", user.id)
 
         return AuthResponse(
             accessToken = accessToken,

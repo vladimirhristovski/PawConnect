@@ -11,7 +11,6 @@ class NoOpEmailService : EmailService {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun sendEmail(to: String, subject: String, body: String) {
-        log.info("Email would be sent to: $to, subject: $subject")
-        log.debug("Email body: $body")
+        log.info("Email would be sent to: {}, subject: {}", to, subject)
     }
 }
