@@ -2,6 +2,7 @@ package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.dto.request.CreateListingRequest
 import com.sorsix.pawconnect.dto.request.UpdateListingRequest
+import com.sorsix.pawconnect.dto.response.ListingSummaryResponse
 import com.sorsix.pawconnect.exception.ConflictException
 import com.sorsix.pawconnect.exception.ForbiddenOperationException
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
@@ -124,8 +125,15 @@ class ListingService(
     }
 
     @Transactional(readOnly = true)
-    fun searchNearby(lat: BigDecimal, lng: BigDecimal, radiusKm: Double, speciesCode: String?, pageable: Pageable): Page<Listing> {
-        return listingRepository.findNearby(lat.toDouble(), lng.toDouble(), radiusKm, speciesCode, pageable)
+    fun searchNearby(
+        lat: BigDecimal,
+        lng: BigDecimal,
+        radiusKm: Double,
+        speciesCode: String?,
+        pageable: Pageable
+    ): Page<ListingSummaryResponse> {
+        val page = listingRepository.findNearby(lat.toDouble(), lng.toDouble(), radiusKm, speciesCode, pageable)
+        return page.map { ListingSummaryResponse.from(it) }
     }
 
     @Transactional(readOnly = true)

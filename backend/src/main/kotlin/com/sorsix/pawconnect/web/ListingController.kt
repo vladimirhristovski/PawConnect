@@ -9,6 +9,7 @@ import com.sorsix.pawconnect.model.enums.Gender
 import com.sorsix.pawconnect.model.enums.Size
 import com.sorsix.pawconnect.service.AuthService
 import com.sorsix.pawconnect.service.ListingService
+import com.sorsix.pawconnect.util.resolveNearbySearch
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -47,12 +48,8 @@ class ListingController(
         @RequestParam(required = false) radiusKm: Double?,
         @PageableDefault(size = 20) pageable: Pageable
     ): Page<ListingSummaryResponse> {
-        if (lat != null || lng != null || radiusKm != null) {
-            if (lat == null || lng == null || radiusKm == null) {
-                throw IllegalArgumentException("lat, lng, and radiusKm must all be provided together")
-            }
-            val nearbyPage = listingService.searchNearby(lat, lng, radiusKm, speciesCode, pageable)
-            return nearbyPage.map { ListingSummaryResponse.from(it) }
+        resolveNearbySearch(lat, lng, radiusKm)?.let {
+            return listingService.searchNearby(it.lat, it.lng, it.radiusKm, speciesCode, pageable)
         }
         val page = listingService.searchListings(
             speciesCode, municipalityCode, petSize, gender,

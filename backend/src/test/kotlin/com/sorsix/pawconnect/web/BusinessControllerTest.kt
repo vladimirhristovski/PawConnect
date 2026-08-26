@@ -17,6 +17,7 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.math.BigDecimal
 import javax.sql.DataSource
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -144,6 +145,117 @@ class BusinessControllerTest {
             statusCode(201)
         } Extract {
             jsonPath().getLong("id")
+        }
+    }
+
+    private fun createBusiness(
+        token: String,
+        typeCode: String = businessTypeCode,
+        latitude: BigDecimal? = null,
+        longitude: BigDecimal? = null
+    ): Long {
+        val name = "Business_${System.nanoTime()}"
+        val locationFields = if (latitude != null && longitude != null) {
+            """, "latitude": $latitude, "longitude": $longitude"""
+        } else ""
+        val payload = """
+        {
+            "name": "$name",
+            "typeCode": "$typeCode",
+            "municipalityCode": "$municipalityCode",
+            "address": "1 Test St",
+            "phone": "123456789",
+            "email": "$name@test.com",
+            "description": "desc"
+            $locationFields
+        }
+        """.trimIndent()
+
+        return Given {
+            header("Authorization", "Bearer $token")
+            body(payload)
+            contentType(ContentType.JSON)
+        } When {
+            post("/api/businesses")
+        } Then {
+            statusCode(201)
+        } Extract {
+            jsonPath().getLong("id")
+        }
+    }
+
+    @Test
+    fun `search businesses near location returns only businesses within radius ordered by distance`() {
+        val nearId = createBusiness(ownerToken, latitude = "42.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal())
+        val withinRadiusId =
+            createBusiness(ownerToken, latitude = "42.0500".toBigDecimal(), longitude = "21.4000".toBigDecimal())
+        val farId = createBusiness(ownerToken, latitude = "43.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal())
+
+        Given {
+            queryParam("lat", "42.0000")
+            queryParam("lng", "21.4000")
+            queryParam("radiusKm", "10")
+            queryParam("size", 20)
+        } When {
+            get("/api/businesses")
+        } Then {
+            statusCode(200)
+            body("content*.id", hasItems(nearId.toInt(), withinRadiusId.toInt()))
+            body("content*.id", not(hasItem(farId.toInt())))
+            body("content[0].id", equalTo(nearId.toInt()))
+        }
+    }
+
+    @Test
+    fun `search businesses near location filters by type`() {
+        val vetId = createBusiness(
+            ownerToken, typeCode = "VET",
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+        val groomerId = createBusiness(
+            ownerToken, typeCode = "GROOMER",
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+
+        Given {
+            queryParam("lat", "42.0")
+            queryParam("lng", "21.4")
+            queryParam("radiusKm", "10")
+            queryParam("typeCode", "VET")
+            queryParam("size", 20)
+        } When {
+            get("/api/businesses")
+        } Then {
+            statusCode(200)
+            body("content*.id", hasItem(vetId.toInt()))
+            body("content*.id", not(hasItem(groomerId.toInt())))
+        }
+    }
+
+    @Test
+    fun `search businesses without precise coordinates are excluded from nearby results`() {
+        Given {
+            queryParam("lat", "42.0")
+            queryParam("lng", "21.4")
+            queryParam("radiusKm", "10")
+            queryParam("size", 20)
+        } When {
+            get("/api/businesses")
+        } Then {
+            statusCode(200)
+            body("content*.id", not(hasItem(businessId.toInt())))
+        }
+    }
+
+    @Test
+    fun `search businesses with only some nearby params returns 400`() {
+        Given {
+            queryParam("lat", "42.0")
+            queryParam("radiusKm", "10")
+        } When {
+            get("/api/businesses")
+        } Then {
+            statusCode(400)
         }
     }
 

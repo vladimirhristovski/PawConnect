@@ -17,6 +17,7 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.math.BigDecimal
 import javax.sql.DataSource
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -173,14 +174,20 @@ class ListingControllerTest {
         petName: String = "TestPet",
         draft: Boolean = true,
         municipality: String = municipalityCode,
-        useBusiness: Boolean = false
+        useBusiness: Boolean = false,
+        speciesCodeOverride: String = speciesCode,
+        latitude: BigDecimal? = null,
+        longitude: BigDecimal? = null
     ): Long {
         val businessField = if (useBusiness) """, "businessId": $businessId""" else ""
+        val locationFields = if (latitude != null && longitude != null) {
+            """, "latitude": $latitude, "longitude": $longitude"""
+        } else ""
         val payload = """
         {
             "pet": {
                 "name": "$petName",
-                "speciesCode": "$speciesCode",
+                "speciesCode": "$speciesCodeOverride",
                 "breedCodes": [],
                 "gender": "MALE",
                 "size": "MEDIUM"
@@ -188,6 +195,7 @@ class ListingControllerTest {
             "municipalityCode": "$municipality",
             "saveAsDraft": $draft
             $businessField
+            $locationFields
         }
         """.trimIndent()
 
@@ -863,6 +871,78 @@ class ListingControllerTest {
         } Then {
             statusCode(200)
             body("totalElements", greaterThan(0))
+        }
+    }
+
+    @Test
+    fun `search listings near location returns only active listings within radius ordered by distance`() {
+        val nearId = createListing(
+            ownerToken, petName = "Near", draft = false,
+            latitude = "42.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal()
+        )
+        val withinRadiusId = createListing(
+            ownerToken, petName = "WithinRadius", draft = false,
+            latitude = "42.0500".toBigDecimal(), longitude = "21.4000".toBigDecimal()
+        )
+        val farId = createListing(
+            ownerToken, petName = "Far", draft = false,
+            latitude = "43.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal()
+        )
+        val draftNearbyId = createListing(
+            ownerToken, petName = "DraftNear", draft = true,
+            latitude = "42.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal()
+        )
+
+        Given {
+            queryParam("lat", "42.0000")
+            queryParam("lng", "21.4000")
+            queryParam("radiusKm", "10")
+            queryParam("size", 20)
+        } When {
+            get("/api/listings")
+        } Then {
+            statusCode(200)
+            body("content*.id", hasItems(nearId.toInt(), withinRadiusId.toInt()))
+            body("content*.id", not(hasItem(farId.toInt())))
+            body("content*.id", not(hasItem(draftNearbyId.toInt())))
+            body("content[0].id", equalTo(nearId.toInt()))
+        }
+    }
+
+    @Test
+    fun `search listings near location filters by species`() {
+        val dogId = createListing(
+            ownerToken, petName = "NearbyDog", draft = false, speciesCodeOverride = "DOG",
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+        val catId = createListing(
+            ownerToken, petName = "NearbyCat", draft = false, speciesCodeOverride = "CAT",
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+
+        Given {
+            queryParam("lat", "42.0")
+            queryParam("lng", "21.4")
+            queryParam("radiusKm", "10")
+            queryParam("speciesCode", "DOG")
+            queryParam("size", 20)
+        } When {
+            get("/api/listings")
+        } Then {
+            statusCode(200)
+            body("content*.id", hasItem(dogId.toInt()))
+            body("content*.id", not(hasItem(catId.toInt())))
+        }
+    }
+
+    @Test
+    fun `search listings with only some nearby params returns 400`() {
+        Given {
+            queryParam("lng", "21.4")
+        } When {
+            get("/api/listings")
+        } Then {
+            statusCode(400)
         }
     }
 

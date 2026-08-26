@@ -197,6 +197,20 @@ class BusinessServiceTest {
     }
 
     @Test
+    fun `searchNearby should delegate to repository with location, radius and type`() {
+        val pageable = PageRequest.of(0, 10)
+        val business = mockBusiness(id = 7L)
+        val page = PageImpl(listOf(business))
+        every { businessRepository.findNearby(42.0, 21.4, 10.0, "VET", pageable) } returns page
+
+        val result = service.searchNearby(42.0.toBigDecimal(), 21.4.toBigDecimal(), 10.0, "VET", pageable)
+
+        assertEquals(1, result.totalElements)
+        assertEquals(7L, result.content[0].id)
+        verify { businessRepository.findNearby(42.0, 21.4, 10.0, "VET", pageable) }
+    }
+
+    @Test
     fun `updateBusiness should update all fields for owner`() {
         val owner = mockUser(id = 1L)
         val business = mockBusiness(id = 10L, owner = owner)

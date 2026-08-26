@@ -5,6 +5,7 @@ import com.sorsix.pawconnect.dto.request.UpdateBusinessRequest
 import com.sorsix.pawconnect.dto.response.BusinessResponse
 import com.sorsix.pawconnect.service.AuthService
 import com.sorsix.pawconnect.service.BusinessService
+import com.sorsix.pawconnect.util.resolveNearbySearch
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -35,11 +36,8 @@ class BusinessController(
         @RequestParam(required = false) radiusKm: Double?,
         @PageableDefault(size = 20) pageable: Pageable
     ): Page<BusinessResponse> {
-        if (lat != null || lng != null || radiusKm != null) {
-            if (lat == null || lng == null || radiusKm == null) {
-                throw IllegalArgumentException("lat, lng, and radiusKm must all be provided together")
-            }
-            return businessService.searchNearby(lat, lng, radiusKm, typeCode, pageable)
+        resolveNearbySearch(lat, lng, radiusKm)?.let {
+            return businessService.searchNearby(it.lat, it.lng, it.radiusKm, typeCode, pageable)
         }
         return businessService.searchBusinesses(typeCode, municipalityCode, pageable)
     }
