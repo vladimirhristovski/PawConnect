@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.Instant
 
 @Service
@@ -35,6 +36,8 @@ class BusinessService(
         val municipality = municipalityRepository.findByCode(request.municipalityCode)
             ?: throw ResourceNotFoundException("Municipality not found: ${request.municipalityCode}")
 
+        val explicitCoordinates = request.latitude != null && request.longitude != null
+
         val business = Business(
             type = type,
             name = request.name,
@@ -44,8 +47,9 @@ class BusinessService(
             address = request.address,
             municipality = municipality,
             owner = currentUser,
-            latitude = request.latitude,
-            longitude = request.longitude
+            latitude = request.latitude ?: municipality.latitude,
+            longitude = request.longitude ?: municipality.longitude,
+            addressGeocoded = explicitCoordinates
         )
         val saved = businessRepository.save(business)
         log.info("Business {} created by user {}", saved.id, currentUser.id)
@@ -80,6 +84,18 @@ class BusinessService(
         return page.map { BusinessResponse.from(it) }
     }
 
+    @Transactional(readOnly = true)
+    fun searchNearby(
+        lat: BigDecimal,
+        lng: BigDecimal,
+        radiusKm: Double,
+        typeCode: String?,
+        pageable: Pageable
+    ): Page<BusinessResponse> {
+        val page = businessRepository.findNearby(lat.toDouble(), lng.toDouble(), radiusKm, typeCode, pageable)
+        return page.map { BusinessResponse.from(it) }
+    }
+
     @Transactional
     fun updateBusiness(id: Long, request: UpdateBusinessRequest, currentUser: User): BusinessResponse {
         val business = businessRepository.findByIdWithAssociations(id)
@@ -99,8 +115,16 @@ class BusinessService(
             business.municipality = municipalityRepository.findByCode(code)
                 ?: throw ResourceNotFoundException("Municipality not found: $code")
         }
-        request.latitude?.let { business.latitude = it }
-        request.longitude?.let { business.longitude = it }
+
+        if (request.latitude != null && request.longitude != null) {
+            business.latitude = request.latitude
+            business.longitude = request.longitude
+            business.addressGeocoded = true
+        } else if (request.address != null || request.municipalityCode != null) {
+            business.latitude = business.municipality.latitude
+            business.longitude = business.municipality.longitude
+            business.addressGeocoded = false
+        }
 
         val updated = businessRepository.save(business)
         log.info("Business {} updated by user {}", updated.id, currentUser.id)

@@ -63,6 +63,9 @@ app:
   email:
     enabled: false
 
+  geocoding:
+    retry-interval: PT6H
+
 azure:
   storage:
     connection-string: ${AZURE_STORAGE_CONNECTION_STRING}

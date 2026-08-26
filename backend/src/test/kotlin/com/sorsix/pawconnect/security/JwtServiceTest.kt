@@ -46,7 +46,12 @@ class JwtServiceTest {
     fun `validateAccessToken should return false for tampered token`() {
         val userDetails = mockk<UserDetails> { every { username } returns "john" }
         val token = jwtService.generateAccessToken(userDetails)
-        val tampered = token.dropLast(1) + "X"
+        val parts = token.split(".")
+        val payload = parts[1]
+        val middleIndex = payload.length / 2
+        val tamperedChar = if (payload[middleIndex] == 'A') 'B' else 'A'
+        val tamperedPayload = payload.substring(0, middleIndex) + tamperedChar + payload.substring(middleIndex + 1)
+        val tampered = "${parts[0]}.$tamperedPayload.${parts[2]}"
         assertFalse(jwtService.validateAccessToken(tampered))
     }
 

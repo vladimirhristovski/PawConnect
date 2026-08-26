@@ -98,4 +98,62 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
     """
     )
     fun findMyListingsWithAssociations(@Param("userId") userId: Long, pageable: Pageable): Page<Listing>
+
+    fun findByLatitudeIsNullAndDeletedAtIsNull(): List<Listing>
+
+    @Query(
+        value = """
+            SELECT l.*
+            FROM listings l
+            JOIN listing_statuses ls ON ls.id = l.status_id
+            JOIN pets p ON p.id = l.pet_id
+            JOIN pet_species ps ON ps.id = p.species_id
+            WHERE l.deleted_at IS NULL
+              AND ls.code = 'ACTIVE'
+              AND l.latitude IS NOT NULL
+              AND l.longitude IS NOT NULL
+              AND (:speciesCode IS NULL OR ps.code = :speciesCode)
+              AND 6371 * acos(
+                    LEAST(1.0, GREATEST(-1.0,
+                      cos(radians(CAST(:lat AS double precision))) * cos(radians(CAST(l.latitude AS double precision))) *
+                      cos(radians(CAST(l.longitude AS double precision)) - radians(CAST(:lng AS double precision)))
+                      + sin(radians(CAST(:lat AS double precision))) * sin(radians(CAST(l.latitude AS double precision)))
+                    ))
+                  ) <= :radiusKm
+            ORDER BY 6371 * acos(
+                    LEAST(1.0, GREATEST(-1.0,
+                      cos(radians(CAST(:lat AS double precision))) * cos(radians(CAST(l.latitude AS double precision))) *
+                      cos(radians(CAST(l.longitude AS double precision)) - radians(CAST(:lng AS double precision)))
+                      + sin(radians(CAST(:lat AS double precision))) * sin(radians(CAST(l.latitude AS double precision)))
+                    ))
+                  ) ASC
+        """,
+        countQuery = """
+            SELECT count(*)
+            FROM listings l
+            JOIN listing_statuses ls ON ls.id = l.status_id
+            JOIN pets p ON p.id = l.pet_id
+            JOIN pet_species ps ON ps.id = p.species_id
+            WHERE l.deleted_at IS NULL
+              AND ls.code = 'ACTIVE'
+              AND l.latitude IS NOT NULL
+              AND l.longitude IS NOT NULL
+              AND (:speciesCode IS NULL OR ps.code = :speciesCode)
+              AND 6371 * acos(
+                    LEAST(1.0, GREATEST(-1.0,
+                      cos(radians(CAST(:lat AS double precision))) * cos(radians(CAST(l.latitude AS double precision))) *
+                      cos(radians(CAST(l.longitude AS double precision)) - radians(CAST(:lng AS double precision)))
+                      + sin(radians(CAST(:lat AS double precision))) * sin(radians(CAST(l.latitude AS double precision)))
+                    ))
+                  ) <= :radiusKm
+        """,
+        nativeQuery = true
+    )
+    fun findNearby(
+        @Param("lat") lat: Double,
+        @Param("lng") lng: Double,
+        @Param("radiusKm") radiusKm: Double,
+        @Param("speciesCode") speciesCode: String?,
+        pageable: Pageable
+    ): Page<Listing>
 }

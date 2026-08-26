@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import java.math.BigDecimal
 
 @RestController
 @RequestMapping("/api/businesses")
@@ -29,8 +30,17 @@ class BusinessController(
     fun searchBusinesses(
         @RequestParam(required = false) typeCode: String?,
         @RequestParam(required = false) municipalityCode: String?,
+        @RequestParam(required = false) lat: BigDecimal?,
+        @RequestParam(required = false) lng: BigDecimal?,
+        @RequestParam(required = false) radiusKm: Double?,
         @PageableDefault(size = 20) pageable: Pageable
     ): Page<BusinessResponse> {
+        if (lat != null || lng != null || radiusKm != null) {
+            if (lat == null || lng == null || radiusKm == null) {
+                throw IllegalArgumentException("lat, lng, and radiusKm must all be provided together")
+            }
+            return businessService.searchNearby(lat, lng, radiusKm, typeCode, pageable)
+        }
         return businessService.searchBusinesses(typeCode, municipalityCode, pageable)
     }
 

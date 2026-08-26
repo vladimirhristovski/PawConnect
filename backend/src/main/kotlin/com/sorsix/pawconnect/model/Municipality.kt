@@ -2,6 +2,7 @@ package com.sorsix.pawconnect.model
 
 import com.sorsix.pawconnect.model.base.BaseEntity
 import jakarta.persistence.*
+import java.math.BigDecimal
 
 @Entity
 @Table(name = "municipalities")
@@ -15,5 +16,9 @@ class Municipality(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "city_id")
     var city: City? = null,
+
+    var latitude: BigDecimal? = null,
+
+    var longitude: BigDecimal? = null,
 
     ) : BaseEntity()

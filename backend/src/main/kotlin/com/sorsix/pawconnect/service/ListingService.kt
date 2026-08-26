@@ -81,8 +81,8 @@ class ListingService(
             title = request.title,
             description = request.description,
             adoptionFee = request.adoptionFee,
-            latitude = request.latitude,
-            longitude = request.longitude,
+            latitude = request.latitude ?: municipality.latitude,
+            longitude = request.longitude ?: municipality.longitude,
             expiresAt = request.expiresAt
         )
 
@@ -124,6 +124,11 @@ class ListingService(
     }
 
     @Transactional(readOnly = true)
+    fun searchNearby(lat: BigDecimal, lng: BigDecimal, radiusKm: Double, speciesCode: String?, pageable: Pageable): Page<Listing> {
+        return listingRepository.findNearby(lat.toDouble(), lng.toDouble(), radiusKm, speciesCode, pageable)
+    }
+
+    @Transactional(readOnly = true)
     fun listMyListings(currentUser: User, pageable: Pageable): Page<Listing> {
         return listingRepository.findMyListingsWithAssociations(currentUser.id!!, pageable)
     }
@@ -159,8 +164,15 @@ class ListingService(
             listing.municipality = municipalityRepository.findByCode(code)
                 ?: throw ResourceNotFoundException("Municipality not found: $code")
         }
-        request.latitude?.let { listing.latitude = it }
-        request.longitude?.let { listing.longitude = it }
+
+        if (request.latitude != null && request.longitude != null) {
+            listing.latitude = request.latitude
+            listing.longitude = request.longitude
+        } else if (request.municipalityCode != null) {
+            listing.latitude = listing.municipality.latitude
+            listing.longitude = listing.municipality.longitude
+        }
+
         request.expiresAt?.let { listing.expiresAt = it }
 
         val saved = listingRepository.save(listing)

@@ -42,8 +42,18 @@ class ListingController(
         @RequestParam(required = false) goodWithOtherPets: Boolean?,
         @RequestParam(required = false) minFee: BigDecimal?,
         @RequestParam(required = false) maxFee: BigDecimal?,
+        @RequestParam(required = false) lat: BigDecimal?,
+        @RequestParam(required = false) lng: BigDecimal?,
+        @RequestParam(required = false) radiusKm: Double?,
         @PageableDefault(size = 20) pageable: Pageable
     ): Page<ListingSummaryResponse> {
+        if (lat != null || lng != null || radiusKm != null) {
+            if (lat == null || lng == null || radiusKm == null) {
+                throw IllegalArgumentException("lat, lng, and radiusKm must all be provided together")
+            }
+            val nearbyPage = listingService.searchNearby(lat, lng, radiusKm, speciesCode, pageable)
+            return nearbyPage.map { ListingSummaryResponse.from(it) }
+        }
         val page = listingService.searchListings(
             speciesCode, municipalityCode, petSize, gender,
             goodWithKids, goodWithOtherPets, minFee, maxFee, pageable

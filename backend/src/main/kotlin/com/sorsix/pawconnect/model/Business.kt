@@ -39,4 +39,7 @@ class Business(
 
     var longitude: BigDecimal? = null,
 
+    @Column(name = "address_geocoded", nullable = false)
+    var addressGeocoded: Boolean = false,
+
     ) : SoftDeletableEntity()
