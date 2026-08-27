@@ -1,0 +1,43 @@
+import { Service, inject, signal } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import {
+  Business,
+  CreateBusinessRequest,
+  UpdateBusinessRequest,
+  BusinessSearchParams,
+} from '../models/business.model';
+import { Page } from '../models/page.model';
+
+@Service()
+export class BusinessService {
+  private http = inject(HttpClient);
+  private baseUrl = `${environment.apiUrl}/businesses`;
+
+  results = signal<Page<Business> | null>(null);
+  selected = signal<Business | null>(null);
+
+  search(params: BusinessSearchParams): void {
+    let httpParams = new HttpParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') {
+        httpParams = httpParams.set(key, String(value));
+      }
+    }
+    this.http
+      .get<Page<Business>>(this.baseUrl, { params: httpParams })
+      .subscribe((page) => this.results.set(page));
+  }
+  loadOne(id: number): void {
+    this.http.get<Business>(`${this.baseUrl}/${id}`).subscribe((b) => this.selected.set(b));
+  }
+  create(request: CreateBusinessRequest) {
+    return this.http.post<Business>(this.baseUrl, request);
+  }
+  update(id: number, request: UpdateBusinessRequest) {
+    return this.http.put<Business>(`${this.baseUrl}/${id}`, request);
+  }
+  delete(id: number) {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+}
