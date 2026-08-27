@@ -1,0 +1,94 @@
+@if (listingService.selected(); as listing) {
+  <div class="listing-detail card">
+    <div class="gallery">
+      @if (listing.pet.photos.length > 0) {
+        @for (photo of listing.pet.photos; track photo.id) {
+          <img [src]="photo.url" [alt]="listing.pet.name" [class.primary]="photo.isPrimary" />
+        }
+      } @else {
+        <div class="photo-placeholder large">No photos yet</div>
+      }
+    </div>
+    <div class="info">
+      <h2>{{ listing.pet.name }}</h2>
+      <span class="badge">{{ listing.statusName }}</span>
+      <p>
+        {{ listing.pet.speciesName }}
+        @if (listing.pet.breeds.length) {
+          ({{ breedNames(listing) }})
+        }
+      </p>
+      <p>
+        {{ listing.pet.gender }}
+        @if (listing.pet.size) {
+          · {{ listing.pet.size }}
+        }
+        @if (listing.pet.age) {
+          · {{ listing.pet.age }} yrs
+        }
+      </p>
+      <p>
+        {{ listing.pet.goodWithKids ? '✓' : '✗' }} good with kids ·
+        {{ listing.pet.goodWithOtherPets ? '✓' : '✗' }} good with other pets
+      </p>
+      @if (listing.pet.description) {
+        <p>{{ listing.pet.description }}</p>
+      }
+      <h3>{{ listing.title || 'Listing details' }}</h3>
+      @if (listing.description) {
+        <p>{{ listing.description }}</p>
+      }
+      <p>{{ listing.municipalityName }}</p>
+      <p class="fee">{{ listing.adoptionFee > 0 ? listing.adoptionFee + ' MKD' : 'Free' }}</p>
+      <p>Posted by {{ listing.postedBy }}</p>
+      @if (listing.business; as biz) {
+        <div class="business-blurb">
+          <strong>{{ biz.name }}</strong> ({{ biz.typeName }}) — {{ biz.phone }}
+        </div>
+      }
+      @if (isOwner()) {
+        <div class="owner-actions">
+          <a class="button" [routerLink]="['/listings', listing.id, 'edit']">Edit</a>
+          <a class="button" [routerLink]="['/listings', listing.id, 'applications']"
+            >View applications</a
+          >
+          @if (listing.statusCode === 'DRAFT') {
+            <button (click)="publish()">Publish</button>
+          }
+          @if (listing.statusCode === 'ACTIVE') {
+            <button (click)="cancel()">Cancel listing</button>
+          }
+          <button class="danger" (click)="remove()">Delete</button>
+        </div>
+      } @else if (auth.isAuthenticated()) {
+        <div class="apply-box">
+          <h3>Apply to adopt</h3>
+          <form (ngSubmit)="submitApplication()">
+            <label
+              >Message
+              <textarea [(ngModel)]="applicationForm.message" name="message" rows="3"></textarea>
+            </label>
+            <label
+              >Contact phone <input [(ngModel)]="applicationForm.contactPhone" name="contactPhone"
+            /></label>
+            <label
+              >Contact email
+              <input [(ngModel)]="applicationForm.contactEmail" name="contactEmail" type="email"
+            /></label>
+            @if (applicationError()) {
+              <p class="error">{{ applicationError() }}</p>
+            }
+            @if (applicationSent()) {
+              <p class="success">Application submitted!</p>
+            }
+            <button type="submit" [disabled]="applicationSent()">Submit application</button>
+          </form>
+        </div>
+      } @else {
+        <p><a routerLink="/login">Log in</a> to apply for this pet.</p>
+      }
+    </div>
+  </div>
+} @else {
+  <p>Loading…</p>
+}

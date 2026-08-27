@@ -1,0 +1,101 @@
+<div class="search-layout">
+  <aside class="filters card">
+    <h3>Filters</h3>
+    <label
+      >Species
+      <select [(ngModel)]="filters.speciesCode">
+        <option [ngValue]="undefined">Any</option>
+        @for (s of lookup.species(); track s.code) {
+          <option [value]="s.code">{{ s.name }}</option>
+        }
+      </select>
+    </label>
+    <label
+      >Municipality
+      <select [(ngModel)]="filters.municipalityCode">
+        <option [ngValue]="undefined">Any</option>
+        @for (m of lookup.municipalities(); track m.code) {
+          <option [value]="m.code">{{ m.name }}</option>
+        }
+      </select>
+    </label>
+    <label
+      >Size
+      <select [(ngModel)]="filters.petSize">
+        <option [ngValue]="undefined">Any</option>
+        <option value="SMALL">Small</option>
+        <option value="MEDIUM">Medium</option>
+        <option value="LARGE">Large</option>
+      </select>
+    </label>
+    <label
+      >Gender
+      <select [(ngModel)]="filters.gender">
+        <option [ngValue]="undefined">Any</option>
+        <option value="MALE">Male</option>
+        <option value="FEMALE">Female</option>
+        <option value="UNKNOWN">Unknown</option>
+      </select>
+    </label>
+    <label class="checkbox"
+      ><input type="checkbox" [(ngModel)]="filters.goodWithKids" /> Good with kids</label
+    >
+    <label class="checkbox"
+      ><input type="checkbox" [(ngModel)]="filters.goodWithOtherPets" /> Good with other pets</label
+    >
+    <label>Min fee <input type="number" min="0" [(ngModel)]="filters.minFee" /></label>
+    <label>Max fee <input type="number" min="0" [(ngModel)]="filters.maxFee" /></label>
+    <label class="checkbox"
+      ><input type="checkbox" [ngModel]="useNearby()" (ngModelChange)="toggleNearby()" /> Search
+      near me</label
+    >
+    @if (useNearby()) {
+      <label>Radius (km) <input type="number" min="1" [(ngModel)]="filters.radiusKm" /></label>
+      @if (locationError()) {
+        <p class="error">{{ locationError() }}</p>
+      }
+    }
+    <button (click)="search()">Apply filters</button>
+  </aside>
+
+  <section class="results">
+    @if (listingService.results(); as page) {
+      @if (page.content.length > 0) {
+        <div class="listing-grid">
+          @for (listing of page.content; track listing.id) {
+            <a class="listing-card card" [routerLink]="['/listings', listing.id]">
+              @if (listing.pet.primaryPhotoUrl) {
+                <img [src]="listing.pet.primaryPhotoUrl" [alt]="listing.pet.name" />
+              } @else {
+                <div class="photo-placeholder">No photo</div>
+              }
+              <div class="pad">
+                <h4>{{ listing.pet.name }}</h4>
+                <p>
+                  {{ listing.pet.speciesName }} · {{ listing.pet.gender }}
+                  @if (listing.pet.size) {
+                    · {{ listing.pet.size }}
+                  }
+                </p>
+                <p>{{ listing.municipalityName }}</p>
+                <p class="fee">
+                  {{ listing.adoptionFee > 0 ? listing.adoptionFee + ' MKD' : 'Free' }}
+                </p>
+                <span class="badge">{{ listing.statusName }}</span>
+              </div>
+            </a>
+          }
+        </div>
+        <app-pagination
+          [current]="page.number"
+          [totalPages]="page.totalPages"
+          (pageChange)="goToPage($event)"
+        />
+      } @else {
+        <p class="empty-state">No listings match your filters.</p>
+      }
+    } @else {
+      <p>Loading…</p>
+    }
+  </section>
+</div>

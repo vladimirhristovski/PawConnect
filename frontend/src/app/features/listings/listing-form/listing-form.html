@@ -1,0 +1,163 @@
+<form class="listing-form card" (ngSubmit)="submit()">
+  <h2>{{ isEdit() ? 'Edit listing' : 'List a pet for adoption' }}</h2>
+
+  @if (!isEdit()) {
+    <fieldset>
+      <legend>Pet details</legend>
+      <label>Name <input name="petName" [(ngModel)]="pet.name" required /></label>
+      <label
+        >Species
+        <select
+          name="speciesCode"
+          [(ngModel)]="pet.speciesCode"
+          required
+          (ngModelChange)="onSpeciesChange()"
+        >
+          <option [ngValue]="undefined">Select…</option>
+          @for (s of lookup.species(); track s.code) {
+            <option [value]="s.code">{{ s.name }}</option>
+          }
+        </select>
+      </label>
+      @if (pet.speciesCode) {
+        <fieldset class="breeds">
+          <legend>Breeds</legend>
+          @for (b of lookup.breeds(); track b.code) {
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                [checked]="isBreedSelected(b.code)"
+                (change)="toggleBreed(b.code)"
+              />
+              {{ b.name }}
+            </label>
+          }
+        </fieldset>
+      }
+      <label
+        >Gender
+        <select name="gender" [(ngModel)]="pet.gender" required>
+          <option value="MALE">Male</option>
+          <option value="FEMALE">Female</option>
+          <option value="UNKNOWN">Unknown</option>
+        </select>
+      </label>
+      <label
+        >Size
+        <select name="size" [(ngModel)]="pet.size">
+          <option [ngValue]="undefined">Unspecified</option>
+          <option value="SMALL">Small</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LARGE">Large</option>
+        </select>
+      </label>
+      <label>Age (years) <input name="age" type="number" min="0" [(ngModel)]="pet.age" /></label>
+      <label>Birth date <input name="birthDate" type="date" [(ngModel)]="pet.birthDate" /></label>
+      <label
+        >Weight (kg)
+        <input name="weightKg" type="number" min="0" step="0.1" [(ngModel)]="pet.weightKg"
+      /></label>
+      <label class="checkbox"
+        ><input type="checkbox" name="goodWithKids" [(ngModel)]="pet.goodWithKids" /> Good with
+        kids</label
+      >
+      <label class="checkbox"
+        ><input type="checkbox" name="goodWithOtherPets" [(ngModel)]="pet.goodWithOtherPets" /> Good
+        with other pets</label
+      >
+      <label
+        >Description
+        <textarea name="petDescription" rows="3" [(ngModel)]="pet.description"></textarea>
+      </label>
+      <label
+        >Photos <input type="file" accept="image/*" multiple (change)="onFilesSelected($event)"
+      /></label>
+      @if (uploading()) {
+        <p>Uploading…</p>
+      }
+      @if (stagedPhotos().length > 0) {
+        <div class="photo-strip">
+          @for (photo of stagedPhotos(); track photo.url) {
+            <div class="staged-photo">
+              <img [src]="photo.url" [alt]="photo.previewName" />
+              <label class="checkbox"
+                ><input
+                  type="radio"
+                  name="primaryPhoto"
+                  [checked]="photo.isPrimary"
+                  (change)="setPrimary(photo)"
+                />
+                Primary</label
+              >
+              <button type="button" (click)="removeStaged(photo)">Remove</button>
+            </div>
+          }
+        </div>
+      }
+    </fieldset>
+  }
+
+  <fieldset>
+    <legend>Listing details</legend>
+    <label>Title <input name="title" [(ngModel)]="listing.title" /></label>
+    <label
+      >Description
+      <textarea name="description" rows="3" [(ngModel)]="listing.description"></textarea>
+    </label>
+    <label
+      >Adoption fee
+      <input name="adoptionFee" type="number" min="0" [(ngModel)]="listing.adoptionFee"
+    /></label>
+    <label>Expires at <input name="expiresAt" type="date" [(ngModel)]="expiresAtDate" /></label>
+    <label
+      >Country
+      <select [(ngModel)]="countryCode" name="country" (ngModelChange)="onCountryChange()">
+        <option [ngValue]="undefined">Select…</option>
+        @for (c of lookup.countries(); track c.code) {
+          <option [value]="c.code">{{ c.name }}</option>
+        }
+      </select>
+    </label>
+    <label
+      >City
+      <select
+        [(ngModel)]="cityCode"
+        name="city"
+        (ngModelChange)="onCityChange()"
+        [disabled]="!countryCode"
+      >
+        <option [ngValue]="undefined">Select…</option>
+        @for (c of lookup.cities(); track c.code) {
+          <option [value]="c.code">{{ c.name }}</option>
+        }
+      </select>
+    </label>
+    <label
+      >Municipality
+      <select
+        name="municipalityCode"
+        [(ngModel)]="listing.municipalityCode"
+        required
+        [disabled]="!cityCode"
+      >
+        <option [ngValue]="undefined">Select…</option>
+        @for (m of lookup.municipalities(); track m.code) {
+          <option [value]="m.code">{{ m.name }}</option>
+        }
+      </select>
+    </label>
+    @if (!isEdit()) {
+      <label class="checkbox"
+        ><input type="checkbox" name="saveAsDraft" [(ngModel)]="saveAsDraft" /> Save as draft (don't
+        publish yet)</label
+      >
+    }
+  </fieldset>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  <button type="submit" [disabled]="submitting()">
+    {{ submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create listing' }}
+  </button>
+</form>

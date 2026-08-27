@@ -1,0 +1,46 @@
+<div class="page-header">
+  <h2>My listings</h2>
+  <a class="button" routerLink="/listings/new">+ New listing</a>
+</div>
+
+@if (listingService.myListings(); as page) {
+  @if (page.content.length > 0) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Pet</th>
+          <th>Status</th>
+          <th>Fee</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (listing of page.content; track listing.id) {
+          <tr>
+            <td>{{ listing.pet.name }}</td>
+            <td>
+              <span class="badge">{{ listing.statusName }}</span>
+            </td>
+            <td>{{ listing.adoptionFee > 0 ? listing.adoptionFee + ' MKD' : 'Free' }}</td>
+            <td>{{ listing.createdAt | date: 'mediumDate' }}</td>
+            <td>
+              <a [routerLink]="['/listings', listing.id]">View</a> ·
+              <a [routerLink]="['/listings', listing.id, 'edit']">Edit</a> ·
+              <a [routerLink]="['/listings', listing.id, 'applications']">Applications</a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <app-pagination
+      [current]="page.number"
+      [totalPages]="page.totalPages"
+      (pageChange)="goToPage($event)"
+    />
+  } @else {
+    <p class="empty-state">You haven't created any listings yet.</p>
+  }
+} @else {
+  <p>Loading…</p>
+}
