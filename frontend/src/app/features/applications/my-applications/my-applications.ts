@@ -1,0 +1,31 @@
+// my-applications.ts
+import { Component, inject, OnInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { DatePipe } from '@angular/common';
+import { ApplicationService } from '../../../core/services/application';
+import { Pagination } from '../../../shared/pagination/pagination';
+
+@Component({
+  selector: 'app-my-applications',
+  imports: [RouterLink, Pagination, DatePipe],
+  templateUrl: './my-applications.html',
+})
+export class MyApplications implements OnInit {
+  protected applicationService = inject(ApplicationService);
+
+  ngOnInit(): void {
+    this.applicationService.loadMine(0);
+  }
+  goToPage(page: number): void {
+    this.applicationService.loadMine(page);
+  }
+
+  withdraw(id: number): void {
+    if (!confirm('Withdraw this application?')) return;
+    this.applicationService.withdraw(id).subscribe(() => this.applicationService.loadMine(0));
+  }
+
+  canWithdraw(statusCode: string): boolean {
+    return statusCode === 'SUBMITTED' || statusCode === 'UNDER_REVIEW';
+  }
+}

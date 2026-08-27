@@ -40,6 +40,14 @@ export const routes: Routes = [
       import('./features/listings/listing-form/listing-form').then((m) => m.ListingForm),
   },
   {
+    path: 'listings/:id/applications',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/applications/listing-applications/listing-applications').then(
+        (m) => m.ListingApplications,
+      ),
+  },
+  {
     path: 'listings/:id',
     loadComponent: () =>
       import('./features/listings/listing-detail/listing-detail').then((m) => m.ListingDetail),
@@ -49,6 +57,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/listings/listing-search/listing-search').then((m) => m.ListingSearch),
   },
-
+  {
+    path: 'applications/mine',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/applications/my-applications/my-applications').then(
+        (m) => m.MyApplications,
+      ),
+  },
   { path: '**', redirectTo: '' },
 ];

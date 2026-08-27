@@ -1,0 +1,45 @@
+<h2>My applications</h2>
+
+@if (applicationService.mine(); as page) {
+  @if (page.content.length > 0) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Pet</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Reviewed by</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (app of page.content; track app.id) {
+          <tr>
+            <td>
+              <a [routerLink]="['/listings', app.listingId]">{{ app.petName }}</a>
+            </td>
+            <td>
+              <span class="badge">{{ app.statusName }}</span>
+            </td>
+            <td>{{ app.createdAt | date: 'mediumDate' }}</td>
+            <td>{{ app.reviewedBy ?? '—' }}</td>
+            <td>
+              @if (canWithdraw(app.statusCode)) {
+                <button class="danger" (click)="withdraw(app.id)">Withdraw</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <app-pagination
+      [current]="page.number"
+      [totalPages]="page.totalPages"
+      (pageChange)="goToPage($event)"
+    />
+  } @else {
+    <p class="empty-state">You haven't applied to adopt any pets yet.</p>
+  }
+} @else {
+  <p>Loading…</p>
+}

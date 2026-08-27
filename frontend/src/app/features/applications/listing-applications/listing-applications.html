@@ -1,0 +1,47 @@
+<h2>Applications for this listing</h2>
+<p><a [routerLink]="['/listings', id()]">← Back to listing</a></p>
+
+@if (applicationService.forListing(); as page) {
+  @if (page.content.length > 0) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Applicant</th>
+          <th>Status</th>
+          <th>Message</th>
+          <th>Contact</th>
+          <th>Submitted</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (app of page.content; track app.id) {
+          <tr>
+            <td>{{ app.applicantUsername }}</td>
+            <td>
+              <span class="badge">{{ app.statusName }}</span>
+            </td>
+            <td>{{ app.message ?? '—' }}</td>
+            <td>{{ app.contactPhone ?? app.contactEmail ?? '—' }}</td>
+            <td>{{ app.createdAt | date: 'mediumDate' }}</td>
+            <td>
+              @if (canDecide(app.statusCode)) {
+                <button (click)="decide(app.id, 'APPROVE')">Approve</button>
+                <button class="danger" (click)="decide(app.id, 'REJECT')">Reject</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <app-pagination
+      [current]="page.number"
+      [totalPages]="page.totalPages"
+      (pageChange)="goToPage($event)"
+    />
+  } @else {
+    <p class="empty-state">No applications yet.</p>
+  }
+} @else {
+  <p>Loading…</p>
+}
