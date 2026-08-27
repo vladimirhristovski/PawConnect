@@ -1,0 +1,24 @@
+<div class="auth-card card">
+  <h2>Create an account</h2>
+  <form (ngSubmit)="submit()">
+    <label
+      >Username <input name="username" [(ngModel)]="model.username" required minlength="3"
+    /></label>
+    <label>Email <input name="email" type="email" [(ngModel)]="model.email" required /></label>
+    <label
+      >Password
+      <input name="password" type="password" [(ngModel)]="model.password" required minlength="6"
+    /></label>
+    <label>First name <input name="firstName" [(ngModel)]="model.firstName" /></label>
+    <label>Last name <input name="lastName" [(ngModel)]="model.lastName" /></label>
+    <label>Phone <input name="phone" [(ngModel)]="model.phone" /></label>
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+    @if (success()) {
+      <p class="success">Account created — you can log in now.</p>
+    }
+    <button type="submit" [disabled]="loading()">{{ loading() ? 'Creating…' : 'Register' }}</button>
+  </form>
+  <p>Already have an account? <a routerLink="/login">Log in</a></p>
+</div>

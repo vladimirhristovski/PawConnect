@@ -1,1 +1,40 @@
-/* You can add global styles to this file, and also import other style files */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f7f7f5; color: #222; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+.card { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 1rem; }
+
+label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; color: #444; margin-bottom: 0.6rem; }
+label.checkbox { flex-direction: row; align-items: center; gap: 0.5rem; }
+input, select, textarea { padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
+
+button, .button {
+  display: inline-block; padding: 0.5rem 1rem; background: #2563eb; color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font: inherit; text-align: center;
+}
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+button.danger { background: #dc2626; }
+
+.error { color: #dc2626; font-size: 0.9rem; }
+.success { color: #16a34a; font-size: 0.9rem; }
+.empty-state { color: #777; padding: 2rem 0; text-align: center; }
+
+.badge {
+  display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px;
+  background: #eef2ff; color: #3730a3; font-size: 0.75rem; font-weight: 600;
+}
+
+.pagination { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1rem 0; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { text-align: left; padding: 0.6rem; border-bottom: 1px solid #eee; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+
+.photo-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  background: #f0f0f0; color: #999; font-size: 0.85rem;
+}
+.photo-placeholder.large { height: 280px; border-radius: 8px; }
