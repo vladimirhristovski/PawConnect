@@ -14,6 +14,24 @@ import java.time.Instant
 
 interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExecutor<Listing> {
 
+    companion object {
+        private const val FULL_ASSOCIATIONS_FETCH = """
+            JOIN FETCH l.pet p
+            JOIN FETCH p.species
+            LEFT JOIN FETCH p.breeds
+            LEFT JOIN FETCH p.photos
+            JOIN FETCH l.municipality m
+            JOIN FETCH m.city c
+            JOIN FETCH c.country
+            JOIN FETCH l.status
+            JOIN FETCH l.postedBy
+            LEFT JOIN FETCH l.business b
+            LEFT JOIN FETCH b.type
+            LEFT JOIN FETCH b.municipality
+            LEFT JOIN FETCH b.owner
+        """
+    }
+
     fun existsByPet_IdAndPostedBy_Id(petId: Long, userId: Long): Boolean
 
     fun existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(petId: Long, codes: Collection<String>): Boolean
@@ -22,25 +40,7 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
 
     fun findByStatus_CodeAndExpiresAtBefore(statusCode: String, cutoff: Instant): List<Listing>
 
-    @Query(
-        """
-        SELECT DISTINCT l FROM Listing l
-        JOIN FETCH l.municipality m
-        JOIN FETCH m.city c
-        JOIN FETCH c.country
-        JOIN FETCH l.status
-        JOIN FETCH l.postedBy
-        LEFT JOIN FETCH l.business b
-        LEFT JOIN FETCH b.type
-        LEFT JOIN FETCH b.municipality
-        LEFT JOIN FETCH b.owner
-        LEFT JOIN FETCH l.pet p
-        LEFT JOIN FETCH p.species
-        LEFT JOIN FETCH p.breeds
-        LEFT JOIN FETCH p.photos
-        WHERE l.id = :id
-        """
-    )
+    @Query("SELECT DISTINCT l FROM Listing l $FULL_ASSOCIATIONS_FETCH WHERE l.id = :id")
     fun findByIdWithAllAssociations(@Param("id") id: Long): Listing?
 
     @Query(
@@ -82,45 +82,19 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
 
     @Query(
         """
-    SELECT DISTINCT l FROM Listing l
-    JOIN FETCH l.pet p
-    JOIN FETCH p.species
-    LEFT JOIN FETCH p.breeds
-    LEFT JOIN FETCH p.photos
-    JOIN FETCH l.municipality m
-    JOIN FETCH m.city c
-    JOIN FETCH c.country
-    JOIN FETCH l.status
-    JOIN FETCH l.postedBy
-    LEFT JOIN FETCH l.business b
-    LEFT JOIN FETCH b.type
-    LEFT JOIN FETCH b.municipality
-    LEFT JOIN FETCH b.owner
-    WHERE l.postedBy.id = :userId
-    AND l.deletedAt IS NULL
-    """
+        SELECT DISTINCT l FROM Listing l $FULL_ASSOCIATIONS_FETCH
+        WHERE l.postedBy.id = :userId
+        AND l.deletedAt IS NULL
+        """
     )
     fun findMyListingsWithAssociations(@Param("userId") userId: Long, pageable: Pageable): Page<Listing>
 
     @Query(
         """
-    SELECT DISTINCT l FROM Listing l
-    JOIN FETCH l.pet p
-    JOIN FETCH p.species
-    LEFT JOIN FETCH p.breeds
-    LEFT JOIN FETCH p.photos
-    JOIN FETCH l.municipality m
-    JOIN FETCH m.city c
-    JOIN FETCH c.country
-    JOIN FETCH l.status
-    JOIN FETCH l.postedBy
-    LEFT JOIN FETCH l.business b
-    LEFT JOIN FETCH b.type
-    LEFT JOIN FETCH b.municipality
-    LEFT JOIN FETCH b.owner
-    WHERE (:statusCode IS NULL OR l.status.code = :statusCode)
-    AND l.deletedAt IS NULL
-    """
+        SELECT DISTINCT l FROM Listing l $FULL_ASSOCIATIONS_FETCH
+        WHERE (:statusCode IS NULL OR l.status.code = :statusCode)
+        AND l.deletedAt IS NULL
+        """
     )
     fun findAllWithAssociations(@Param("statusCode") statusCode: String?, pageable: Pageable): Page<Listing>
 

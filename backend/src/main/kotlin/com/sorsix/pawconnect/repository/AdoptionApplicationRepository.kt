@@ -9,33 +9,25 @@ import org.springframework.data.repository.query.Param
 
 interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Long> {
 
-    @Query(
+    companion object {
+        private const val ASSOCIATIONS_FETCH = """
+            JOIN FETCH a.listing l
+            JOIN FETCH l.pet p
+            JOIN FETCH p.species
+            JOIN FETCH l.municipality
+            JOIN FETCH l.status
+            JOIN FETCH a.applicant
+            JOIN FETCH a.status
+            LEFT JOIN FETCH a.reviewedBy
         """
-        SELECT a FROM AdoptionApplication a
-        JOIN FETCH a.listing l
-        JOIN FETCH l.pet p
-        JOIN FETCH p.species
-        JOIN FETCH l.municipality
-        JOIN FETCH l.status
-        JOIN FETCH a.applicant
-        JOIN FETCH a.status
-        LEFT JOIN FETCH a.reviewedBy
-        WHERE a.id = :id
-        """
-    )
+    }
+
+    @Query("SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH WHERE a.id = :id")
     fun findByIdWithAllAssociations(@Param("id") id: Long): AdoptionApplication?
 
     @Query(
         """
-        SELECT a FROM AdoptionApplication a
-        JOIN FETCH a.listing l
-        JOIN FETCH l.pet p
-        JOIN FETCH p.species
-        JOIN FETCH l.municipality
-        JOIN FETCH l.status
-        JOIN FETCH a.applicant
-        JOIN FETCH a.status
-        LEFT JOIN FETCH a.reviewedBy
+        SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH
         WHERE a.applicant.id = :applicantId
         AND a.deletedAt IS NULL
         """
@@ -47,15 +39,7 @@ interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Lon
 
     @Query(
         """
-        SELECT a FROM AdoptionApplication a
-        JOIN FETCH a.listing l
-        JOIN FETCH l.pet p
-        JOIN FETCH p.species
-        JOIN FETCH l.municipality
-        JOIN FETCH l.status
-        JOIN FETCH a.applicant
-        JOIN FETCH a.status
-        LEFT JOIN FETCH a.reviewedBy
+        SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH
         WHERE a.listing.id = :listingId
         AND a.deletedAt IS NULL
         """
@@ -67,15 +51,7 @@ interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Lon
 
     @Query(
         """
-        SELECT a FROM AdoptionApplication a
-        JOIN FETCH a.listing l
-        JOIN FETCH l.pet p
-        JOIN FETCH p.species
-        JOIN FETCH l.municipality
-        JOIN FETCH l.status
-        JOIN FETCH a.applicant
-        JOIN FETCH a.status
-        LEFT JOIN FETCH a.reviewedBy
+        SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH
         WHERE (:statusCode IS NULL OR a.status.code = :statusCode)
         AND a.deletedAt IS NULL
         """
