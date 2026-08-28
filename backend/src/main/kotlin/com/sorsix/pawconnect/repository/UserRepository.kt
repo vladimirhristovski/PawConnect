@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import java.util.Optional
+import java.util.*
 
 interface UserRepository : JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.username = :username AND u.deletedAt IS NULL")
@@ -20,15 +20,18 @@ interface UserRepository : JpaRepository<User, Long> {
 
     @Query(
         """
-        SELECT DISTINCT u FROM User u
+        SELECT DISTINCT u.id FROM User u
         LEFT JOIN u.roles r
         WHERE (:active IS NULL OR u.isActive = :active)
         AND (:role IS NULL OR r.name = :role)
         """
     )
-    fun searchUsers(
+    fun searchUserIds(
         @Param("active") active: Boolean?,
         @Param("role") role: String?,
         pageable: Pageable
-    ): Page<User>
+    ): Page<Long>
+
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE u.id IN :ids")
+    fun findAllByIdInWithRoles(@Param("ids") ids: List<Long>): List<User>
 }

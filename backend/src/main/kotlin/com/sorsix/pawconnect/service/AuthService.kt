@@ -14,8 +14,10 @@ import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
 import com.sorsix.pawconnect.util.requireId
 import jakarta.mail.internet.MimeMessage
+import org.hibernate.exception.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.security.authentication.AuthenticationManager
@@ -75,7 +77,17 @@ class AuthService(
             .orElseThrow { IllegalStateException("USER role not found") }
         user.roles.add(userRole)
 
-        val saved = userRepository.save(user)
+        val saved = try {
+            userRepository.save(user)
+        } catch (ex: DataIntegrityViolationException) {
+            val constraintName = (ex.cause as? ConstraintViolationException)?.constraintName
+            val message = when (constraintName) {
+                "uq_users_username_active" -> "Username already taken"
+                "uq_users_email_active" -> "Email already registered"
+                else -> "Username or email already registered"
+            }
+            throw IllegalArgumentException(message)
+        }
         log.info("User registered: {}", saved.id)
         return UserResponse.from(saved)
     }

@@ -13,9 +13,11 @@ import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
 import com.sorsix.pawconnect.util.requireId
 import io.mockk.*
+import org.hibernate.exception.ConstraintViolationException
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -127,6 +129,24 @@ class AuthServiceTest {
             authService.register(request)
         }
         verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `register should translate a racing duplicate username into a clean 400`() {
+        val request = RegisterRequest("john", "john@mail.com", "pass", null, null, null)
+        every { userRepository.existsByUsernameAndDeletedAtIsNull(request.username) } returns false
+        every { userRepository.existsByEmailAndDeletedAtIsNull(request.email) } returns false
+        every { roleRepository.findByName("USER") } returns Optional.of(Role("USER").apply { id = 1L })
+        every { passwordEncoder.encode(request.password) } returns "encoded"
+        val constraintViolation = ConstraintViolationException(
+            "duplicate key", java.sql.SQLException("duplicate key"), "uq_users_username_active"
+        )
+        every { userRepository.save(any()) } throws DataIntegrityViolationException("insert failed", constraintViolation)
+
+        val ex = assertThrows(IllegalArgumentException::class.java) {
+            authService.register(request)
+        }
+        assertEquals("Username already taken", ex.message)
     }
 
     @Test

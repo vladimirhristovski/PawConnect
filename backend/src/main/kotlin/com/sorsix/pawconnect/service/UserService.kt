@@ -7,6 +7,7 @@ import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.util.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,8 +22,10 @@ class UserService(
 
     @Transactional(readOnly = true)
     fun searchUsers(active: Boolean?, role: String?, pageable: Pageable): Page<UserResponse> {
-        val page = userRepository.searchUsers(active, role, pageable)
-        return page.map { UserResponse.from(it) }
+        val idPage = userRepository.searchUserIds(active, role, pageable)
+        val usersById = userRepository.findAllByIdInWithRoles(idPage.content).associateBy { it.id }
+        val users = idPage.content.mapNotNull { usersById[it] }.map { UserResponse.from(it) }
+        return PageImpl(users, pageable, idPage.totalElements)
     }
 
     @Transactional
