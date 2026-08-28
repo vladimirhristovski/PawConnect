@@ -6,6 +6,7 @@ import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.authentication.DisabledException
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -44,6 +45,14 @@ class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException::class)
     fun handleBadCredentials(ex: BadCredentialsException, request: WebRequest): ResponseEntity<ProblemDetail> {
         val pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid username or password")
+        pd.type = URI.create("about:blank")
+        pd.instance = URI.create(request.getDescription(false))
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(pd)
+    }
+
+    @ExceptionHandler(DisabledException::class)
+    fun handleDisabled(ex: DisabledException, request: WebRequest): ResponseEntity<ProblemDetail> {
+        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Account is deactivated")
         pd.type = URI.create("about:blank")
         pd.instance = URI.create(request.getDescription(false))
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(pd)

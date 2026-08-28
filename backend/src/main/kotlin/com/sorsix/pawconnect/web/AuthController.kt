@@ -58,4 +58,10 @@ class AuthController(
             ?: throw UnauthorizedException("Not authenticated")
         return ResponseEntity.ok(user)
     }
+
+    @DeleteMapping("/me")
+    fun deleteAccount(): ResponseEntity<Void> {
+        authService.deleteOwnAccount()
+        return ResponseEntity.noContent().build()
+    }
 }

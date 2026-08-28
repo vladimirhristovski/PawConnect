@@ -33,6 +33,7 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
         LEFT JOIN FETCH l.business b
         LEFT JOIN FETCH b.type
         LEFT JOIN FETCH b.municipality
+        LEFT JOIN FETCH b.owner
         LEFT JOIN FETCH l.pet p
         LEFT JOIN FETCH p.species
         LEFT JOIN FETCH p.breeds
@@ -93,11 +94,35 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
     JOIN FETCH l.postedBy
     LEFT JOIN FETCH l.business b
     LEFT JOIN FETCH b.type
+    LEFT JOIN FETCH b.municipality
+    LEFT JOIN FETCH b.owner
     WHERE l.postedBy.id = :userId
     AND l.deletedAt IS NULL
     """
     )
     fun findMyListingsWithAssociations(@Param("userId") userId: Long, pageable: Pageable): Page<Listing>
+
+    @Query(
+        """
+    SELECT DISTINCT l FROM Listing l
+    JOIN FETCH l.pet p
+    JOIN FETCH p.species
+    LEFT JOIN FETCH p.breeds
+    LEFT JOIN FETCH p.photos
+    JOIN FETCH l.municipality m
+    JOIN FETCH m.city c
+    JOIN FETCH c.country
+    JOIN FETCH l.status
+    JOIN FETCH l.postedBy
+    LEFT JOIN FETCH l.business b
+    LEFT JOIN FETCH b.type
+    LEFT JOIN FETCH b.municipality
+    LEFT JOIN FETCH b.owner
+    WHERE (:statusCode IS NULL OR l.status.code = :statusCode)
+    AND l.deletedAt IS NULL
+    """
+    )
+    fun findAllWithAssociations(@Param("statusCode") statusCode: String?, pageable: Pageable): Page<Listing>
 
     fun findByLatitudeIsNullAndDeletedAtIsNull(): List<Listing>
 

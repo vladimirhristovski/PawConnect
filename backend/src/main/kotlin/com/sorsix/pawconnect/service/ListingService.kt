@@ -12,6 +12,7 @@ import com.sorsix.pawconnect.model.enums.Size
 import com.sorsix.pawconnect.repository.*
 import com.sorsix.pawconnect.util.ApplicationStatusCodes
 import com.sorsix.pawconnect.util.ListingStatusCodes
+import com.sorsix.pawconnect.util.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -51,7 +52,7 @@ class ListingService(
         }
 
         if (listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(
-                pet.id!!, ListingStatusCodes.OPEN_STATUSES
+                pet.requireId(), ListingStatusCodes.OPEN_STATUSES
             )
         ) {
             throw ConflictException("This pet already has an open listing")
@@ -89,7 +90,7 @@ class ListingService(
 
         val saved = listingRepository.save(listing)
         log.info("Listing {} created by user {} (status {})", saved.id, currentUser.id, status.code)
-        return getListingWithAssociationsOrThrow(saved.id!!)
+        return getListingWithAssociationsOrThrow(saved.requireId())
     }
 
     @Transactional(readOnly = true)
@@ -138,7 +139,12 @@ class ListingService(
 
     @Transactional(readOnly = true)
     fun listMyListings(currentUser: User, pageable: Pageable): Page<Listing> {
-        return listingRepository.findMyListingsWithAssociations(currentUser.id!!, pageable)
+        return listingRepository.findMyListingsWithAssociations(currentUser.requireId(), pageable)
+    }
+
+    @Transactional(readOnly = true)
+    fun adminSearchListings(statusCode: String?, pageable: Pageable): Page<Listing> {
+        return listingRepository.findAllWithAssociations(statusCode, pageable)
     }
 
     @Transactional
@@ -154,7 +160,7 @@ class ListingService(
         listing.status = activeStatus
         val saved = listingRepository.save(listing)
         log.info("Listing {} published by user {}", saved.id, currentUser.id)
-        return getListingWithAssociationsOrThrow(saved.id!!)
+        return getListingWithAssociationsOrThrow(saved.requireId())
     }
 
     @Transactional
@@ -185,7 +191,7 @@ class ListingService(
 
         val saved = listingRepository.save(listing)
         log.info("Listing {} updated by user {}", saved.id, currentUser.id)
-        return getListingWithAssociationsOrThrow(saved.id!!)
+        return getListingWithAssociationsOrThrow(saved.requireId())
     }
 
     @Transactional
@@ -200,7 +206,7 @@ class ListingService(
         listing.status = cancelledStatus
 
         val pendingApps = adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
-            listing.id!!, ApplicationStatusCodes.PENDING_STATUSES
+            listing.requireId(), ApplicationStatusCodes.PENDING_STATUSES
         )
         if (pendingApps.isNotEmpty()) {
             val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
@@ -216,7 +222,7 @@ class ListingService(
 
         val saved = listingRepository.save(listing)
         log.info("Listing {} cancelled by user {}; {} pending application(s) rejected", listing.id, currentUser.id, pendingApps.size)
-        return getListingWithAssociationsOrThrow(saved.id!!)
+        return getListingWithAssociationsOrThrow(saved.requireId())
     }
 
     @Transactional

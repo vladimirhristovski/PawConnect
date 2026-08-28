@@ -507,6 +507,89 @@ class AuthControllerTest {
     }
 
     @Test
+    fun `delete account should soft delete user and revoke tokens`() {
+        Given {
+            body(
+                """
+                {
+                    "username": "deleteuser",
+                    "email": "delete@example.com",
+                    "password": "password123"
+                }
+                """.trimIndent()
+            )
+            contentType(ContentType.JSON)
+        } When {
+            post("/api/auth/register")
+        } Then {
+            statusCode(201)
+        }
+
+        val loginResponse = Given {
+            body(
+                """
+                {
+                    "username": "deleteuser",
+                    "password": "password123"
+                }
+                """.trimIndent()
+            )
+            contentType(ContentType.JSON)
+        } When {
+            post("/api/auth/login")
+        } Then {
+            statusCode(200)
+        } Extract {
+            jsonPath()
+        }
+
+        val accessToken = loginResponse.getString("accessToken")
+        val refreshToken = loginResponse.getString("refreshToken")
+
+        Given {
+            header("Authorization", "Bearer $accessToken")
+        } When {
+            delete("/api/auth/me")
+        } Then {
+            statusCode(204)
+        }
+
+        Given {
+            body(
+                """
+                {
+                    "username": "deleteuser",
+                    "password": "password123"
+                }
+                """.trimIndent()
+            )
+            contentType(ContentType.JSON)
+        } When {
+            post("/api/auth/login")
+        } Then {
+            statusCode(401)
+        }
+
+        Given {
+            body(mapOf("refreshToken" to refreshToken))
+            contentType(ContentType.JSON)
+        } When {
+            post("/api/auth/refresh")
+        } Then {
+            statusCode(400)
+        }
+    }
+
+    @Test
+    fun `delete account without token returns 401`() {
+        When {
+            delete("/api/auth/me")
+        } Then {
+            statusCode(401)
+        }
+    }
+
+    @Test
     fun `reset password with invalid token should return 400`() {
         Given {
             body(

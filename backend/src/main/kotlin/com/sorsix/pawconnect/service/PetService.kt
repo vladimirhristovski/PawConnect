@@ -9,6 +9,7 @@ import com.sorsix.pawconnect.model.Pet
 import com.sorsix.pawconnect.model.PetPhoto
 import com.sorsix.pawconnect.model.User
 import com.sorsix.pawconnect.repository.*
+import com.sorsix.pawconnect.util.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -65,7 +66,7 @@ class PetService(
         normalizePrimaryPhoto(savedPet.photos)
         val saved = petRepository.save(pet)
         log.info("Pet {} created ({} photo(s))", saved.id, saved.photos.size)
-        return petRepository.findByIdWithAllAssociations(saved.id!!)
+        return petRepository.findByIdWithAllAssociations(saved.requireId())
             ?: throw IllegalStateException("Pet not found after save")
     }
 
@@ -109,7 +110,7 @@ class PetService(
 
         val saved = petRepository.save(pet)
         log.info("Pet {} updated by user {}", saved.id, currentUser.id)
-        return petRepository.findByIdWithAllAssociations(saved.id!!)
+        return petRepository.findByIdWithAllAssociations(saved.requireId())
             ?: throw ResourceNotFoundException("Pet not found after update")
     }
 
@@ -162,7 +163,7 @@ class PetService(
 
     private fun ensureCanManagePet(pet: Pet, currentUser: User) {
         if (currentUser.isAdmin()) return
-        val ownsListing = listingRepository.existsByPet_IdAndPostedBy_Id(pet.id!!, currentUser.id!!)
+        val ownsListing = listingRepository.existsByPet_IdAndPostedBy_Id(pet.requireId(), currentUser.requireId())
         if (!ownsListing) {
             throw ForbiddenOperationException("You do not own any listing for this pet")
         }

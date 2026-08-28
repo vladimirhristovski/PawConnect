@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
 import com.sorsix.pawconnect.model.Business
+import com.sorsix.pawconnect.util.requireId
 import java.math.BigDecimal
 
 data class BusinessResponse(
@@ -21,7 +22,7 @@ data class BusinessResponse(
     companion object {
         fun from(business: Business): BusinessResponse {
             return BusinessResponse(
-                id = business.id!!,
+                id = business.requireId(),
                 typeCode = business.type.code,
                 typeName = business.type.name,
                 name = business.name,

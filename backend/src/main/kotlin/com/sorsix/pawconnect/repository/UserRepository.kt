@@ -1,6 +1,8 @@
 package com.sorsix.pawconnect.repository
 
 import com.sorsix.pawconnect.model.User
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -15,4 +17,18 @@ interface UserRepository : JpaRepository<User, Long> {
 
     fun existsByUsernameAndDeletedAtIsNull(username: String): Boolean
     fun existsByEmailAndDeletedAtIsNull(email: String): Boolean
+
+    @Query(
+        """
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN u.roles r
+        WHERE (:active IS NULL OR u.isActive = :active)
+        AND (:role IS NULL OR r.name = :role)
+        """
+    )
+    fun searchUsers(
+        @Param("active") active: Boolean?,
+        @Param("role") role: String?,
+        pageable: Pageable
+    ): Page<User>
 }

@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
 import com.sorsix.pawconnect.model.Listing
+import com.sorsix.pawconnect.util.requireId
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -25,7 +26,7 @@ data class ListingResponse(
     companion object {
         fun from(listing: Listing): ListingResponse {
             return ListingResponse(
-                id = listing.id!!,
+                id = listing.requireId(),
                 pet = PetResponse.from(listing.pet),
                 postedBy = listing.postedBy.username,
                 municipalityCode = listing.municipality.code,

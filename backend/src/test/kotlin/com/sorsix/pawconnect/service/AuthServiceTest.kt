@@ -11,6 +11,7 @@ import com.sorsix.pawconnect.repository.RoleRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
+import com.sorsix.pawconnect.util.requireId
 import io.mockk.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -34,6 +35,7 @@ class AuthServiceTest {
     private lateinit var authenticationManager: AuthenticationManager
     private lateinit var passwordResetTokenRepository: PasswordResetTokenRepository
     private lateinit var emailService: EmailService
+    private lateinit var userService: UserService
     private lateinit var authService: AuthService
 
     private val resetTokenTtl = 3600000L
@@ -48,6 +50,7 @@ class AuthServiceTest {
         authenticationManager = mockk()
         passwordResetTokenRepository = mockk()
         emailService = mockk(relaxed = true)
+        userService = mockk()
 
         authService = AuthService(
             userRepository,
@@ -58,8 +61,10 @@ class AuthServiceTest {
             authenticationManager,
             passwordResetTokenRepository,
             emailService,
+            userService,
             900_000L,
-            resetTokenTtl
+            resetTokenTtl,
+            "http://localhost:4200"
         )
         SecurityContextHolder.clearContext()
     }
@@ -134,7 +139,7 @@ class AuthServiceTest {
         }
 
         every { authenticationManager.authenticate(any<UsernamePasswordAuthenticationToken>()) } returns authentication
-        every { refreshTokenRepository.revokeAllUserTokens(user.id!!, any()) } returns 1
+        every { refreshTokenRepository.revokeAllUserTokens(user.requireId(), any()) } returns 1
         every { jwtService.generateAccessToken(any()) } returns "access_token"
         val refreshPair = "raw_refresh" to mockk<RefreshToken>()
         every { jwtService.generateRefreshToken(user) } returns refreshPair
@@ -145,7 +150,7 @@ class AuthServiceTest {
         assertEquals("access_token", response.accessToken)
         assertEquals("raw_refresh", response.refreshToken)
         assertEquals(900, response.expiresIn)
-        verify { refreshTokenRepository.revokeAllUserTokens(user.id!!, any()) }
+        verify { refreshTokenRepository.revokeAllUserTokens(user.requireId(), any()) }
         verify { jwtService.generateAccessToken(any()) }
     }
 
@@ -209,13 +214,13 @@ class AuthServiceTest {
         val user = User("john", "john@mail.com", "pass", null, null, null).apply { id = 1L }
 
         every { userRepository.findByEmailActive(request.email) } returns Optional.of(user)
-        every { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.id!!, any()) } returns 1
+        every { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), any()) } returns 1
         every { passwordResetTokenRepository.save(any<PasswordResetToken>()) } answers { it.invocation.args[0] as PasswordResetToken }
 
         val result = authService.forgotPassword(request)
 
         assertTrue(result)
-        verify { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.id!!, any()) }
+        verify { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), any()) }
         verify { passwordResetTokenRepository.save(any<PasswordResetToken>()) }
         verify(exactly = 1) { emailService.sendEmail("john@mail.com", "Password Reset Request", any()) }
     }

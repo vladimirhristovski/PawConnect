@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
 import com.sorsix.pawconnect.model.User
+import com.sorsix.pawconnect.util.requireId
 
 data class UserResponse(
     val id: Long,
@@ -15,7 +16,7 @@ data class UserResponse(
     companion object {
         fun from(user: User): UserResponse {
             return UserResponse(
-                id = user.id!!,
+                id = user.requireId(),
                 username = user.username,
                 email = user.email,
                 firstName = user.firstName,

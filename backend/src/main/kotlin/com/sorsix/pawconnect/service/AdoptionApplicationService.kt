@@ -12,6 +12,7 @@ import com.sorsix.pawconnect.repository.ApplicationStatusRepository
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.util.ApplicationStatusCodes
 import com.sorsix.pawconnect.util.ListingStatusCodes
+import com.sorsix.pawconnect.util.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -42,7 +43,7 @@ class AdoptionApplicationService(
         }
 
         val existing = applicationRepository.findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
-            listingId, currentUser.id!!, ApplicationStatusCodes.PENDING_STATUSES
+            listingId, currentUser.requireId(), ApplicationStatusCodes.PENDING_STATUSES
         )
         if (existing.isNotEmpty()) {
             throw ConflictException("You already have a pending application for this listing")
@@ -62,13 +63,18 @@ class AdoptionApplicationService(
 
         val saved = applicationRepository.save(application)
         log.info("Application {} submitted by user {} for listing {}", saved.id, currentUser.id, listingId)
-        return applicationRepository.findByIdWithAllAssociations(saved.id!!)
+        return applicationRepository.findByIdWithAllAssociations(saved.requireId())
             ?: throw IllegalStateException("Application not found after save")
     }
 
     @Transactional(readOnly = true)
     fun listMyApplications(currentUser: User, pageable: Pageable): Page<AdoptionApplication> {
-        return applicationRepository.findByApplicant_IdAndDeletedAtIsNull(currentUser.id!!, pageable)
+        return applicationRepository.findByApplicant_IdAndDeletedAtIsNull(currentUser.requireId(), pageable)
+    }
+
+    @Transactional(readOnly = true)
+    fun adminListApplications(statusCode: String?, pageable: Pageable): Page<AdoptionApplication> {
+        return applicationRepository.findAllWithAssociations(statusCode, pageable)
     }
 
     @Transactional(readOnly = true)
@@ -109,7 +115,7 @@ class AdoptionApplicationService(
             val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
                 ?: throw IllegalStateException("REJECTED status not found")
             val otherPending = applicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
-                listing.id!!, ApplicationStatusCodes.PENDING_STATUSES
+                listing.requireId(), ApplicationStatusCodes.PENDING_STATUSES
             ).filter { it.id != app.id }
             otherPending.forEach { other ->
                 other.status = rejectedStatus

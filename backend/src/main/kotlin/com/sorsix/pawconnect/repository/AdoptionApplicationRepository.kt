@@ -65,6 +65,26 @@ interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Lon
         pageable: Pageable
     ): Page<AdoptionApplication>
 
+    @Query(
+        """
+        SELECT a FROM AdoptionApplication a
+        JOIN FETCH a.listing l
+        JOIN FETCH l.pet p
+        JOIN FETCH p.species
+        JOIN FETCH l.municipality
+        JOIN FETCH l.status
+        JOIN FETCH a.applicant
+        JOIN FETCH a.status
+        LEFT JOIN FETCH a.reviewedBy
+        WHERE (:statusCode IS NULL OR a.status.code = :statusCode)
+        AND a.deletedAt IS NULL
+        """
+    )
+    fun findAllWithAssociations(
+        @Param("statusCode") statusCode: String?,
+        pageable: Pageable
+    ): Page<AdoptionApplication>
+
     // Simple existence checks (no FETCH needed)
     fun findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
         listingId: Long,

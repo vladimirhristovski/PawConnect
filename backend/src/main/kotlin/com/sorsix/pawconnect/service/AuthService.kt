@@ -3,6 +3,7 @@ package com.sorsix.pawconnect.service
 import com.sorsix.pawconnect.dto.request.*
 import com.sorsix.pawconnect.dto.response.AuthResponse
 import com.sorsix.pawconnect.dto.response.UserResponse
+import com.sorsix.pawconnect.exception.UnauthorizedException
 import com.sorsix.pawconnect.model.PasswordResetToken
 import com.sorsix.pawconnect.model.User
 import com.sorsix.pawconnect.repository.PasswordResetTokenRepository
@@ -11,6 +12,7 @@ import com.sorsix.pawconnect.repository.RoleRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
+import com.sorsix.pawconnect.util.requireId
 import jakarta.mail.internet.MimeMessage
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -38,8 +40,10 @@ class AuthService(
     private val authenticationManager: AuthenticationManager,
     private val passwordResetTokenRepository: PasswordResetTokenRepository,
     private val emailService: EmailService,
+    private val userService: UserService,
     @Value("\${app.jwt.access-token-ttl}") private val accessTokenTtl: Long,
-    @Value("\${app.reset-token-ttl}") private val resetTokenTtl: Long
+    @Value("\${app.reset-token-ttl}") private val resetTokenTtl: Long,
+    @Value("\${app.frontend-url}") private val frontendUrl: String
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -61,7 +65,8 @@ class AuthService(
         val user = User(
             username = request.username,
             email = request.email,
-            password = passwordEncoder.encode(request.password)!!,
+            password = passwordEncoder.encode(request.password)
+                ?: throw IllegalStateException("Password encoder returned null"),
             firstName = request.firstName,
             lastName = request.lastName,
             phone = request.phone
@@ -82,7 +87,7 @@ class AuthService(
         )
         val user = (auth.principal as CustomUserDetails).getUser()
 
-        refreshTokenRepository.revokeAllUserTokens(user.id!!, Instant.now())
+        refreshTokenRepository.revokeAllUserTokens(user.requireId(), Instant.now())
 
         val accessToken = jwtService.generateAccessToken(auth.principal as UserDetails)
         val (rawRefresh, refreshEntity) = jwtService.generateRefreshToken(user)
@@ -134,7 +139,7 @@ class AuthService(
             return true
         }
 
-        passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.id!!, Instant.now())
+        passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), Instant.now())
 
         val rawToken = UUID.randomUUID().toString() + System.currentTimeMillis()
         val tokenHash = hashToken(rawToken)
@@ -149,7 +154,7 @@ class AuthService(
 
         log.info("Password reset requested for user {}", user.id)
 
-        val resetLink = "http://localhost:8080/api/auth/reset-password?token=$rawToken"
+        val resetLink = "$frontendUrl/reset-password?token=$rawToken"
         val emailBody = """
             You requested a password reset.
             Click the link below to set a new password:
@@ -176,7 +181,8 @@ class AuthService(
         }
 
         val user = resetToken.user
-        user.password = passwordEncoder.encode(request.newPassword)!!
+        user.password = passwordEncoder.encode(request.newPassword)
+            ?: throw IllegalStateException("Password encoder returned null")
         userRepository.save(user)
 
         resetToken.usedAt = Instant.now()
@@ -185,6 +191,12 @@ class AuthService(
         log.info("Password reset completed for user {}", user.id)
 
         return true
+    }
+
+    @Transactional
+    fun deleteOwnAccount() {
+        val user = getCurrentUser() ?: throw UnauthorizedException("Not authenticated")
+        userService.deleteUser(user.requireId())
     }
 
     fun getCurrentUser(): User? {

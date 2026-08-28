@@ -3,6 +3,7 @@ package com.sorsix.pawconnect.dto.response
 import com.sorsix.pawconnect.model.Pet
 import com.sorsix.pawconnect.model.enums.Gender
 import com.sorsix.pawconnect.model.enums.Size
+import com.sorsix.pawconnect.util.requireId
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -25,7 +26,7 @@ data class PetResponse(
     companion object {
         fun from(pet: Pet): PetResponse {
             return PetResponse(
-                id = pet.id!!,
+                id = pet.requireId(),
                 name = pet.name,
                 speciesCode = pet.species.code,
                 speciesName = pet.species.name,

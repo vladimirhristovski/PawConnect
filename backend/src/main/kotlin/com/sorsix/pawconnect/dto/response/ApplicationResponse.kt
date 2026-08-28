@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
 import com.sorsix.pawconnect.model.AdoptionApplication
+import com.sorsix.pawconnect.util.requireId
 import java.time.Instant
 
 data class ApplicationResponse(
@@ -22,10 +23,10 @@ data class ApplicationResponse(
     companion object {
         fun from(app: AdoptionApplication): ApplicationResponse {
             return ApplicationResponse(
-                id = app.id!!,
-                listingId = app.listing.id!!,
+                id = app.requireId(),
+                listingId = app.listing.requireId(),
                 petName = app.listing.pet.name,
-                applicantId = app.applicant.id!!,
+                applicantId = app.applicant.requireId(),
                 applicantUsername = app.applicant.username,
                 statusCode = app.status.code,
                 statusName = app.status.name,
