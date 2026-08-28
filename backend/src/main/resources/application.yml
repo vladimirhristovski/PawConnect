@@ -61,10 +61,8 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
-  email:
-    enabled: false
-
   mail:
+    enabled: false
     from: ${MAIL_FROM_ADDRESS}
 
   geocoding:

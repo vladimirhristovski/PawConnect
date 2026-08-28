@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 
 @Service
-@ConditionalOnProperty(name = ["app.email.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["app.mail.enabled"], havingValue = "true", matchIfMissing = true)
 class RealEmailService(
     private val mailSender: JavaMailSender,
     @Value("\${app.mail.from}") private val fromAddress: String

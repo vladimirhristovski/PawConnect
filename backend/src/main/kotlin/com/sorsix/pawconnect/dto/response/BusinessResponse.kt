@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.model.Business
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.domain.Business
+import com.sorsix.pawconnect.common.requireId
 import java.math.BigDecimal
 
 data class BusinessResponse(

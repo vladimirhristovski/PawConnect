@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.repository
 
-import com.sorsix.pawconnect.model.PasswordResetToken
+import com.sorsix.pawconnect.domain.PasswordResetToken
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query

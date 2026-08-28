@@ -1,8 +1,8 @@
 package com.sorsix.pawconnect.security
 
-import com.sorsix.pawconnect.model.PasswordResetToken
-import com.sorsix.pawconnect.model.RefreshToken
-import com.sorsix.pawconnect.model.User
+import com.sorsix.pawconnect.domain.PasswordResetToken
+import com.sorsix.pawconnect.domain.RefreshToken
+import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys

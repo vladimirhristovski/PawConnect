@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.model.PetSpecies
+import com.sorsix.pawconnect.domain.PetSpecies
 import com.sorsix.pawconnect.repository.*
 import io.mockk.every
 import io.mockk.mockk

@@ -4,7 +4,7 @@ import com.sorsix.pawconnect.dto.response.UserResponse
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.UserRepository
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl

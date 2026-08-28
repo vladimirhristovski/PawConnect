@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.model.PetSpecies
+import com.sorsix.pawconnect.domain.PetSpecies
 
 data class SpeciesResponse(
     val code: String, val name: String

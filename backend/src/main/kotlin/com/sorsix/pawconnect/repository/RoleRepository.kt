@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.repository
 
-import com.sorsix.pawconnect.model.Role
+import com.sorsix.pawconnect.domain.Role
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.Optional
 

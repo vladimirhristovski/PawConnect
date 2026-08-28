@@ -1,8 +1,8 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.model.Business
-import com.sorsix.pawconnect.model.Listing
-import com.sorsix.pawconnect.model.Municipality
+import com.sorsix.pawconnect.domain.Business
+import com.sorsix.pawconnect.domain.Listing
+import com.sorsix.pawconnect.domain.Municipality
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository

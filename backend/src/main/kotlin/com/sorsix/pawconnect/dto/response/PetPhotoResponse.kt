@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.model.PetPhoto
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.domain.PetPhoto
+import com.sorsix.pawconnect.common.requireId
 
 data class PetPhotoResponse(
     val id: Long, val url: String, val isPrimary: Boolean, val displayOrder: Int

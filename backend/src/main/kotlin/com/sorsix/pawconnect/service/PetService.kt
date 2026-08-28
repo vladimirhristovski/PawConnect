@@ -5,11 +5,11 @@ import com.sorsix.pawconnect.dto.request.PetPhotoRequest
 import com.sorsix.pawconnect.dto.request.UpdatePetRequest
 import com.sorsix.pawconnect.exception.ForbiddenOperationException
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
-import com.sorsix.pawconnect.model.Pet
-import com.sorsix.pawconnect.model.PetPhoto
-import com.sorsix.pawconnect.model.User
+import com.sorsix.pawconnect.domain.Pet
+import com.sorsix.pawconnect.domain.PetPhoto
+import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.*
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

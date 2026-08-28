@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.security
 
-import com.sorsix.pawconnect.model.User
+import com.sorsix.pawconnect.domain.User
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails

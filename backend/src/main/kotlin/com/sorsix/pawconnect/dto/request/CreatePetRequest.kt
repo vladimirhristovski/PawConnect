@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.request
 
-import com.sorsix.pawconnect.model.enums.Gender
-import com.sorsix.pawconnect.model.enums.Size
+import com.sorsix.pawconnect.domain.Gender
+import com.sorsix.pawconnect.domain.Size
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import java.math.BigDecimal

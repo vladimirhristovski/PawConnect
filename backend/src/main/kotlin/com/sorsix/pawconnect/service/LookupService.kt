@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.model.*
+import com.sorsix.pawconnect.domain.*
 import com.sorsix.pawconnect.repository.*
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service

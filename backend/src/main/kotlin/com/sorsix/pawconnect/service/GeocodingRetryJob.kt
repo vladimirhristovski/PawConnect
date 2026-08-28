@@ -3,7 +3,7 @@ package com.sorsix.pawconnect.service
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository
-import com.sorsix.pawconnect.util.geocodeQuery
+import com.sorsix.pawconnect.common.geocodeQuery
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.scheduling.annotation.Scheduled

@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.security
 
-import com.sorsix.pawconnect.model.Role
-import com.sorsix.pawconnect.model.User
+import com.sorsix.pawconnect.domain.Role
+import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk

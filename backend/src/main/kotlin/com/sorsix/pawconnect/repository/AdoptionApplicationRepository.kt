@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.repository
 
-import com.sorsix.pawconnect.model.AdoptionApplication
+import com.sorsix.pawconnect.domain.AdoptionApplication
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository

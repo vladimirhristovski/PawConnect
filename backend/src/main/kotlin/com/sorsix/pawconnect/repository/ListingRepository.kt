@@ -1,8 +1,8 @@
 package com.sorsix.pawconnect.repository
 
-import com.sorsix.pawconnect.model.Listing
-import com.sorsix.pawconnect.model.enums.Gender
-import com.sorsix.pawconnect.model.enums.Size
+import com.sorsix.pawconnect.domain.Listing
+import com.sorsix.pawconnect.domain.Gender
+import com.sorsix.pawconnect.domain.Size
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query

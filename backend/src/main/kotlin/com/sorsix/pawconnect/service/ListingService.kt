@@ -6,13 +6,9 @@ import com.sorsix.pawconnect.dto.response.ListingSummaryResponse
 import com.sorsix.pawconnect.exception.ConflictException
 import com.sorsix.pawconnect.exception.ForbiddenOperationException
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
-import com.sorsix.pawconnect.model.*
-import com.sorsix.pawconnect.model.enums.Gender
-import com.sorsix.pawconnect.model.enums.Size
+import com.sorsix.pawconnect.domain.*
+import com.sorsix.pawconnect.common.*
 import com.sorsix.pawconnect.repository.*
-import com.sorsix.pawconnect.util.ApplicationStatusCodes
-import com.sorsix.pawconnect.util.ListingStatusCodes
-import com.sorsix.pawconnect.util.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable

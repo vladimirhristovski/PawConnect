@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.repository
 
-import com.sorsix.pawconnect.model.RefreshToken
+import com.sorsix.pawconnect.domain.RefreshToken
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query

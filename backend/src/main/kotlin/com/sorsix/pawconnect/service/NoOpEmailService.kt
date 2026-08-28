@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnProperty(name = ["app.email.enabled"], havingValue = "false")
+@ConditionalOnProperty(name = ["app.mail.enabled"], havingValue = "false")
 class NoOpEmailService : EmailService {
 
     private val log = LoggerFactory.getLogger(javaClass)

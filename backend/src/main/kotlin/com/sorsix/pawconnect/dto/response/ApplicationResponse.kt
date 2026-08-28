@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.model.AdoptionApplication
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.domain.AdoptionApplication
+import com.sorsix.pawconnect.common.requireId
 import java.time.Instant
 
 data class ApplicationResponse(

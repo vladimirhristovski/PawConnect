@@ -1,17 +1,17 @@
 package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.dto.request.*
-import com.sorsix.pawconnect.model.PasswordResetToken
-import com.sorsix.pawconnect.model.RefreshToken
-import com.sorsix.pawconnect.model.Role
-import com.sorsix.pawconnect.model.User
+import com.sorsix.pawconnect.domain.PasswordResetToken
+import com.sorsix.pawconnect.domain.RefreshToken
+import com.sorsix.pawconnect.domain.Role
+import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.PasswordResetTokenRepository
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.RoleRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.common.requireId
 import io.mockk.*
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.jupiter.api.Assertions.*

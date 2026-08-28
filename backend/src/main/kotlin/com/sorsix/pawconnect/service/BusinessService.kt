@@ -5,10 +5,10 @@ import com.sorsix.pawconnect.dto.request.UpdateBusinessRequest
 import com.sorsix.pawconnect.dto.response.BusinessResponse
 import com.sorsix.pawconnect.exception.ForbiddenOperationException
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
-import com.sorsix.pawconnect.model.Business
-import com.sorsix.pawconnect.model.BusinessType
-import com.sorsix.pawconnect.model.Municipality
-import com.sorsix.pawconnect.model.User
+import com.sorsix.pawconnect.domain.Business
+import com.sorsix.pawconnect.domain.BusinessType
+import com.sorsix.pawconnect.domain.Municipality
+import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository

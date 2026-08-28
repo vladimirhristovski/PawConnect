@@ -1,6 +1,6 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.model.City
+import com.sorsix.pawconnect.domain.City
 
 data class CityResponse(
     val code: String, val name: String, val countryCode: String?

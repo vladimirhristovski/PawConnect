@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.model.User
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.common.requireId
 
 data class UserResponse(
     val id: Long,

@@ -20,13 +20,22 @@ import java.net.URI
 class GlobalExceptionHandler {
     private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
-    @ExceptionHandler(IllegalArgumentException::class)
-    fun handleIllegalArgument(ex: IllegalArgumentException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.message ?: "Invalid request")
+    private fun problem(
+        status: HttpStatus,
+        detail: String,
+        request: WebRequest,
+        properties: Map<String, Any?> = emptyMap()
+    ): ResponseEntity<ProblemDetail> {
+        val pd = ProblemDetail.forStatusAndDetail(status, detail)
         pd.type = URI.create("about:blank")
         pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.badRequest().body(pd)
+        properties.forEach { (key, value) -> pd.setProperty(key, value) }
+        return ResponseEntity.status(status).body(pd)
     }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgument(ex: IllegalArgumentException, request: WebRequest): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.BAD_REQUEST, ex.message ?: "Invalid request", request)
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     fun handleTypeMismatch(
@@ -34,29 +43,19 @@ class GlobalExceptionHandler {
     ): ResponseEntity<ProblemDetail> {
         val message =
             "Failed to convert parameter '${ex.name}' with value '${ex.value}' to required type '${ex.requiredType?.simpleName}'"
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message)
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        pd.setProperty("parameter", ex.name)
-        pd.setProperty("value", ex.value)
-        return ResponseEntity.badRequest().body(pd)
+        return problem(
+            HttpStatus.BAD_REQUEST, message, request,
+            mapOf("parameter" to ex.name, "value" to ex.value)
+        )
     }
 
     @ExceptionHandler(BadCredentialsException::class)
-    fun handleBadCredentials(ex: BadCredentialsException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid username or password")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(pd)
-    }
+    fun handleBadCredentials(ex: BadCredentialsException, request: WebRequest): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.UNAUTHORIZED, "Invalid username or password", request)
 
     @ExceptionHandler(DisabledException::class)
-    fun handleDisabled(ex: DisabledException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Account is deactivated")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(pd)
-    }
+    fun handleDisabled(ex: DisabledException, request: WebRequest): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.UNAUTHORIZED, "Account is deactivated", request)
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException, request: WebRequest): ResponseEntity<ProblemDetail> {
@@ -64,80 +63,46 @@ class GlobalExceptionHandler {
             if (it is FieldError) mapOf("field" to it.field, "message" to it.defaultMessage)
             else mapOf("message" to it.defaultMessage)
         }
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        pd.setProperty("errors", errors)
-        return ResponseEntity.badRequest().body(pd)
+        return problem(HttpStatus.BAD_REQUEST, "Validation failed", request, mapOf("errors" to errors))
     }
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleHttpMessageNotReadable(
         ex: HttpMessageNotReadableException, request: WebRequest
-    ): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Malformed JSON request")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.badRequest().body(pd)
-    }
+    ): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.BAD_REQUEST, "Malformed JSON request", request)
 
     @ExceptionHandler(MaxUploadSizeExceededException::class)
     fun handleMaxUploadSize(
         ex: MaxUploadSizeExceededException, request: WebRequest
-    ): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(pd)
-    }
+    ): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size", request)
 
     @ExceptionHandler(BlobStorageException::class)
     fun handleBlobStorage(ex: BlobStorageException, request: WebRequest): ResponseEntity<ProblemDetail> {
         log.error("Blob storage operation failed", ex)
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.message ?: "File storage error")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(pd)
+        return problem(HttpStatus.BAD_GATEWAY, ex.message ?: "File storage error", request)
     }
 
     @ExceptionHandler(Exception::class)
     fun handleGeneric(ex: Exception, request: WebRequest): ResponseEntity<ProblemDetail> {
         log.error("Unexpected error", ex)
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(pd)
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request)
     }
 
     @ExceptionHandler(ResourceNotFoundException::class)
-    fun handleResourceNotFound(ex: ResourceNotFoundException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(pd)
-    }
+    fun handleResourceNotFound(ex: ResourceNotFoundException, request: WebRequest): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found", request)
 
     @ExceptionHandler(ForbiddenOperationException::class)
-    fun handleForbidden(ex: ForbiddenOperationException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.message ?: "Access denied")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(pd)
-    }
+    fun handleForbidden(ex: ForbiddenOperationException, request: WebRequest): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.FORBIDDEN, ex.message ?: "Access denied", request)
 
     @ExceptionHandler(ConflictException::class)
-    fun handleConflict(ex: ConflictException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Conflict")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(pd)
-    }
+    fun handleConflict(ex: ConflictException, request: WebRequest): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.CONFLICT, ex.message ?: "Conflict", request)
 
     @ExceptionHandler(UnauthorizedException::class)
-    fun handleUnauthorized(ex: UnauthorizedException, request: WebRequest): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.message ?: "Not authenticated")
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(pd)
-    }
+    fun handleUnauthorized(ex: UnauthorizedException, request: WebRequest): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.UNAUTHORIZED, ex.message ?: "Not authenticated", request)
 }

@@ -1,9 +1,9 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.model.Pet
-import com.sorsix.pawconnect.model.enums.Gender
-import com.sorsix.pawconnect.model.enums.Size
-import com.sorsix.pawconnect.util.requireId
+import com.sorsix.pawconnect.domain.Pet
+import com.sorsix.pawconnect.domain.Gender
+import com.sorsix.pawconnect.domain.Size
+import com.sorsix.pawconnect.common.requireId
 import java.math.BigDecimal
 import java.time.LocalDate
 
