@@ -9,10 +9,13 @@ import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.authentication.DisabledException
 import org.springframework.validation.BindingResult
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.context.request.WebRequest
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import java.net.URI
 
 class GlobalExceptionHandlerTest {
@@ -74,5 +77,67 @@ class GlobalExceptionHandlerTest {
         val response = handler.handleGeneric(ex, request)
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode)
         assertEquals("An unexpected error occurred", response.body?.detail)
+    }
+
+    @Test
+    fun `handleDisabled returns UNAUTHORIZED`() {
+        val response = handler.handleDisabled(DisabledException("disabled"), request)
+        assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
+        assertEquals("Account is deactivated", response.body?.detail)
+    }
+
+    @Test
+    fun `handleTypeMismatch returns BAD_REQUEST with parameter and value properties`() {
+        val ex = mockk<MethodArgumentTypeMismatchException>(relaxed = true)
+        every { ex.name } returns "id"
+        every { ex.value } returns "abc"
+        every { ex.requiredType } returns Long::class.javaObjectType
+
+        val response = handler.handleTypeMismatch(ex, request)
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals("id", response.body?.properties?.get("parameter"))
+        assertEquals("abc", response.body?.properties?.get("value"))
+    }
+
+    @Test
+    fun `handleMaxUploadSize returns PAYLOAD_TOO_LARGE`() {
+        val response = handler.handleMaxUploadSize(MaxUploadSizeExceededException(5), request)
+        assertEquals(HttpStatus.PAYLOAD_TOO_LARGE, response.statusCode)
+    }
+
+    @Test
+    fun `handleBlobStorage returns BAD_GATEWAY`() {
+        val response = handler.handleBlobStorage(BlobStorageException("blob down"), request)
+        assertEquals(HttpStatus.BAD_GATEWAY, response.statusCode)
+        assertEquals("blob down", response.body?.detail)
+    }
+
+    @Test
+    fun `handleResourceNotFound returns NOT_FOUND`() {
+        val response = handler.handleResourceNotFound(ResourceNotFoundException("missing"), request)
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+        assertEquals("missing", response.body?.detail)
+    }
+
+    @Test
+    fun `handleForbidden returns FORBIDDEN`() {
+        val response = handler.handleForbidden(ForbiddenOperationException("not allowed"), request)
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+        assertEquals("not allowed", response.body?.detail)
+    }
+
+    @Test
+    fun `handleConflict returns CONFLICT`() {
+        val response = handler.handleConflict(ConflictException("duplicate"), request)
+        assertEquals(HttpStatus.CONFLICT, response.statusCode)
+        assertEquals("duplicate", response.body?.detail)
+    }
+
+    @Test
+    fun `handleUnauthorized returns UNAUTHORIZED`() {
+        val response = handler.handleUnauthorized(UnauthorizedException("no session"), request)
+        assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
+        assertEquals("no session", response.body?.detail)
     }
 }
