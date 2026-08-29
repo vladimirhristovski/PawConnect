@@ -52,6 +52,7 @@
           <a class="button" [routerLink]="['/listings', listing.id, 'applications']"
             >View applications</a
           >
+          <a class="button" [routerLink]="['/pets', listing.pet.id, 'photos']">Manage pet</a>
           @if (listing.statusCode === 'DRAFT') {
             <button (click)="publish()">Publish</button>
           }

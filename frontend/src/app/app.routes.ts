@@ -87,5 +87,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/businesses/business-search/business-search').then((m) => m.BusinessSearch),
   },
+  {
+    path: 'pets/:id/photos',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/pets/pet-photo-manager/pet-photo-manager').then((m) => m.PetPhotoManager),
+  },
   { path: '**', redirectTo: '' },
 ];

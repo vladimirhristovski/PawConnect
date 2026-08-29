@@ -1,0 +1,113 @@
+@if (petService.selected(); as pet) {
+  <h2>Manage {{ pet.name }}</h2>
+  <p><a [routerLink]="['/listings']">← Back to listings</a></p>
+
+  <div class="manager-layout">
+    <form class="card" (ngSubmit)="saveDetails()">
+      <h3>Pet details</h3>
+
+      <label>Name <input name="name" [(ngModel)]="model.name" required /></label>
+
+      <label
+        >Species
+        <select
+          name="speciesCode"
+          [(ngModel)]="model.speciesCode"
+          (ngModelChange)="onSpeciesChange()"
+        >
+          @for (s of lookup.species(); track s.code) {
+            <option [value]="s.code">{{ s.name }}</option>
+          }
+        </select>
+      </label>
+
+      <fieldset class="breeds">
+        <legend>Breeds</legend>
+        @for (b of lookup.breeds(); track b.code) {
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              [checked]="isBreedSelected(b.code)"
+              (change)="toggleBreed(b.code)"
+            />
+            {{ b.name }}
+          </label>
+        }
+      </fieldset>
+
+      <label
+        >Gender
+        <select name="gender" [(ngModel)]="model.gender">
+          <option value="MALE">Male</option>
+          <option value="FEMALE">Female</option>
+          <option value="UNKNOWN">Unknown</option>
+        </select>
+      </label>
+      <label
+        >Size
+        <select name="size" [(ngModel)]="model.size">
+          <option [ngValue]="undefined">Unspecified</option>
+          <option value="SMALL">Small</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LARGE">Large</option>
+        </select>
+      </label>
+      <label>Age (years) <input name="age" type="number" min="0" [(ngModel)]="model.age" /></label>
+      <label>Birth date <input name="birthDate" type="date" [(ngModel)]="model.birthDate" /></label>
+      <label
+        >Weight (kg)
+        <input name="weightKg" type="number" min="0" step="0.1" [(ngModel)]="model.weightKg"
+      /></label>
+      <label class="checkbox"
+        ><input type="checkbox" name="goodWithKids" [(ngModel)]="model.goodWithKids" /> Good with
+        kids</label
+      >
+      <label class="checkbox"
+        ><input type="checkbox" name="goodWithOtherPets" [(ngModel)]="model.goodWithOtherPets" />
+        Good with other pets</label
+      >
+      <label
+        >Description
+        <textarea name="description" rows="3" [(ngModel)]="model.description"></textarea>
+      </label>
+
+      @if (saveError()) {
+        <p class="error">{{ saveError() }}</p>
+      }
+      @if (saveSuccess()) {
+        <p class="success">Saved.</p>
+      }
+
+      <button type="submit" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save details' }}
+      </button>
+    </form>
+
+    <div class="card">
+      <h3>Photos</h3>
+      <label
+        >Upload a photo <input type="file" accept="image/*" (change)="onFileSelected($event)"
+      /></label>
+      @if (uploading()) {
+        <p>Uploading…</p>
+      }
+      @if (uploadError()) {
+        <p class="error">{{ uploadError() }}</p>
+      }
+
+      <div class="photo-grid">
+        @for (photo of pet.photos; track photo.id) {
+          <div class="photo-item" [class.primary]="photo.isPrimary">
+            <img [src]="photo.url" [alt]="pet.name" />
+            @if (photo.isPrimary) {
+              <span class="badge">Primary</span>
+            }
+            <button class="danger" (click)="removePhoto(photo.id)">Remove</button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+  <p>Loading…</p>
+}
