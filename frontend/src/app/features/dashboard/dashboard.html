@@ -1,0 +1,43 @@
+<section class="hero">
+  <h1>Find your new best friend</h1>
+  <p>Browse pets looking for a home, or list one that needs to find its person.</p>
+  <div class="hero-actions">
+    <a class="button" routerLink="/listings">Browse listings</a>
+    @if (auth.isAuthenticated()) {
+      <a class="button secondary" routerLink="/listings/new">List a pet</a>
+    } @else {
+      <a class="button secondary" routerLink="/register">Get started</a>
+    }
+  </div>
+</section>
+
+<section>
+  <div class="page-header">
+    <h2>Recently listed</h2>
+    <a routerLink="/listings">See all →</a>
+  </div>
+
+  @if (listingService.results(); as page) {
+    @if (page.content.length > 0) {
+      <div class="listing-grid">
+        @for (listing of page.content; track listing.id) {
+          <a class="listing-card card" [routerLink]="['/listings', listing.id]">
+            @if (listing.pet.primaryPhotoUrl) {
+              <img [src]="listing.pet.primaryPhotoUrl" [alt]="listing.pet.name" />
+            } @else {
+              <div class="photo-placeholder">No photo</div>
+            }
+            <div class="pad">
+              <h4>{{ listing.pet.name }}</h4>
+              <p>{{ listing.pet.speciesName }} · {{ listing.municipalityName }}</p>
+            </div>
+          </a>
+        }
+      </div>
+    } @else {
+      <p class="empty-state">No active listings yet — be the first to post one!</p>
+    }
+  } @else {
+    <p>Loading…</p>
+  }
+</section>
