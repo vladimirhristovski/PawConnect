@@ -1,0 +1,67 @@
+<div class="page-header">
+  <h2>Businesses</h2>
+  @if (auth.isAuthenticated()) {
+    <a class="button" routerLink="/businesses/new">+ Add business</a>
+  }
+</div>
+
+<div class="search-layout">
+  <aside class="filters card">
+    <h3>Filters</h3>
+    <label
+      >Type
+      <select [(ngModel)]="filters.typeCode">
+        <option [ngValue]="undefined">Any</option>
+        @for (t of lookup.businessTypes(); track t.code) {
+          <option [value]="t.code">{{ t.name }}</option>
+        }
+      </select>
+    </label>
+    <label
+      >Municipality
+      <select [(ngModel)]="filters.municipalityCode">
+        <option [ngValue]="undefined">Any</option>
+        @for (m of lookup.municipalities(); track m.code) {
+          <option [value]="m.code">{{ m.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="checkbox"
+      ><input type="checkbox" [ngModel]="useNearby()" (ngModelChange)="toggleNearby()" /> Search
+      near me</label
+    >
+    @if (useNearby()) {
+      <label>Radius (km) <input type="number" min="1" [(ngModel)]="filters.radiusKm" /></label>
+      @if (locationError()) {
+        <p class="error">{{ locationError() }}</p>
+      }
+    }
+    <button (click)="search()">Apply filters</button>
+  </aside>
+
+  <section class="results">
+    @if (businessService.results(); as page) {
+      @if (page.content.length > 0) {
+        <div class="business-grid">
+          @for (biz of page.content; track biz.id) {
+            <a class="business-card card" [routerLink]="['/businesses', biz.id]">
+              <h4>{{ biz.name }}</h4>
+              <span class="badge">{{ biz.typeName }}</span>
+              <p>{{ biz.address }}, {{ biz.municipalityName }}</p>
+              <p>{{ biz.phone }}</p>
+            </a>
+          }
+        </div>
+        <app-pagination
+          [current]="page.number"
+          [totalPages]="page.totalPages"
+          (pageChange)="goToPage($event)"
+        />
+      } @else {
+        <p class="empty-state">No businesses match your filters.</p>
+      }
+    } @else {
+      <p>Loading…</p>
+    }
+  </section>
+</div>

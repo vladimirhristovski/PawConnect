@@ -1,4 +1,3 @@
-// listing-detail.ts
 import { Component, inject, input, effect, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';

@@ -65,5 +65,27 @@ export const routes: Routes = [
         (m) => m.MyApplications,
       ),
   },
+  {
+    path: 'businesses/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/businesses/business-form/business-form').then((m) => m.BusinessForm),
+  },
+  {
+    path: 'businesses/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/businesses/business-form/business-form').then((m) => m.BusinessForm),
+  },
+  {
+    path: 'businesses/:id',
+    loadComponent: () =>
+      import('./features/businesses/business-detail/business-detail').then((m) => m.BusinessDetail),
+  },
+  {
+    path: 'businesses',
+    loadComponent: () =>
+      import('./features/businesses/business-search/business-search').then((m) => m.BusinessSearch),
+  },
   { path: '**', redirectTo: '' },
 ];

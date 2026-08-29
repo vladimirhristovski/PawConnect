@@ -1,0 +1,26 @@
+@if (businessService.selected(); as biz) {
+  <div class="business-detail card">
+    <h2>{{ biz.name }}</h2>
+    <span class="badge">{{ biz.typeName }}</span>
+    @if (biz.description) {
+      <p>{{ biz.description }}</p>
+    }
+    <p>{{ biz.address }}, {{ biz.municipalityName }}</p>
+    <p>Phone: {{ biz.phone }}</p>
+    @if (biz.email) {
+      <p>Email: {{ biz.email }}</p>
+    }
+    @if (biz.ownerUsername) {
+      <p>Managed by {{ biz.ownerUsername }}</p>
+    }
+
+    @if (isOwner()) {
+      <div class="owner-actions">
+        <a class="button" [routerLink]="['/businesses', biz.id, 'edit']">Edit</a>
+        <button class="danger" (click)="remove()">Delete</button>
+      </div>
+    }
+  </div>
+} @else {
+  <p>Loading…</p>
+}

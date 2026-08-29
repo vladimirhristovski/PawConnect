@@ -1,4 +1,3 @@
-// listing-applications.ts
 import { Component, inject, input, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';

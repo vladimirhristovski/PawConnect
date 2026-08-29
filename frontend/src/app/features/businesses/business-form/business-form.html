@@ -1,0 +1,71 @@
+<form class="business-form card" (ngSubmit)="submit()">
+  <h2>{{ isEdit() ? 'Edit business' : 'Add a business' }}</h2>
+
+  <label>Name <input name="name" [(ngModel)]="model.name" required /></label>
+
+  <label
+    >Type
+    <select name="typeCode" [(ngModel)]="model.typeCode" required>
+      <option [ngValue]="undefined">Select…</option>
+      @for (t of lookup.businessTypes(); track t.code) {
+        <option [value]="t.code">{{ t.name }}</option>
+      }
+    </select>
+  </label>
+
+  <label
+    >Description <textarea name="description" rows="3" [(ngModel)]="model.description"></textarea>
+  </label>
+  <label>Phone <input name="phone" [(ngModel)]="model.phone" required /></label>
+  <label>Email <input name="email" type="email" [(ngModel)]="model.email" /></label>
+  <label>Address <input name="address" [(ngModel)]="model.address" required /></label>
+
+  @if (!isEdit()) {
+    <label
+      >Country
+      <select [(ngModel)]="countryCode" name="country" (ngModelChange)="onCountryChange()">
+        <option [ngValue]="undefined">Select…</option>
+        @for (c of lookup.countries(); track c.code) {
+          <option [value]="c.code">{{ c.name }}</option>
+        }
+      </select>
+    </label>
+    <label
+      >City
+      <select
+        [(ngModel)]="cityCode"
+        name="city"
+        (ngModelChange)="onCityChange()"
+        [disabled]="!countryCode"
+      >
+        <option [ngValue]="undefined">Select…</option>
+        @for (c of lookup.cities(); track c.code) {
+          <option [value]="c.code">{{ c.name }}</option>
+        }
+      </select>
+    </label>
+  }
+  <label
+    >Municipality
+    <select name="municipalityCode" [(ngModel)]="model.municipalityCode" required>
+      <option [ngValue]="undefined">Select…</option>
+      @for (m of lookup.municipalities(); track m.code) {
+        <option [value]="m.code">{{ m.name }}</option>
+      }
+    </select>
+  </label>
+
+  <label
+    >Latitude <input name="latitude" type="number" step="0.000001" [(ngModel)]="model.latitude"
+  /></label>
+  <label
+    >Longitude <input name="longitude" type="number" step="0.000001" [(ngModel)]="model.longitude"
+  /></label>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  <button type="submit" [disabled]="submitting()">
+    {{ submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create business' }}
+  </button>
+</form>

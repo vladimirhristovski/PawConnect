@@ -1,4 +1,3 @@
-// my-applications.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
