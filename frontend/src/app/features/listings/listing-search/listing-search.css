@@ -33,3 +33,11 @@
 .listing-card .photo-placeholder {
   height: 160px;
 }
+.link-btn {
+  background: transparent;
+  color: #2563eb;
+  padding: 0.25rem 0;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}

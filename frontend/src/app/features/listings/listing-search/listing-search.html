@@ -3,7 +3,7 @@
     <h3>Filters</h3>
     <label
       >Species
-      <select [(ngModel)]="filters.speciesCode">
+      <select [(ngModel)]="filters.speciesCode" (ngModelChange)="onFilterChange()">
         <option [ngValue]="undefined">Any</option>
         @for (s of lookup.species(); track s.code) {
           <option [value]="s.code">{{ s.name }}</option>
@@ -12,7 +12,7 @@
     </label>
     <label
       >Municipality
-      <select [(ngModel)]="filters.municipalityCode">
+      <select [(ngModel)]="filters.municipalityCode" (ngModelChange)="onFilterChange()">
         <option [ngValue]="undefined">Any</option>
         @for (m of lookup.municipalities(); track m.code) {
           <option [value]="m.code">{{ m.name }}</option>
@@ -21,7 +21,7 @@
     </label>
     <label
       >Size
-      <select [(ngModel)]="filters.petSize">
+      <select [(ngModel)]="filters.petSize" (ngModelChange)="onFilterChange()">
         <option [ngValue]="undefined">Any</option>
         <option value="SMALL">Small</option>
         <option value="MEDIUM">Medium</option>
@@ -30,7 +30,7 @@
     </label>
     <label
       >Gender
-      <select [(ngModel)]="filters.gender">
+      <select [(ngModel)]="filters.gender" (ngModelChange)="onFilterChange()">
         <option [ngValue]="undefined">Any</option>
         <option value="MALE">Male</option>
         <option value="FEMALE">Female</option>
@@ -38,24 +38,62 @@
       </select>
     </label>
     <label class="checkbox"
-      ><input type="checkbox" [(ngModel)]="filters.goodWithKids" /> Good with kids</label
+      ><input
+        type="checkbox"
+        [(ngModel)]="filters.goodWithKids"
+        (ngModelChange)="onFilterChange()"
+      />
+      Good with kids</label
     >
     <label class="checkbox"
-      ><input type="checkbox" [(ngModel)]="filters.goodWithOtherPets" /> Good with other pets</label
+      ><input
+        type="checkbox"
+        [(ngModel)]="filters.goodWithOtherPets"
+        (ngModelChange)="onFilterChange()"
+      />
+      Good with other pets</label
     >
-    <label>Min fee <input type="number" min="0" [(ngModel)]="filters.minFee" /></label>
-    <label>Max fee <input type="number" min="0" [(ngModel)]="filters.maxFee" /></label>
+    <label
+      >Min fee
+      <input
+        type="number"
+        min="0"
+        [(ngModel)]="filters.minFee"
+        (ngModelChange)="onFilterChange()"
+      />
+    </label>
+    <label
+      >Max fee
+      <input
+        type="number"
+        min="0"
+        [(ngModel)]="filters.maxFee"
+        (ngModelChange)="onFilterChange()"
+      />
+    </label>
     <label class="checkbox"
       ><input type="checkbox" [ngModel]="useNearby()" (ngModelChange)="toggleNearby()" /> Search
       near me</label
     >
     @if (useNearby()) {
-      <label>Radius (km) <input type="number" min="1" [(ngModel)]="filters.radiusKm" /></label>
+      <label
+        >Radius (km)
+        <input
+          type="number"
+          min="1"
+          [(ngModel)]="filters.radiusKm"
+          (ngModelChange)="onFilterChange()"
+        />
+      </label>
+      @if (locating()) {
+        <p>Locating you…</p>
+      }
       @if (locationError()) {
         <p class="error">{{ locationError() }}</p>
       }
     }
     <button (click)="search()">Apply filters</button>
+    <button type="button" class="link-btn" (click)="clearFilters()">Clear filters</button>
   </aside>
 
   <section class="results">
