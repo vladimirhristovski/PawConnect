@@ -6,6 +6,7 @@ import { LookupService } from '../../../core/services/lookup';
 import { PhotoService } from '../../../core/services/photo';
 import { CreateListingRequest, UpdateListingRequest } from '../../../core/models/listing.model';
 import { CreatePetRequest, PetPhotoRequest } from '../../../core/models/pet.model';
+import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 
 interface StagedPhoto extends PetPhotoRequest {
   previewName: string;
@@ -45,6 +46,10 @@ export class ListingForm {
   submitting = signal(false);
   error = signal<string | null>(null);
 
+  locating = signal(false);
+  locationError = signal<string | null>(null);
+  manualLocation = false;
+
   constructor() {
     this.lookup.loadSpecies();
     this.lookup.loadCountries();
@@ -61,6 +66,8 @@ export class ListingForm {
         this.listing.description = existing.description ?? undefined;
         this.listing.adoptionFee = existing.adoptionFee;
         this.listing.municipalityCode = existing.municipalityCode;
+        this.listing.latitude = existing.latitude ?? undefined;
+        this.listing.longitude = existing.longitude ?? undefined;
         this.expiresAtDate = existing.expiresAt ? existing.expiresAt.substring(0, 10) : '';
       }
     });
@@ -95,6 +102,26 @@ export class ListingForm {
   onCityChange(): void {
     this.listing.municipalityCode = undefined;
     this.lookup.loadMunicipalities(this.cityCode);
+  }
+
+  useMyLocation(): void {
+    this.locationError.set(null);
+    this.locating.set(true);
+    getCurrentPosition()
+      .then((coords) => {
+        this.locating.set(false);
+        this.listing.latitude = coords.lat;
+        this.listing.longitude = coords.lng;
+      })
+      .catch((err: Error) => {
+        this.locating.set(false);
+        this.locationError.set(err.message);
+      });
+  }
+
+  clearLocation(): void {
+    this.listing.latitude = undefined;
+    this.listing.longitude = undefined;
   }
 
   onFilesSelected(event: Event): void {
@@ -144,6 +171,8 @@ export class ListingForm {
         description: this.listing.description,
         adoptionFee: this.listing.adoptionFee,
         municipalityCode: this.listing.municipalityCode,
+        latitude: this.listing.latitude,
+        longitude: this.listing.longitude,
         expiresAt: this.expiresAtDate ? new Date(this.expiresAtDate).toISOString() : undefined,
       };
       this.listingService.update(Number(this.id()), payload).subscribe({
@@ -160,6 +189,8 @@ export class ListingForm {
         title: this.listing.title,
         description: this.listing.description,
         adoptionFee: this.listing.adoptionFee,
+        latitude: this.listing.latitude,
+        longitude: this.listing.longitude,
         expiresAt: this.expiresAtDate ? new Date(this.expiresAtDate).toISOString() : undefined,
         saveAsDraft: this.saveAsDraft,
       };
