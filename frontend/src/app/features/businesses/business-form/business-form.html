@@ -61,6 +61,12 @@
   <label
     >Longitude <input name="longitude" type="number" step="0.000001" [(ngModel)]="model.longitude"
   /></label>
+  <button type="button" (click)="useMyLocation()" [disabled]="locating()">
+    {{ locating() ? 'Locating…' : '📍 Use my current location' }}
+  </button>
+  @if (locationError()) {
+    <p class="error">{{ locationError() }}</p>
+  }
 
   @if (error()) {
     <p class="error">{{ error() }}</p>

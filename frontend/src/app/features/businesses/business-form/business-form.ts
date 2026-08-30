@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { BusinessService } from '../../../core/services/business';
 import { LookupService } from '../../../core/services/lookup';
 import { CreateBusinessRequest, UpdateBusinessRequest } from '../../../core/models/business.model';
+import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 
 @Component({
   selector: 'app-business-form',
@@ -30,6 +31,9 @@ export class BusinessForm {
 
   submitting = signal(false);
   error = signal<string | null>(null);
+
+  locating = signal(false);
+  locationError = signal<string | null>(null);
 
   constructor() {
     this.lookup.loadBusinessTypes();
@@ -72,6 +76,21 @@ export class BusinessForm {
   onCityChange(): void {
     this.model.municipalityCode = '';
     this.lookup.loadMunicipalities(this.cityCode);
+  }
+
+  useMyLocation(): void {
+    this.locationError.set(null);
+    this.locating.set(true);
+    getCurrentPosition()
+      .then((coords) => {
+        this.locating.set(false);
+        this.model.latitude = coords.lat;
+        this.model.longitude = coords.lng;
+      })
+      .catch((err: Error) => {
+        this.locating.set(false);
+        this.locationError.set(err.message);
+      });
   }
 
   submit(): void {
