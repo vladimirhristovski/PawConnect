@@ -18,3 +18,8 @@
 .business-card {
   display: block;
 }
+.badge.distance {
+  background: #ecfdf5;
+  color: #047857;
+  margin-left: 0.4rem;
+}
