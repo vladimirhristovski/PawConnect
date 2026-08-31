@@ -1,7 +1,6 @@
 package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.dto.response.UserResponse
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.common.requireId
@@ -29,9 +28,8 @@ class UserService(
     }
 
     @Transactional
-    fun setActive(id: Long, active: Boolean): UserResponse {
-        val user = userRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("User not found: $id") }
+    fun setActive(id: Long, active: Boolean): UserResponse? {
+        val user = userRepository.findById(id).orElse(null) ?: return null
         user.isActive = active
         val updated = userRepository.save(user)
         if (!active) {
@@ -42,13 +40,13 @@ class UserService(
     }
 
     @Transactional
-    fun deleteUser(id: Long) {
-        val user = userRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("User not found: $id") }
-        if (user.deletedAt != null) return
+    fun deleteUser(id: Long): Boolean {
+        val user = userRepository.findById(id).orElse(null) ?: return false
+        if (user.deletedAt != null) return true
         user.deletedAt = Instant.now()
         userRepository.save(user)
         refreshTokenRepository.revokeAllUserTokens(user.requireId(), Instant.now())
         log.info("User {} soft-deleted", user.id)
+        return true
     }
 }

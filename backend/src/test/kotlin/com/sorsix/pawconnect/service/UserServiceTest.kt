@@ -1,7 +1,6 @@
 package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.domain.User
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import io.mockk.every
@@ -14,7 +13,8 @@ import org.springframework.data.domain.PageRequest
 import java.time.Instant
 import java.util.Optional
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 
 class UserServiceTest {
 
@@ -37,7 +37,7 @@ class UserServiceTest {
     @Test
     fun `setActive throws when the user does not exist`() {
         every { userRepository.findById(9L) } returns Optional.empty()
-        assertFailsWith<ResourceNotFoundException> { service.setActive(9L, false) }
+        assertNull(service.setActive(9L, false))
     }
 
     @Test
@@ -67,7 +67,7 @@ class UserServiceTest {
     @Test
     fun `deleteUser throws when the user does not exist`() {
         every { userRepository.findById(9L) } returns Optional.empty()
-        assertFailsWith<ResourceNotFoundException> { service.deleteUser(9L) }
+        assertFalse(service.deleteUser(9L))
     }
 
     @Test
