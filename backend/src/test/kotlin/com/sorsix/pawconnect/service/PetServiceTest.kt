@@ -9,8 +9,10 @@ import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.dto.request.CreatePetRequest
 import com.sorsix.pawconnect.dto.request.PetPhotoRequest
 import com.sorsix.pawconnect.dto.request.UpdatePetRequest
-import com.sorsix.pawconnect.exception.ForbiddenOperationException
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
+import com.sorsix.pawconnect.domain.result.AddPetPhotoResult
+import com.sorsix.pawconnect.domain.result.CreatePetResult
+import com.sorsix.pawconnect.domain.result.RemovePetPhotoResult
+import com.sorsix.pawconnect.domain.result.UpdatePetResult
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.repository.PetBreedRepository
 import com.sorsix.pawconnect.repository.PetPhotoRepository
@@ -24,8 +26,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.web.multipart.MultipartFile
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class PetServiceTest {
@@ -83,9 +86,8 @@ class PetServiceTest {
     @Test
     fun `createPet throws when species not found`() {
         every { petSpeciesRepository.findByCode("CAT") } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.createPet(request(speciesCode = "CAT"))
-        }
+        val result = service.createPet(request(speciesCode = "CAT"))
+        assertIs<CreatePetResult.NotFound>(result)
         verify(exactly = 0) { petRepository.save(any()) }
     }
 
@@ -93,9 +95,8 @@ class PetServiceTest {
     fun `createPet throws when a requested breed code does not exist`() {
         every { petSpeciesRepository.findByCode("DOG") } returns mockSpecies()
         every { petBreedRepository.findByCodeIn(listOf("A", "B")) } returns listOf(mockBreed("A"))
-        assertFailsWith<ResourceNotFoundException> {
-            service.createPet(request(breedCodes = listOf("A", "B")))
-        }
+        val result = service.createPet(request(breedCodes = listOf("A", "B")))
+        assertIs<CreatePetResult.NotFound>(result)
     }
 
     @Test
@@ -112,7 +113,8 @@ class PetServiceTest {
         val saved = petSlot.first()
         assertEquals("Bella", saved.name)
         assertEquals(species, saved.species)
-        assertEquals(reloaded, result)
+        assertIs<CreatePetResult.Success>(result)
+        assertEquals(reloaded, result.pet)
     }
 
     @Test
@@ -135,24 +137,23 @@ class PetServiceTest {
     }
 
     @Test
-    fun `getPetOrThrow returns the pet when present`() {
+    fun `findPet returns the pet when present`() {
         val pet = mockk<Pet>(relaxed = true)
         every { petRepository.findByIdWithAllAssociations(3L) } returns pet
-        assertEquals(pet, service.getPetOrThrow(3L))
+        assertEquals(pet, service.findPet(3L))
     }
 
     @Test
-    fun `getPetOrThrow throws when the pet is missing`() {
+    fun `findPet returns null when the pet is missing`() {
         every { petRepository.findByIdWithAllAssociations(3L) } returns null
-        assertFailsWith<ResourceNotFoundException> { service.getPetOrThrow(3L) }
+        assertEquals(null, service.findPet(3L))
     }
 
     @Test
     fun `updatePet throws when the pet is missing`() {
         every { petRepository.findByIdWithAllAssociations(1L) } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.updatePet(1L, UpdatePetRequest(name = "x"), mockUser())
-        }
+        val result = service.updatePet(1L, UpdatePetRequest(name = "x"), mockUser())
+        assertIs<UpdatePetResult.NotFound>(result)
     }
 
     @Test
@@ -161,9 +162,8 @@ class PetServiceTest {
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
         every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 2L) } returns false
-        assertFailsWith<ForbiddenOperationException> {
-            service.updatePet(5L, UpdatePetRequest(name = "x"), mockUser(id = 2L))
-        }
+        val result = service.updatePet(5L, UpdatePetRequest(name = "x"), mockUser(id = 2L))
+        assertIs<UpdatePetResult.Forbidden>(result)
     }
 
     @Test
@@ -216,9 +216,8 @@ class PetServiceTest {
         every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
         every { petSpeciesRepository.findByCode("ZEBRA") } returns null
 
-        assertFailsWith<ResourceNotFoundException> {
-            service.updatePet(5L, UpdatePetRequest(speciesCode = "ZEBRA"), mockUser(id = 1L))
-        }
+        val result = service.updatePet(5L, UpdatePetRequest(speciesCode = "ZEBRA"), mockUser(id = 1L))
+        assertIs<UpdatePetResult.NotFound>(result)
     }
 
     @Test
@@ -245,9 +244,8 @@ class PetServiceTest {
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
         every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 2L) } returns false
-        assertFailsWith<ForbiddenOperationException> {
-            service.addPhoto(5L, PetPhotoRequest(url = "x"), mockUser(id = 2L))
-        }
+        val result = service.addPhoto(5L, PetPhotoRequest(url = "x"), mockUser(id = 2L))
+        assertIs<AddPetPhotoResult.Forbidden>(result)
     }
 
     @Test
@@ -277,9 +275,8 @@ class PetServiceTest {
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
         every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 2L) } returns false
 
-        assertFailsWith<ForbiddenOperationException> {
-            service.uploadAndAddPhoto(5L, file, isPrimary = false, displayOrder = 0, currentUser = mockUser(id = 2L))
-        }
+        val result = service.uploadAndAddPhoto(5L, file, isPrimary = false, displayOrder = 0, currentUser = mockUser(id = 2L))
+        assertIs<AddPetPhotoResult.Forbidden>(result)
         verify(exactly = 0) { blobStorageService.upload(any(), any()) }
     }
 
@@ -291,9 +288,8 @@ class PetServiceTest {
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
         every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
 
-        assertFailsWith<ResourceNotFoundException> {
-            service.removePhoto(5L, 999L, mockUser(id = 1L))
-        }
+        val result = service.removePhoto(5L, 999L, mockUser(id = 1L))
+        assertIs<RemovePetPhotoResult.NotFound>(result)
     }
 
     @Test

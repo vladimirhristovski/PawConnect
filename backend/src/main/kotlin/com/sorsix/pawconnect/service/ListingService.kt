@@ -7,6 +7,7 @@ import com.sorsix.pawconnect.exception.ConflictException
 import com.sorsix.pawconnect.exception.ForbiddenOperationException
 import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.domain.*
+import com.sorsix.pawconnect.domain.result.CreatePetResult
 import com.sorsix.pawconnect.common.*
 import com.sorsix.pawconnect.repository.*
 import org.slf4j.LoggerFactory
@@ -43,7 +44,10 @@ class ListingService(
             request.petId != null -> petRepository.findById(request.petId)
                 .orElseThrow { ResourceNotFoundException("Pet not found: ${request.petId}") }
 
-            request.pet != null -> petService.createPet(request.pet)
+            request.pet != null -> when (val result = petService.createPet(request.pet)) {
+                is CreatePetResult.Success -> result.pet
+                is CreatePetResult.NotFound -> throw ResourceNotFoundException(result.message)
+            }
             else -> throw IllegalArgumentException("Either petId or pet must be provided")
         }
 

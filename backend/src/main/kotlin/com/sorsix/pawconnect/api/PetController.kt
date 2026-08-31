@@ -1,5 +1,9 @@
 package com.sorsix.pawconnect.api
 
+import com.sorsix.pawconnect.common.problemResponse
+import com.sorsix.pawconnect.domain.result.AddPetPhotoResult
+import com.sorsix.pawconnect.domain.result.RemovePetPhotoResult
+import com.sorsix.pawconnect.domain.result.UpdatePetResult
 import com.sorsix.pawconnect.dto.request.PetPhotoRequest
 import com.sorsix.pawconnect.dto.request.UpdatePetRequest
 import com.sorsix.pawconnect.dto.response.PetPhotoResponse
@@ -9,6 +13,7 @@ import com.sorsix.pawconnect.service.PetService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
@@ -19,43 +24,52 @@ class PetController(
 ) {
 
     @GetMapping("/{id}")
-    fun getPet(@PathVariable id: Long): PetResponse {
-        val pet = petService.getPetOrThrow(id)
-        return PetResponse.from(pet)
-    }
+    fun getPet(@PathVariable id: Long): ResponseEntity<*> =
+        petService.findPet(id)?.let { ResponseEntity.ok(PetResponse.from(it)) }
+            ?: problemResponse(HttpStatus.NOT_FOUND, "Pet not found: $id")
 
     @PutMapping("/{id}")
-    fun updatePet(@PathVariable id: Long, @Valid @RequestBody request: UpdatePetRequest): PetResponse {
+    fun updatePet(@PathVariable id: Long, @Valid @RequestBody request: UpdatePetRequest): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val pet = petService.updatePet(id, request, currentUser)
-        return PetResponse.from(pet)
+        return when (val result = petService.updatePet(id, request, currentUser)) {
+            is UpdatePetResult.Success -> ResponseEntity.ok(PetResponse.from(result.pet))
+            is UpdatePetResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is UpdatePetResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @PostMapping("/{id}/photos")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun addPhoto(@PathVariable id: Long, @Valid @RequestBody request: PetPhotoRequest): PetPhotoResponse {
+    fun addPhoto(@PathVariable id: Long, @Valid @RequestBody request: PetPhotoRequest): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val photo = petService.addPhoto(id, request, currentUser)
-        return PetPhotoResponse.from(photo)
+        return when (val result = petService.addPhoto(id, request, currentUser)) {
+            is AddPetPhotoResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(PetPhotoResponse.from(result.photo))
+            is AddPetPhotoResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is AddPetPhotoResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @PostMapping("/{id}/photos/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    @ResponseStatus(HttpStatus.CREATED)
     fun uploadPhoto(
         @PathVariable id: Long,
         @RequestPart("file") file: MultipartFile,
         @RequestParam(defaultValue = "false") isPrimary: Boolean,
         @RequestParam(defaultValue = "0") displayOrder: Int
-    ): PetPhotoResponse {
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val photo = petService.uploadAndAddPhoto(id, file, isPrimary, displayOrder, currentUser)
-        return PetPhotoResponse.from(photo)
+        return when (val result = petService.uploadAndAddPhoto(id, file, isPrimary, displayOrder, currentUser)) {
+            is AddPetPhotoResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(PetPhotoResponse.from(result.photo))
+            is AddPetPhotoResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is AddPetPhotoResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @DeleteMapping("/{id}/photos/{photoId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun removePhoto(@PathVariable id: Long, @PathVariable photoId: Long) {
+    fun removePhoto(@PathVariable id: Long, @PathVariable photoId: Long): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        petService.removePhoto(id, photoId, currentUser)
+        return when (val result = petService.removePhoto(id, photoId, currentUser)) {
+            is RemovePetPhotoResult.Success -> ResponseEntity.noContent().build<Unit>()
+            is RemovePetPhotoResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is RemovePetPhotoResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 }

@@ -3,11 +3,13 @@ package com.sorsix.pawconnect.service
 import com.sorsix.pawconnect.dto.request.CreatePetRequest
 import com.sorsix.pawconnect.dto.request.PetPhotoRequest
 import com.sorsix.pawconnect.dto.request.UpdatePetRequest
-import com.sorsix.pawconnect.exception.ForbiddenOperationException
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.domain.Pet
 import com.sorsix.pawconnect.domain.PetPhoto
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.AddPetPhotoResult
+import com.sorsix.pawconnect.domain.result.CreatePetResult
+import com.sorsix.pawconnect.domain.result.RemovePetPhotoResult
+import com.sorsix.pawconnect.domain.result.UpdatePetResult
 import com.sorsix.pawconnect.repository.*
 import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
@@ -27,15 +29,15 @@ class PetService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun createPet(request: CreatePetRequest): Pet {
+    fun createPet(request: CreatePetRequest): CreatePetResult {
         val species = petSpeciesRepository.findByCode(request.speciesCode)
-            ?: throw ResourceNotFoundException("Species not found: ${request.speciesCode}")
+            ?: return CreatePetResult.NotFound("Species not found: ${request.speciesCode}")
 
         val breeds = if (request.breedCodes.isNotEmpty()) {
             val found = petBreedRepository.findByCodeIn(request.breedCodes)
             if (found.size != request.breedCodes.size) {
                 val missing = request.breedCodes.filterNot { found.any { breed -> breed.code == it } }
-                throw ResourceNotFoundException("Breeds not found: $missing")
+                return CreatePetResult.NotFound("Breeds not found: $missing")
             }
             found.toMutableSet()
         } else mutableSetOf()
@@ -66,23 +68,23 @@ class PetService(
         normalizePrimaryPhoto(savedPet.photos)
         val saved = petRepository.save(pet)
         log.info("Pet {} created ({} photo(s))", saved.id, saved.photos.size)
-        return petRepository.findByIdWithAllAssociations(saved.requireId())
+        val reloaded = petRepository.findByIdWithAllAssociations(saved.requireId())
             ?: throw IllegalStateException("Pet not found after save")
+        return CreatePetResult.Success(reloaded)
     }
 
     @Transactional(readOnly = true)
-    fun getPetOrThrow(id: Long): Pet {
-        return petRepository.findByIdWithAllAssociations(id) ?: throw ResourceNotFoundException("Pet not found: $id")
-    }
+    fun findPet(id: Long): Pet? = petRepository.findByIdWithAllAssociations(id)
 
     @Transactional
-    fun updatePet(id: Long, request: UpdatePetRequest, currentUser: User): Pet {
-        val pet = getPetOrThrow(id)
-        ensureCanManagePet(pet, currentUser)
+    fun updatePet(id: Long, request: UpdatePetRequest, currentUser: User): UpdatePetResult {
+        val pet = findPet(id) ?: return UpdatePetResult.NotFound("Pet not found: $id")
+        canManagePetReason(pet, currentUser)?.let { return UpdatePetResult.Forbidden(it) }
 
         request.speciesCode?.let { code ->
-            pet.species =
-                petSpeciesRepository.findByCode(code) ?: throw ResourceNotFoundException("Species not found: $code")
+            val species = petSpeciesRepository.findByCode(code)
+                ?: return UpdatePetResult.NotFound("Species not found: $code")
+            pet.species = species
         }
         request.breedCodes?.let { codes ->
             if (codes.isNotEmpty()) {
@@ -91,7 +93,7 @@ class PetService(
                     val missing = codes.filterNot { code ->
                         found.any { breed -> breed.code == code }
                     }
-                    throw ResourceNotFoundException("Breeds not found: $missing")
+                    return UpdatePetResult.NotFound("Breeds not found: $missing")
                 }
                 pet.breeds = found.toMutableSet()
             } else {
@@ -110,14 +112,15 @@ class PetService(
 
         val saved = petRepository.save(pet)
         log.info("Pet {} updated by user {}", saved.id, currentUser.id)
-        return petRepository.findByIdWithAllAssociations(saved.requireId())
-            ?: throw ResourceNotFoundException("Pet not found after update")
+        val reloaded = petRepository.findByIdWithAllAssociations(saved.requireId())
+            ?: return UpdatePetResult.NotFound("Pet not found after update")
+        return UpdatePetResult.Success(reloaded)
     }
 
     @Transactional
-    fun addPhoto(petId: Long, request: PetPhotoRequest, currentUser: User): PetPhoto {
-        val pet = getPetOrThrow(petId)
-        ensureCanManagePet(pet, currentUser)
+    fun addPhoto(petId: Long, request: PetPhotoRequest, currentUser: User): AddPetPhotoResult {
+        val pet = findPet(petId) ?: return AddPetPhotoResult.NotFound("Pet not found: $petId")
+        canManagePetReason(pet, currentUser)?.let { return AddPetPhotoResult.Forbidden(it) }
 
         if (request.isPrimary) {
             pet.photos.filter { it.isPrimary }.forEach { it.isPrimary = false }
@@ -132,14 +135,14 @@ class PetService(
         val savedPhoto = petPhotoRepository.save(photo)
         petRepository.save(pet)
         log.info("Photo {} added to pet {} by user {}", savedPhoto.id, pet.id, currentUser.id)
-        return savedPhoto
+        return AddPetPhotoResult.Success(savedPhoto)
     }
 
     fun uploadAndAddPhoto(
         petId: Long, file: MultipartFile, isPrimary: Boolean, displayOrder: Int, currentUser: User
-    ): PetPhoto {
-        val pet = getPetOrThrow(petId)
-        ensureCanManagePet(pet, currentUser)
+    ): AddPetPhotoResult {
+        val pet = findPet(petId) ?: return AddPetPhotoResult.NotFound("Pet not found: $petId")
+        canManagePetReason(pet, currentUser)?.let { return AddPetPhotoResult.Forbidden(it) }
 
         val url = blobStorageService.upload(file, "pets/$petId")
         log.info("Photo uploaded to blob for pet {} by user {}", petId, currentUser.id)
@@ -149,24 +152,24 @@ class PetService(
     }
 
     @Transactional
-    fun removePhoto(petId: Long, photoId: Long, currentUser: User) {
-        val pet = getPetOrThrow(petId)
-        ensureCanManagePet(pet, currentUser)
+    fun removePhoto(petId: Long, photoId: Long, currentUser: User): RemovePetPhotoResult {
+        val pet = findPet(petId) ?: return RemovePetPhotoResult.NotFound("Pet not found: $petId")
+        canManagePetReason(pet, currentUser)?.let { return RemovePetPhotoResult.Forbidden(it) }
 
-        val photo = pet.photos.find { it.id == photoId } ?: throw ResourceNotFoundException("Photo not found: $photoId")
+        val photo = pet.photos.find { it.id == photoId }
+            ?: return RemovePetPhotoResult.NotFound("Photo not found: $photoId")
         pet.photos.remove(photo)
         petPhotoRepository.delete(photo)
         log.info("Photo {} removed from pet {} by user {}", photoId, petId, currentUser.id)
         runCatching { blobStorageService.delete(photo.url) }
             .onFailure { log.warn("Failed to delete blob for photo {} (pet {}): {}", photoId, petId, it.message) }
+        return RemovePetPhotoResult.Success
     }
 
-    private fun ensureCanManagePet(pet: Pet, currentUser: User) {
-        if (currentUser.isAdmin()) return
+    private fun canManagePetReason(pet: Pet, currentUser: User): String? {
+        if (currentUser.isAdmin()) return null
         val ownsListing = listingRepository.existsByPet_IdAndPostedBy_Id(pet.requireId(), currentUser.requireId())
-        if (!ownsListing) {
-            throw ForbiddenOperationException("You do not own any listing for this pet")
-        }
+        return if (ownsListing) null else "You do not own any listing for this pet"
     }
 
     private fun normalizePrimaryPhoto(photos: MutableList<PetPhoto>) {

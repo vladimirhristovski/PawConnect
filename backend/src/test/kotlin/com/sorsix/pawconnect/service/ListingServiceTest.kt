@@ -10,6 +10,7 @@ import com.sorsix.pawconnect.domain.ListingStatus
 import com.sorsix.pawconnect.domain.Municipality
 import com.sorsix.pawconnect.domain.Pet
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.CreatePetResult
 import com.sorsix.pawconnect.dto.request.CreateListingRequest
 import com.sorsix.pawconnect.dto.request.CreatePetRequest
 import com.sorsix.pawconnect.dto.request.UpdateListingRequest
@@ -196,7 +197,7 @@ class ListingServiceTest {
     fun `createListing creates an inline pet and defaults latitude longitude to the municipality`() {
         val inlinePet = mockk<Pet>(relaxed = true)
         every { inlinePet.id } returns 5L
-        every { petService.createPet(any()) } returns inlinePet
+        every { petService.createPet(any()) } returns CreatePetResult.Success(inlinePet)
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         val municipality = mockMunicipality(lat = BigDecimal("41.1"), lng = BigDecimal("20.2"))
         every { municipalityRepository.findByCode("SK-CENTAR") } returns municipality
