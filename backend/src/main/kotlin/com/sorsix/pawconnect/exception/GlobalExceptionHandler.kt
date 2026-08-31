@@ -90,18 +90,6 @@ class GlobalExceptionHandler {
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request)
     }
 
-    @ExceptionHandler(ResourceNotFoundException::class)
-    fun handleResourceNotFound(ex: ResourceNotFoundException, request: WebRequest): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found", request)
-
-    @ExceptionHandler(ForbiddenOperationException::class)
-    fun handleForbidden(ex: ForbiddenOperationException, request: WebRequest): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.FORBIDDEN, ex.message ?: "Access denied", request)
-
-    @ExceptionHandler(ConflictException::class)
-    fun handleConflict(ex: ConflictException, request: WebRequest): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.CONFLICT, ex.message ?: "Conflict", request)
-
     @ExceptionHandler(UnauthorizedException::class)
     fun handleUnauthorized(ex: UnauthorizedException, request: WebRequest): ResponseEntity<ProblemDetail> =
         problem(HttpStatus.UNAUTHORIZED, ex.message ?: "Not authenticated", request)

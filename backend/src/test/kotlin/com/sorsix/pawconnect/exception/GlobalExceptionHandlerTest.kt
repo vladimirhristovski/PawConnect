@@ -114,27 +114,6 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    fun `handleResourceNotFound returns NOT_FOUND`() {
-        val response = handler.handleResourceNotFound(ResourceNotFoundException("missing"), request)
-        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
-        assertEquals("missing", response.body?.detail)
-    }
-
-    @Test
-    fun `handleForbidden returns FORBIDDEN`() {
-        val response = handler.handleForbidden(ForbiddenOperationException("not allowed"), request)
-        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
-        assertEquals("not allowed", response.body?.detail)
-    }
-
-    @Test
-    fun `handleConflict returns CONFLICT`() {
-        val response = handler.handleConflict(ConflictException("duplicate"), request)
-        assertEquals(HttpStatus.CONFLICT, response.statusCode)
-        assertEquals("duplicate", response.body?.detail)
-    }
-
-    @Test
     fun `handleUnauthorized returns UNAUTHORIZED`() {
         val response = handler.handleUnauthorized(UnauthorizedException("no session"), request)
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
