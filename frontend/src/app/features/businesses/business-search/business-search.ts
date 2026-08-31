@@ -8,7 +8,7 @@ import { BusinessService } from '../../../core/services/business';
 import { LookupService } from '../../../core/services/lookup';
 import { AuthService } from '../../../core/services/auth';
 import { Pagination } from '../../../shared/pagination/pagination';
-import { BusinessSearchParams } from '../../../core/models/business.model';
+import { BusinessSearchParams, Business } from '../../../core/models/business.model';
 import { Coordinates } from '../../../core/models/coordinates.model';
 import { getCurrentPosition, haversineDistanceKm } from '../../../shared/geo/geo-utils';
 import {
@@ -134,6 +134,12 @@ export class BusinessSearch implements OnInit {
     if (!coords || biz.latitude == null || biz.longitude == null) return null;
     const km = haversineDistanceKm(coords, { lat: biz.latitude, lng: biz.longitude });
     return km < 1 ? `${Math.round(km * 1000)} m away` : `${km.toFixed(1)} km away`;
+  }
+
+  primaryPhotoUrl(biz: Business): string | null {
+    const primary = biz.photos.find((p) => p.isPrimary);
+    if (primary) return primary.url;
+    return biz.photos.length > 0 ? biz.photos[0].url : null;
   }
 
   private locateThenSearch(): void {

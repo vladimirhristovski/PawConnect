@@ -12,6 +12,7 @@ export interface Business {
   ownerUsername: string | null;
   latitude: number | null;
   longitude: number | null;
+  photos: BusinessPhoto[];
 }
 
 export interface CreateBusinessRequest {
@@ -24,6 +25,7 @@ export interface CreateBusinessRequest {
   municipalityCode: string;
   latitude?: number;
   longitude?: number;
+  photos?: BusinessPhotoRequest[];
 }
 
 export interface UpdateBusinessRequest {
@@ -46,4 +48,21 @@ export interface BusinessSearchParams {
   radiusKm?: number;
   page?: number;
   size?: number;
+}
+
+export interface BusinessPhoto {
+  id: number;
+  url: string;
+  isPrimary: boolean;
+  displayOrder: number;
+}
+
+export interface BusinessPhotoRequest {
+  url: string;
+  isPrimary?: boolean;
+  displayOrder?: number;
+}
+
+export interface StagedBusinessPhoto extends BusinessPhotoRequest {
+  previewName: string;
 }

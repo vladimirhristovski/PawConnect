@@ -78,3 +78,7 @@ export interface UpdatePetRequest {
 export interface TempUploadResponse {
   url: string;
 }
+
+export interface StagedPetPhoto extends PetPhotoRequest {
+  previewName: string;
+}

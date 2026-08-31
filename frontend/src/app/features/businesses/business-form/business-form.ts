@@ -1,22 +1,28 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { BusinessService } from '../../../core/services/business';
 import { LookupService } from '../../../core/services/lookup';
-import { CreateBusinessRequest, UpdateBusinessRequest } from '../../../core/models/business.model';
+import { PhotoService } from '../../../core/services/photo';
+import {
+  CreateBusinessRequest,
+  UpdateBusinessRequest,
+  StagedBusinessPhoto,
+} from '../../../core/models/business.model';
 import { Coordinates } from '../../../core/models/coordinates.model';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
 
 @Component({
   selector: 'app-business-form',
-  imports: [FormsModule, MapPicker],
+  imports: [FormsModule, RouterLink, MapPicker],
   templateUrl: './business-form.html',
   styleUrl: './business-form.css',
 })
 export class BusinessForm {
   protected businessService = inject(BusinessService);
   protected lookup = inject(LookupService);
+  private photoService = inject(PhotoService);
   private router = inject(Router);
 
   id = input<string>();
@@ -30,6 +36,10 @@ export class BusinessForm {
   };
   countryCode?: string;
   cityCode?: string;
+
+  stagedPhotos = signal<StagedBusinessPhoto[]>([]);
+  uploading = signal(false);
+  uploadError = signal<string | null>(null);
 
   submitting = signal(false);
   error = signal<string | null>(null);
@@ -115,6 +125,43 @@ export class BusinessForm {
     this.showMapPicker.set(false);
   }
 
+  onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files || files.length === 0) return;
+
+    this.uploadError.set(null);
+    this.uploading.set(true);
+    let remaining = files.length;
+    Array.from(files).forEach((file) => {
+      this.photoService.uploadTemp(file).subscribe({
+        next: (res) => {
+          const isFirst = this.stagedPhotos().length === 0;
+          this.stagedPhotos.update((list) => [
+            ...list,
+            { url: res.url, isPrimary: isFirst, displayOrder: list.length, previewName: file.name },
+          ]);
+        },
+        error: (err) => {
+          this.uploadError.set(err.error?.message ?? 'Upload failed.');
+        },
+        complete: () => {
+          remaining -= 1;
+          if (remaining <= 0) this.uploading.set(false);
+        },
+      });
+    });
+    input.value = '';
+  }
+
+  setPrimary(photo: StagedBusinessPhoto): void {
+    this.stagedPhotos.update((list) => list.map((p) => ({ ...p, isPrimary: p.url === photo.url })));
+  }
+
+  removeStaged(photo: StagedBusinessPhoto): void {
+    this.stagedPhotos.update((list) => list.filter((p) => p.url !== photo.url));
+  }
+
   submit(): void {
     this.error.set(null);
     this.submitting.set(true);
@@ -129,7 +176,11 @@ export class BusinessForm {
         },
       });
     } else {
-      this.businessService.create(this.model).subscribe({
+      const payload: CreateBusinessRequest = {
+        ...this.model,
+        photos: this.stagedPhotos().map(({ previewName, ...rest }) => rest),
+      };
+      this.businessService.create(payload).subscribe({
         next: (created) => this.router.navigate(['/businesses', created.id]),
         error: (err) => {
           this.submitting.set(false);

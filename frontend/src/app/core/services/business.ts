@@ -3,6 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import {
   Business,
+  BusinessPhoto,
+  BusinessPhotoRequest,
   CreateBusinessRequest,
   UpdateBusinessRequest,
   BusinessSearchParams,
@@ -39,5 +41,18 @@ export class BusinessService {
   }
   delete(id: number) {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+  addPhotoByUrl(id: number, request: BusinessPhotoRequest) {
+    return this.http.post<BusinessPhoto>(`${this.baseUrl}/${id}/photos`, request);
+  }
+  uploadPhoto(id: number, file: File, isPrimary: boolean, displayOrder: number) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('isPrimary', String(isPrimary));
+    formData.append('displayOrder', String(displayOrder));
+    return this.http.post<BusinessPhoto>(`${this.baseUrl}/${id}/photos/upload`, formData);
+  }
+  removePhoto(id: number, photoId: number) {
+    return this.http.delete<void>(`${this.baseUrl}/${id}/photos/${photoId}`);
   }
 }

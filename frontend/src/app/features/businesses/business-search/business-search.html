@@ -33,7 +33,12 @@
     @if (useNearby()) {
       <label
         >Radius (km)
-        <input type="number" min="1" [(ngModel)]="filters.radiusKm" (ngModelChange)="onFilterChange()" />
+        <input
+          type="number"
+          min="1"
+          [(ngModel)]="filters.radiusKm"
+          (ngModelChange)="onFilterChange()"
+        />
       </label>
       @if (locating()) {
         <p>Locating you…</p>
@@ -52,13 +57,20 @@
         <div class="business-grid">
           @for (biz of page.content; track biz.id) {
             <a class="business-card card" [routerLink]="['/businesses', biz.id]">
-              <h4>{{ biz.name }}</h4>
-              <span class="badge">{{ biz.typeName }}</span>
-              @if (distanceLabel(biz); as distance) {
-                <span class="badge distance">{{ distance }}</span>
+              @if (primaryPhotoUrl(biz); as photoUrl) {
+                <img [src]="photoUrl" [alt]="biz.name" />
+              } @else {
+                <div class="photo-placeholder">No photo</div>
               }
-              <p>{{ biz.address }}, {{ biz.municipalityName }}</p>
-              <p>{{ biz.phone }}</p>
+              <div class="card-body">
+                <h4>{{ biz.name }}</h4>
+                <span class="badge">{{ biz.typeName }}</span>
+                @if (distanceLabel(biz); as distance) {
+                  <span class="badge distance">{{ distance }}</span>
+                }
+                <p>{{ biz.address }}, {{ biz.municipalityName }}</p>
+                <p>{{ biz.phone }}</p>
+              </div>
             </a>
           }
         </div>

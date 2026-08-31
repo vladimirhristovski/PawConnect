@@ -5,14 +5,10 @@ import { ListingService } from '../../../core/services/listing';
 import { LookupService } from '../../../core/services/lookup';
 import { PhotoService } from '../../../core/services/photo';
 import { CreateListingRequest, UpdateListingRequest } from '../../../core/models/listing.model';
-import { CreatePetRequest, PetPhotoRequest } from '../../../core/models/pet.model';
+import { CreatePetRequest, StagedPetPhoto } from '../../../core/models/pet.model';
 import { Coordinates } from '../../../core/models/coordinates.model';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
-
-interface StagedPhoto extends PetPhotoRequest {
-  previewName: string;
-}
 
 @Component({
   selector: 'app-listing-form',
@@ -43,7 +39,7 @@ export class ListingForm {
   countryCode?: string;
   cityCode?: string;
 
-  stagedPhotos = signal<StagedPhoto[]>([]);
+  stagedPhotos = signal<StagedPetPhoto[]>([]);
   uploading = signal(false);
   submitting = signal(false);
   error = signal<string | null>(null);
@@ -171,11 +167,11 @@ export class ListingForm {
     input.value = '';
   }
 
-  setPrimary(photo: StagedPhoto): void {
+  setPrimary(photo: StagedPetPhoto): void {
     this.stagedPhotos.update((list) => list.map((p) => ({ ...p, isPrimary: p.url === photo.url })));
   }
 
-  removeStaged(photo: StagedPhoto): void {
+  removeStaged(photo: StagedPetPhoto): void {
     this.stagedPhotos.update((list) => list.filter((p) => p.url !== photo.url));
   }
 

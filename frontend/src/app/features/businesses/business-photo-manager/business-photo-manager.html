@@ -1,0 +1,75 @@
+@if (businessService.selected(); as biz) {
+  <h2>Manage {{ biz.name }}</h2>
+  <p><a [routerLink]="['/businesses', biz.id]">← Back to business</a></p>
+
+  <div class="manager-layout">
+    <form class="card" (ngSubmit)="saveDetails()">
+      <h3>Business details</h3>
+
+      <label>Name <input name="name" [(ngModel)]="model.name" required /></label>
+
+      <label
+        >Type
+        <select name="typeCode" [(ngModel)]="model.typeCode">
+          @for (t of lookup.businessTypes(); track t.code) {
+            <option [value]="t.code">{{ t.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label
+        >Description
+        <textarea name="description" rows="3" [(ngModel)]="model.description"></textarea>
+      </label>
+      <label>Phone <input name="phone" [(ngModel)]="model.phone" /></label>
+      <label>Email <input name="email" type="email" [(ngModel)]="model.email" /></label>
+      <label>Address <input name="address" [(ngModel)]="model.address" /></label>
+      <label
+        >Municipality
+        <select name="municipalityCode" [(ngModel)]="model.municipalityCode">
+          @for (m of lookup.municipalities(); track m.code) {
+            <option [value]="m.code">{{ m.name }}</option>
+          }
+        </select>
+      </label>
+
+      @if (saveError()) {
+        <p class="error">{{ saveError() }}</p>
+      }
+      @if (saveSuccess()) {
+        <p class="success">Saved.</p>
+      }
+
+      <button type="submit" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Save details' }}
+      </button>
+    </form>
+
+    <div class="card">
+      <h3>Photos</h3>
+      <label
+        >Upload a photo <input type="file" accept="image/*" (change)="onFileSelected($event)"
+      /></label>
+      @if (uploading()) {
+        <p>Uploading…</p>
+      }
+      @if (uploadError()) {
+        <p class="error">{{ uploadError() }}</p>
+      }
+
+      <div class="photo-grid">
+        @for (photo of biz.photos; track photo.id) {
+          <div class="photo-item" [class.primary]="photo.isPrimary">
+            <img [src]="photo.url" [alt]="biz.name" />
+            @if (photo.isPrimary) {
+              <span class="badge">Primary</span>
+            }
+            <button class="danger" (click)="removePhoto(photo.id)">Remove</button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+  <p>Loading…</p>
+}

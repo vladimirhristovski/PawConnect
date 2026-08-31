@@ -79,6 +79,42 @@
     />
   }
 
+  @if (!isEdit()) {
+    <fieldset>
+      <legend>Photos</legend>
+      <label
+        >Photos <input type="file" accept="image/*" multiple (change)="onFilesSelected($event)"
+      /></label>
+      @if (uploading()) {
+        <p>Uploading…</p>
+      }
+      @if (uploadError()) {
+        <p class="error">{{ uploadError() }}</p>
+      }
+      @if (stagedPhotos().length > 0) {
+        <div class="photo-strip">
+          @for (photo of stagedPhotos(); track photo.url) {
+            <div class="staged-photo">
+              <img [src]="photo.url" [alt]="photo.previewName" />
+              <label class="checkbox"
+                ><input
+                  type="radio"
+                  name="primaryPhoto"
+                  [checked]="photo.isPrimary"
+                  (change)="setPrimary(photo)"
+                />
+                Primary</label
+              >
+              <button type="button" (click)="removeStaged(photo)">Remove</button>
+            </div>
+          }
+        </div>
+      }
+    </fieldset>
+  } @else {
+    <p><a [routerLink]="['/businesses', id(), 'photos']">Manage photos</a></p>
+  }
+
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
