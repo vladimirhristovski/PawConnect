@@ -1,21 +1,35 @@
 import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, skip } from 'rxjs/operators';
 import { BusinessService } from '../../../core/services/business';
 import { LookupService } from '../../../core/services/lookup';
 import { AuthService } from '../../../core/services/auth';
 import { Pagination } from '../../../shared/pagination/pagination';
 import { BusinessSearchParams } from '../../../core/models/business.model';
 import { Coordinates } from '../../../core/models/coordinates.model';
+import { getCurrentPosition, haversineDistanceKm } from '../../../shared/geo/geo-utils';
 import {
-  getCurrentPosition,
-  haversineDistanceKm,
-} from '../../../shared/geo/geo-utils';
+  ParamSchema,
+  filtersToQueryParams,
+  readFiltersFromParams,
+} from '../../../shared/query-params/query-param-sync';
 
 const FILTER_DEBOUNCE_MS = 400;
+
+const DEFAULT_FILTERS: BusinessSearchParams = { page: 0, size: 12 };
+
+const FILTER_SCHEMA: ParamSchema<BusinessSearchParams> = {
+  typeCode: 'string',
+  municipalityCode: 'string',
+  lat: 'number',
+  lng: 'number',
+  radiusKm: 'number',
+  page: 'number',
+  size: 'number',
+};
 
 @Component({
   selector: 'app-business-search',
@@ -28,14 +42,17 @@ export class BusinessSearch implements OnInit {
   protected lookup = inject(LookupService);
   protected auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
-  filters: BusinessSearchParams = { page: 0, size: 12 };
+  filters: BusinessSearchParams = { ...DEFAULT_FILTERS };
   useNearby = signal(false);
   locating = signal(false);
   locationError = signal<string | null>(null);
   userCoords = signal<Coordinates | null>(null);
 
   private filterChange$ = new Subject<void>();
+  private suppressNextParamSync = false;
 
   constructor() {
     this.filterChange$
@@ -46,7 +63,33 @@ export class BusinessSearch implements OnInit {
   ngOnInit(): void {
     this.lookup.loadBusinessTypes();
     this.lookup.loadMunicipalities();
-    this.search();
+
+    this.filters = readFiltersFromParams(this.route.snapshot.queryParamMap, FILTER_SCHEMA, {
+      ...DEFAULT_FILTERS,
+    });
+    if (this.filters.lat != null && this.filters.lng != null) {
+      this.useNearby.set(true);
+      this.userCoords.set({ lat: this.filters.lat, lng: this.filters.lng });
+    }
+    this.runSearch();
+
+    this.route.queryParamMap
+      .pipe(skip(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe((paramMap) => {
+        if (this.suppressNextParamSync) {
+          this.suppressNextParamSync = false;
+          return;
+        }
+        this.filters = readFiltersFromParams(paramMap, FILTER_SCHEMA, { ...DEFAULT_FILTERS });
+        if (this.filters.lat != null && this.filters.lng != null) {
+          this.useNearby.set(true);
+          this.userCoords.set({ lat: this.filters.lat, lng: this.filters.lng });
+        } else {
+          this.useNearby.set(false);
+          this.userCoords.set(null);
+        }
+        this.runSearch();
+      });
   }
 
   search(): void {
@@ -60,7 +103,7 @@ export class BusinessSearch implements OnInit {
   }
 
   clearFilters(): void {
-    this.filters = { page: 0, size: 12 };
+    this.filters = { ...DEFAULT_FILTERS };
     this.useNearby.set(false);
     this.userCoords.set(null);
     this.locationError.set(null);
@@ -112,5 +155,16 @@ export class BusinessSearch implements OnInit {
 
   private runSearch(): void {
     this.businessService.search(this.filters);
+    this.updateUrl();
+  }
+
+  private updateUrl(): void {
+    const queryParams = filtersToQueryParams(this.filters, FILTER_SCHEMA, DEFAULT_FILTERS);
+    this.suppressNextParamSync = true;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
+    });
   }
 }

@@ -1,16 +1,39 @@
 import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, skip } from 'rxjs/operators';
 import { ListingService } from '../../../core/services/listing';
 import { LookupService } from '../../../core/services/lookup';
 import { Pagination } from '../../../shared/pagination/pagination';
 import { ListingSearchParams } from '../../../core/models/listing.model';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
+import {
+  ParamSchema,
+  filtersToQueryParams,
+  readFiltersFromParams,
+} from '../../../shared/query-params/query-param-sync';
 
 const FILTER_DEBOUNCE_MS = 400;
+
+const DEFAULT_FILTERS: ListingSearchParams = { page: 0, size: 12 };
+
+const FILTER_SCHEMA: ParamSchema<ListingSearchParams> = {
+  speciesCode: 'string',
+  municipalityCode: 'string',
+  petSize: 'string',
+  gender: 'string',
+  goodWithKids: 'boolean',
+  goodWithOtherPets: 'boolean',
+  minFee: 'number',
+  maxFee: 'number',
+  lat: 'number',
+  lng: 'number',
+  radiusKm: 'number',
+  page: 'number',
+  size: 'number',
+};
 
 @Component({
   selector: 'app-listing-search',
@@ -22,13 +45,16 @@ export class ListingSearch implements OnInit {
   protected listingService = inject(ListingService);
   protected lookup = inject(LookupService);
   private destroyRef = inject(DestroyRef);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
-  filters: ListingSearchParams = { page: 0, size: 12 };
+  filters: ListingSearchParams = { ...DEFAULT_FILTERS };
   useNearby = signal(false);
   locating = signal(false);
   locationError = signal<string | null>(null);
 
   private filterChange$ = new Subject<void>();
+  private suppressNextParamSync = false;
 
   constructor() {
     this.filterChange$
@@ -39,7 +65,24 @@ export class ListingSearch implements OnInit {
   ngOnInit(): void {
     this.lookup.loadSpecies();
     this.lookup.loadMunicipalities();
-    this.search();
+
+    this.filters = readFiltersFromParams(this.route.snapshot.queryParamMap, FILTER_SCHEMA, {
+      ...DEFAULT_FILTERS,
+    });
+    this.useNearby.set(this.filters.lat != null && this.filters.lng != null);
+    this.runSearch();
+
+    this.route.queryParamMap
+      .pipe(skip(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe((paramMap) => {
+        if (this.suppressNextParamSync) {
+          this.suppressNextParamSync = false;
+          return;
+        }
+        this.filters = readFiltersFromParams(paramMap, FILTER_SCHEMA, { ...DEFAULT_FILTERS });
+        this.useNearby.set(this.filters.lat != null && this.filters.lng != null);
+        this.runSearch();
+      });
   }
 
   search(): void {
@@ -53,7 +96,7 @@ export class ListingSearch implements OnInit {
   }
 
   clearFilters(): void {
-    this.filters = { page: 0, size: 12 };
+    this.filters = { ...DEFAULT_FILTERS };
     this.useNearby.set(false);
     this.locationError.set(null);
     this.search();
@@ -95,5 +138,16 @@ export class ListingSearch implements OnInit {
 
   private runSearch(): void {
     this.listingService.search(this.filters);
+    this.updateUrl();
+  }
+
+  private updateUrl(): void {
+    const queryParams = filtersToQueryParams(this.filters, FILTER_SCHEMA, DEFAULT_FILTERS);
+    this.suppressNextParamSync = true;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      replaceUrl: true,
+    });
   }
 }
