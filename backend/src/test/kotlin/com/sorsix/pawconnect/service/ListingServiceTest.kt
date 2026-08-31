@@ -10,13 +10,15 @@ import com.sorsix.pawconnect.domain.ListingStatus
 import com.sorsix.pawconnect.domain.Municipality
 import com.sorsix.pawconnect.domain.Pet
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.CancelListingResult
+import com.sorsix.pawconnect.domain.result.CreateListingResult
 import com.sorsix.pawconnect.domain.result.CreatePetResult
+import com.sorsix.pawconnect.domain.result.DeleteListingResult
+import com.sorsix.pawconnect.domain.result.PublishListingResult
+import com.sorsix.pawconnect.domain.result.UpdateListingResult
 import com.sorsix.pawconnect.dto.request.CreateListingRequest
 import com.sorsix.pawconnect.dto.request.CreatePetRequest
 import com.sorsix.pawconnect.dto.request.UpdateListingRequest
-import com.sorsix.pawconnect.exception.ConflictException
-import com.sorsix.pawconnect.exception.ForbiddenOperationException
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.repository.AdoptionApplicationRepository
 import com.sorsix.pawconnect.repository.ApplicationStatusRepository
 import com.sorsix.pawconnect.repository.BusinessRepository
@@ -35,6 +37,7 @@ import java.math.BigDecimal
 import java.util.Optional
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
@@ -128,9 +131,8 @@ class ListingServiceTest {
     @Test
     fun `createListing throws when petId does not resolve`() {
         every { petRepository.findById(5L) } returns Optional.empty()
-        assertFailsWith<ResourceNotFoundException> {
-            service.createListing(createRequest(petId = 5L), mockUser())
-        }
+        val result = service.createListing(createRequest(petId = 5L), mockUser())
+        assertIs<CreateListingResult.NotFound>(result)
     }
 
     @Test
@@ -141,9 +143,8 @@ class ListingServiceTest {
         every {
             listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(5L, ListingStatusCodes.OPEN_STATUSES)
         } returns true
-        assertFailsWith<ConflictException> {
-            service.createListing(createRequest(petId = 5L), mockUser())
-        }
+        val result = service.createListing(createRequest(petId = 5L), mockUser())
+        assertIs<CreateListingResult.Conflict>(result)
     }
 
     @Test
@@ -153,9 +154,8 @@ class ListingServiceTest {
         every { petRepository.findById(5L) } returns Optional.of(pet)
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.createListing(createRequest(petId = 5L), mockUser())
-        }
+        val result = service.createListing(createRequest(petId = 5L), mockUser())
+        assertIs<CreateListingResult.NotFound>(result)
     }
 
     @Test
@@ -168,9 +168,8 @@ class ListingServiceTest {
         val business = mockk<Business>(relaxed = true)
         every { business.owner } returns mockUser(id = 2L)
         every { businessRepository.findById(77L) } returns Optional.of(business)
-        assertFailsWith<ForbiddenOperationException> {
-            service.createListing(createRequest(petId = 5L, businessId = 77L), mockUser(id = 1L))
-        }
+        val result = service.createListing(createRequest(petId = 5L, businessId = 77L), mockUser(id = 1L))
+        assertIs<CreateListingResult.Forbidden>(result)
     }
 
     @Test
@@ -190,7 +189,8 @@ class ListingServiceTest {
         val result = service.createListing(createRequest(petId = 5L, saveAsDraft = true), mockUser(id = 1L))
 
         assertSame(draft, listingSlot.first().status)
-        assertSame(reloaded, result)
+        assertIs<CreateListingResult.Success>(result)
+        assertSame(reloaded, result.listing)
     }
 
     @Test
@@ -277,19 +277,19 @@ class ListingServiceTest {
     @Test
     fun `publishListing throws when the listing is missing`() {
         every { listingRepository.findByIdWithAllAssociations(1L) } returns null
-        assertFailsWith<ResourceNotFoundException> { service.publishListing(1L, mockUser()) }
+        assertIs<PublishListingResult.NotFound>(service.publishListing(1L, mockUser()))
     }
 
     @Test
     fun `publishListing forbids a non-owner`() {
         every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.DRAFT)
-        assertFailsWith<ForbiddenOperationException> { service.publishListing(10L, mockUser(id = 2L)) }
+        assertIs<PublishListingResult.Forbidden>(service.publishListing(10L, mockUser(id = 2L)))
     }
 
     @Test
     fun `publishListing throws conflict when the listing is not in DRAFT`() {
         every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.ACTIVE)
-        assertFailsWith<ConflictException> { service.publishListing(10L, mockUser(id = 1L)) }
+        assertIs<PublishListingResult.Conflict>(service.publishListing(10L, mockUser(id = 1L)))
     }
 
     @Test
@@ -309,9 +309,8 @@ class ListingServiceTest {
     @Test
     fun `updateListing throws conflict when the listing is adopted`() {
         every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.ADOPTED)
-        assertFailsWith<ConflictException> {
-            service.updateListing(10L, UpdateListingRequest(title = "x"), mockUser(id = 1L))
-        }
+        val result = service.updateListing(10L, UpdateListingRequest(title = "x"), mockUser(id = 1L))
+        assertIs<UpdateListingResult.Conflict>(result)
     }
 
     @Test
@@ -331,9 +330,8 @@ class ListingServiceTest {
         val listing = mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.DRAFT)
         every { listingRepository.findByIdWithAllAssociations(10L) } returns listing
         every { municipalityRepository.findByCode("BAD") } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.updateListing(10L, UpdateListingRequest(municipalityCode = "BAD"), mockUser(id = 1L))
-        }
+        val result = service.updateListing(10L, UpdateListingRequest(municipalityCode = "BAD"), mockUser(id = 1L))
+        assertIs<UpdateListingResult.NotFound>(result)
     }
 
     @Test
@@ -355,7 +353,7 @@ class ListingServiceTest {
     @Test
     fun `cancelListing throws conflict when already cancelled`() {
         every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.CANCELLED)
-        assertFailsWith<ConflictException> { service.cancelListing(10L, mockUser(id = 1L)) }
+        assertIs<CancelListingResult.Conflict>(service.cancelListing(10L, mockUser(id = 1L)))
     }
 
     @Test
@@ -398,7 +396,7 @@ class ListingServiceTest {
     @Test
     fun `deleteListing forbids a non-owner`() {
         every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L)
-        assertFailsWith<ForbiddenOperationException> { service.deleteListing(10L, mockUser(id = 2L)) }
+        assertIs<DeleteListingResult.Forbidden>(service.deleteListing(10L, mockUser(id = 2L)))
     }
 
     @Test

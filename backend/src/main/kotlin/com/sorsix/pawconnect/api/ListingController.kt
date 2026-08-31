@@ -1,10 +1,15 @@
 package com.sorsix.pawconnect.api
 
+import com.sorsix.pawconnect.common.problemResponse
+import com.sorsix.pawconnect.domain.result.CancelListingResult
+import com.sorsix.pawconnect.domain.result.CreateListingResult
+import com.sorsix.pawconnect.domain.result.DeleteListingResult
+import com.sorsix.pawconnect.domain.result.PublishListingResult
+import com.sorsix.pawconnect.domain.result.UpdateListingResult
 import com.sorsix.pawconnect.dto.request.CreateListingRequest
 import com.sorsix.pawconnect.dto.request.UpdateListingRequest
 import com.sorsix.pawconnect.dto.response.ListingResponse
 import com.sorsix.pawconnect.dto.response.ListingSummaryResponse
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.domain.Gender
 import com.sorsix.pawconnect.domain.Size
 import com.sorsix.pawconnect.service.AuthService
@@ -14,6 +19,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
 
@@ -25,11 +31,14 @@ class ListingController(
 ) {
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createListing(@Valid @RequestBody request: CreateListingRequest): ListingResponse {
+    fun createListing(@Valid @RequestBody request: CreateListingRequest): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val listing = listingService.createListing(request, currentUser)
-        return ListingResponse.from(listing)
+        return when (val result = listingService.createListing(request, currentUser)) {
+            is CreateListingResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(ListingResponse.from(result.listing))
+            is CreateListingResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is CreateListingResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
+            is CreateListingResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @GetMapping
@@ -65,41 +74,55 @@ class ListingController(
     }
 
     @GetMapping("/{id}")
-    fun getListing(@PathVariable id: Long): ListingResponse {
+    fun getListing(@PathVariable id: Long): ResponseEntity<*> {
         val currentUser = authService.getCurrentUser()
-        val listing = listingService.getVisibleListing(id, currentUser)
-            ?: throw ResourceNotFoundException("Listing not found")
-        return ListingResponse.from(listing)
+        return listingService.getVisibleListing(id, currentUser)?.let { ResponseEntity.ok(ListingResponse.from(it)) }
+            ?: problemResponse(HttpStatus.NOT_FOUND, "Listing not found")
     }
 
     @PutMapping("/{id}")
     fun updateListing(
         @PathVariable id: Long,
         @Valid @RequestBody request: UpdateListingRequest
-    ): ListingResponse {
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val listing = listingService.updateListing(id, request, currentUser)
-        return ListingResponse.from(listing)
+        return when (val result = listingService.updateListing(id, request, currentUser)) {
+            is UpdateListingResult.Success -> ResponseEntity.ok(ListingResponse.from(result.listing))
+            is UpdateListingResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is UpdateListingResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
+            is UpdateListingResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @PostMapping("/{id}/publish")
-    fun publishListing(@PathVariable id: Long): ListingResponse {
+    fun publishListing(@PathVariable id: Long): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val listing = listingService.publishListing(id, currentUser)
-        return ListingResponse.from(listing)
+        return when (val result = listingService.publishListing(id, currentUser)) {
+            is PublishListingResult.Success -> ResponseEntity.ok(ListingResponse.from(result.listing))
+            is PublishListingResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is PublishListingResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
+            is PublishListingResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @PostMapping("/{id}/cancel")
-    fun cancelListing(@PathVariable id: Long): ListingResponse {
+    fun cancelListing(@PathVariable id: Long): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val listing = listingService.cancelListing(id, currentUser)
-        return ListingResponse.from(listing)
+        return when (val result = listingService.cancelListing(id, currentUser)) {
+            is CancelListingResult.Success -> ResponseEntity.ok(ListingResponse.from(result.listing))
+            is CancelListingResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is CancelListingResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
+            is CancelListingResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteListing(@PathVariable id: Long) {
+    fun deleteListing(@PathVariable id: Long): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        listingService.deleteListing(id, currentUser)
+        return when (val result = listingService.deleteListing(id, currentUser)) {
+            is DeleteListingResult.Success -> ResponseEntity.noContent().build<Unit>()
+            is DeleteListingResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is DeleteListingResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 }
