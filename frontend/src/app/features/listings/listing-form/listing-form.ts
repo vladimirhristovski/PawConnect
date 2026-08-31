@@ -6,7 +6,9 @@ import { LookupService } from '../../../core/services/lookup';
 import { PhotoService } from '../../../core/services/photo';
 import { CreateListingRequest, UpdateListingRequest } from '../../../core/models/listing.model';
 import { CreatePetRequest, PetPhotoRequest } from '../../../core/models/pet.model';
+import { Coordinates } from '../../../core/models/coordinates.model';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
+import { MapPicker } from '../../../shared/map-picker/map-picker';
 
 interface StagedPhoto extends PetPhotoRequest {
   previewName: string;
@@ -14,7 +16,7 @@ interface StagedPhoto extends PetPhotoRequest {
 
 @Component({
   selector: 'app-listing-form',
-  imports: [FormsModule],
+  imports: [FormsModule, MapPicker],
   templateUrl: './listing-form.html',
   styleUrl: './listing-form.css',
 })
@@ -49,6 +51,7 @@ export class ListingForm {
   locating = signal(false);
   locationError = signal<string | null>(null);
   manualLocation = false;
+  showMapPicker = signal(false);
 
   constructor() {
     this.lookup.loadSpecies();
@@ -122,6 +125,25 @@ export class ListingForm {
   clearLocation(): void {
     this.listing.latitude = undefined;
     this.listing.longitude = undefined;
+  }
+
+  currentCoordinates(): Coordinates | null {
+    if (this.listing.latitude == null || this.listing.longitude == null) return null;
+    return { lat: this.listing.latitude, lng: this.listing.longitude };
+  }
+
+  openMapPicker(): void {
+    this.showMapPicker.set(true);
+  }
+
+  onMapConfirmed(coords: Coordinates): void {
+    this.listing.latitude = coords.lat;
+    this.listing.longitude = coords.lng;
+    this.showMapPicker.set(false);
+  }
+
+  onMapCancelled(): void {
+    this.showMapPicker.set(false);
   }
 
   onFilesSelected(event: Event): void {

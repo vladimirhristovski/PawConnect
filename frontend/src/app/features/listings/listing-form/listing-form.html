@@ -152,9 +152,20 @@
       Enter coordinates manually
     </label>
 
-    <button type="button" (click)="useMyLocation()" [disabled]="locating()">
-      {{ locating() ? 'Locating…' : '📍 Use my current location' }}
-    </button>
+    <div class="location-actions">
+      <button type="button" (click)="useMyLocation()" [disabled]="locating()">
+        {{ locating() ? 'Locating…' : '📍 Use my current location' }}
+      </button>
+      <button type="button" (click)="openMapPicker()">🗺️ Pick on map</button>
+    </div>
+
+    @if (showMapPicker()) {
+      <app-map-picker
+        [initial]="currentCoordinates()"
+        (confirmed)="onMapConfirmed($event)"
+        (cancelled)="onMapCancelled()"
+      />
+    }
 
     @if (manualLocation) {
       <label

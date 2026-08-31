@@ -32,3 +32,9 @@
   object-fit: cover;
   border-radius: 6px;
 }
+.location-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}

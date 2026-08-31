@@ -1,0 +1,36 @@
+<div class="map-picker-backdrop" (click)="close()">
+  <div class="map-picker-panel card" (click)="$event.stopPropagation()">
+    <div class="map-picker-header">
+      <h3>Pick a location</h3>
+      <button type="button" class="icon-btn" (click)="close()" aria-label="Close map picker">
+        ✕
+      </button>
+    </div>
+
+    @if (mapLoadError()) {
+      <p class="error">The map couldn't be loaded. You can still enter coordinates manually.</p>
+    } @else {
+      <p class="map-picker-hint">
+        Click anywhere on the map, or drag the pin, to set the location.
+      </p>
+      <div #mapContainer class="map-picker-map"></div>
+
+      <div class="map-picker-footer">
+        @if (selected(); as coords) {
+          <span class="map-picker-coords">
+            {{ coords.lat | number: '1.6-6' }}, {{ coords.lng | number: '1.6-6' }}
+          </span>
+        } @else {
+          <span class="map-picker-coords muted">No location selected yet</span>
+        }
+
+        <div class="map-picker-actions">
+          <button type="button" class="secondary" (click)="close()">Cancel</button>
+          <button type="button" [disabled]="!selected()" (click)="confirm()">
+            Use this location
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

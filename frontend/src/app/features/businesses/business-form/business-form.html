@@ -61,11 +61,22 @@
   <label
     >Longitude <input name="longitude" type="number" step="0.000001" [(ngModel)]="model.longitude"
   /></label>
-  <button type="button" (click)="useMyLocation()" [disabled]="locating()">
-    {{ locating() ? 'Locating…' : '📍 Use my current location' }}
-  </button>
+  <div class="location-actions">
+    <button type="button" (click)="useMyLocation()" [disabled]="locating()">
+      {{ locating() ? 'Locating…' : '📍 Use my current location' }}
+    </button>
+    <button type="button" (click)="openMapPicker()">🗺️ Pick on map</button>
+  </div>
   @if (locationError()) {
     <p class="error">{{ locationError() }}</p>
+  }
+
+  @if (showMapPicker()) {
+    <app-map-picker
+      [initial]="currentCoordinates()"
+      (confirmed)="onMapConfirmed($event)"
+      (cancelled)="onMapCancelled()"
+    />
   }
 
   @if (error()) {

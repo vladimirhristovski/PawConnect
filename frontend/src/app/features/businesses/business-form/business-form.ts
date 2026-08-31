@@ -4,11 +4,13 @@ import { Router } from '@angular/router';
 import { BusinessService } from '../../../core/services/business';
 import { LookupService } from '../../../core/services/lookup';
 import { CreateBusinessRequest, UpdateBusinessRequest } from '../../../core/models/business.model';
+import { Coordinates } from '../../../core/models/coordinates.model';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
+import { MapPicker } from '../../../shared/map-picker/map-picker';
 
 @Component({
   selector: 'app-business-form',
-  imports: [FormsModule],
+  imports: [FormsModule, MapPicker],
   templateUrl: './business-form.html',
   styleUrl: './business-form.css',
 })
@@ -34,6 +36,7 @@ export class BusinessForm {
 
   locating = signal(false);
   locationError = signal<string | null>(null);
+  showMapPicker = signal(false);
 
   constructor() {
     this.lookup.loadBusinessTypes();
@@ -91,6 +94,25 @@ export class BusinessForm {
         this.locating.set(false);
         this.locationError.set(err.message);
       });
+  }
+
+  currentCoordinates(): Coordinates | null {
+    if (this.model.latitude == null || this.model.longitude == null) return null;
+    return { lat: this.model.latitude, lng: this.model.longitude };
+  }
+
+  openMapPicker(): void {
+    this.showMapPicker.set(true);
+  }
+
+  onMapConfirmed(coords: Coordinates): void {
+    this.model.latitude = coords.lat;
+    this.model.longitude = coords.lng;
+    this.showMapPicker.set(false);
+  }
+
+  onMapCancelled(): void {
+    this.showMapPicker.set(false);
   }
 
   submit(): void {
