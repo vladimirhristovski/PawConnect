@@ -2,12 +2,13 @@ package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.dto.request.CreateBusinessRequest
 import com.sorsix.pawconnect.dto.request.UpdateBusinessRequest
-import com.sorsix.pawconnect.exception.ForbiddenOperationException
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.domain.Business
 import com.sorsix.pawconnect.domain.BusinessType
 import com.sorsix.pawconnect.domain.Municipality
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.CreateBusinessResult
+import com.sorsix.pawconnect.domain.result.DeleteBusinessResult
+import com.sorsix.pawconnect.domain.result.UpdateBusinessResult
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.BusinessPhotoRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
@@ -20,7 +21,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.jpa.domain.Specification
 import java.time.Instant
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
 class BusinessServiceTest {
@@ -94,7 +95,7 @@ class BusinessServiceTest {
         val savedBusiness = mockBusiness(id = 100L, owner = user, type = type, municipality = municipality)
         every { businessRepository.save(any<Business>()) } returns savedBusiness
 
-        val response = service.createBusiness(request, user)
+        val result = service.createBusiness(request, user)
 
         val slot = slot<Business>()
         verify { businessRepository.save(capture(slot)) }
@@ -110,8 +111,9 @@ class BusinessServiceTest {
         assertEquals(21.4.toBigDecimal(), captured.longitude)
         assertEquals(user, captured.owner)
 
-        assertNotNull(response)
-        assertEquals(100L, response.id)
+        assertIs<CreateBusinessResult.Success>(result)
+        assertNotNull(result.business)
+        assertEquals(100L, result.business.id)
     }
 
     @Test
@@ -120,9 +122,8 @@ class BusinessServiceTest {
         val request = CreateBusinessRequest(
             typeCode = "UNKNOWN", name = "Test", phone = "123", address = "St", municipalityCode = "SK"
         )
-        assertFailsWith<ResourceNotFoundException> {
-            service.createBusiness(request, mockUser())
-        }
+        val result = service.createBusiness(request, mockUser())
+        assertIs<CreateBusinessResult.NotFound>(result)
         verify(exactly = 0) { businessRepository.save(any()) }
     }
 
@@ -134,26 +135,24 @@ class BusinessServiceTest {
         val request = CreateBusinessRequest(
             typeCode = "SHELTER", name = "Test", phone = "123", address = "St", municipalityCode = "BAD"
         )
-        assertFailsWith<ResourceNotFoundException> {
-            service.createBusiness(request, mockUser())
-        }
+        val result = service.createBusiness(request, mockUser())
+        assertIs<CreateBusinessResult.NotFound>(result)
         verify(exactly = 0) { businessRepository.save(any()) }
     }
 
     @Test
-    fun `getBusinessOrThrow should return business when found`() {
+    fun `findBusiness should return business when found`() {
         val business = mockBusiness(id = 5L)
         every { businessRepository.findByIdWithAssociations(5L) } returns business
-        val response = service.getBusinessOrThrow(5L)
+        val response = service.findBusiness(5L)
+        assertNotNull(response)
         assertEquals(5L, response.id)
     }
 
     @Test
-    fun `getBusinessOrThrow should throw when business not found`() {
+    fun `findBusiness should return null when business not found`() {
         every { businessRepository.findByIdWithAssociations(99L) } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.getBusinessOrThrow(99L)
-        }
+        assertEquals(null, service.findBusiness(99L))
     }
 
     @Test
@@ -257,9 +256,8 @@ class BusinessServiceTest {
     @Test
     fun `updateBusiness should throw when business not found`() {
         every { businessRepository.findByIdWithAssociations(99L) } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.updateBusiness(99L, UpdateBusinessRequest(name = "x"), mockUser())
-        }
+        val result = service.updateBusiness(99L, UpdateBusinessRequest(name = "x"), mockUser())
+        assertIs<UpdateBusinessResult.NotFound>(result)
     }
 
     @Test
@@ -270,9 +268,8 @@ class BusinessServiceTest {
         every { businessTypeRepository.findByCode("UNKNOWN") } returns null
 
         val request = UpdateBusinessRequest(typeCode = "UNKNOWN")
-        assertFailsWith<ResourceNotFoundException> {
-            service.updateBusiness(1L, request, owner)
-        }
+        val result = service.updateBusiness(1L, request, owner)
+        assertIs<UpdateBusinessResult.NotFound>(result)
     }
 
     @Test
@@ -283,9 +280,8 @@ class BusinessServiceTest {
         every { municipalityRepository.findByCode("BAD") } returns null
 
         val request = UpdateBusinessRequest(municipalityCode = "BAD")
-        assertFailsWith<ResourceNotFoundException> {
-            service.updateBusiness(1L, request, owner)
-        }
+        val result = service.updateBusiness(1L, request, owner)
+        assertIs<UpdateBusinessResult.NotFound>(result)
     }
 
     @Test
@@ -294,9 +290,8 @@ class BusinessServiceTest {
         val business = mockBusiness(owner = owner)
         every { businessRepository.findByIdWithAssociations(10L) } returns business
 
-        assertFailsWith<ForbiddenOperationException> {
-            service.updateBusiness(10L, UpdateBusinessRequest(name = "Hacked"), mockUser(id = 2L))
-        }
+        val result = service.updateBusiness(10L, UpdateBusinessRequest(name = "Hacked"), mockUser(id = 2L))
+        assertIs<UpdateBusinessResult.Forbidden>(result)
     }
 
     @Test
@@ -326,9 +321,8 @@ class BusinessServiceTest {
     @Test
     fun `deleteBusiness should throw when business not found`() {
         every { businessRepository.findByIdWithAssociations(99L) } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.deleteBusiness(99L, mockUser())
-        }
+        val result = service.deleteBusiness(99L, mockUser())
+        assertIs<DeleteBusinessResult.NotFound>(result)
     }
 
     @Test
@@ -337,8 +331,7 @@ class BusinessServiceTest {
         val business = mockBusiness(owner = owner)
         every { businessRepository.findByIdWithAssociations(10L) } returns business
 
-        assertFailsWith<ForbiddenOperationException> {
-            service.deleteBusiness(10L, mockUser(id = 2L))
-        }
+        val result = service.deleteBusiness(10L, mockUser(id = 2L))
+        assertIs<DeleteBusinessResult.Forbidden>(result)
     }
 }

@@ -1,9 +1,14 @@
 package com.sorsix.pawconnect.api
 
+import com.sorsix.pawconnect.common.problemResponse
+import com.sorsix.pawconnect.domain.result.AddBusinessPhotoResult
+import com.sorsix.pawconnect.domain.result.CreateBusinessResult
+import com.sorsix.pawconnect.domain.result.DeleteBusinessResult
+import com.sorsix.pawconnect.domain.result.RemoveBusinessPhotoResult
+import com.sorsix.pawconnect.domain.result.UpdateBusinessResult
 import com.sorsix.pawconnect.dto.request.BusinessPhotoRequest
 import com.sorsix.pawconnect.dto.request.CreateBusinessRequest
 import com.sorsix.pawconnect.dto.request.UpdateBusinessRequest
-import com.sorsix.pawconnect.dto.response.BusinessPhotoResponse
 import com.sorsix.pawconnect.dto.response.BusinessResponse
 import com.sorsix.pawconnect.service.AuthService
 import com.sorsix.pawconnect.service.BusinessService
@@ -13,6 +18,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
@@ -24,10 +30,12 @@ class BusinessController(
 ) {
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createBusiness(@Valid @RequestBody request: CreateBusinessRequest): BusinessResponse {
+    fun createBusiness(@Valid @RequestBody request: CreateBusinessRequest): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        return businessService.createBusiness(request, currentUser)
+        return when (val result = businessService.createBusiness(request, currentUser)) {
+            is CreateBusinessResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.business)
+            is CreateBusinessResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+        }
     }
 
     @GetMapping
@@ -46,48 +54,64 @@ class BusinessController(
     }
 
     @GetMapping("/{id}")
-    fun getBusiness(@PathVariable id: Long): BusinessResponse {
-        return businessService.getBusinessOrThrow(id)
-    }
+    fun getBusiness(@PathVariable id: Long): ResponseEntity<*> =
+        businessService.findBusiness(id)?.let { ResponseEntity.ok(it) }
+            ?: problemResponse(HttpStatus.NOT_FOUND, "Business not found: $id")
 
     @PutMapping("/{id}")
     fun updateBusiness(
         @PathVariable id: Long, @Valid @RequestBody request: UpdateBusinessRequest
-    ): BusinessResponse {
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        return businessService.updateBusiness(id, request, currentUser)
+        return when (val result = businessService.updateBusiness(id, request, currentUser)) {
+            is UpdateBusinessResult.Success -> ResponseEntity.ok(result.business)
+            is UpdateBusinessResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is UpdateBusinessResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteBusiness(@PathVariable id: Long) {
+    fun deleteBusiness(@PathVariable id: Long): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        businessService.deleteBusiness(id, currentUser)
+        return when (val result = businessService.deleteBusiness(id, currentUser)) {
+            is DeleteBusinessResult.Success -> ResponseEntity.noContent().build<Unit>()
+            is DeleteBusinessResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is DeleteBusinessResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @PostMapping("/{id}/photos")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun addPhoto(@PathVariable id: Long, @Valid @RequestBody request: BusinessPhotoRequest): BusinessPhotoResponse {
+    fun addPhoto(@PathVariable id: Long, @Valid @RequestBody request: BusinessPhotoRequest): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        return businessService.addPhoto(id, request, currentUser)
+        return when (val result = businessService.addPhoto(id, request, currentUser)) {
+            is AddBusinessPhotoResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.photo)
+            is AddBusinessPhotoResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is AddBusinessPhotoResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @PostMapping("/{id}/photos/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    @ResponseStatus(HttpStatus.CREATED)
     fun uploadPhoto(
         @PathVariable id: Long,
         @RequestPart("file") file: MultipartFile,
         @RequestParam(defaultValue = "false") isPrimary: Boolean,
         @RequestParam(defaultValue = "0") displayOrder: Int
-    ): BusinessPhotoResponse {
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        return businessService.uploadAndAddPhoto(id, file, isPrimary, displayOrder, currentUser)
+        return when (val result = businessService.uploadAndAddPhoto(id, file, isPrimary, displayOrder, currentUser)) {
+            is AddBusinessPhotoResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.photo)
+            is AddBusinessPhotoResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is AddBusinessPhotoResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @DeleteMapping("/{id}/photos/{photoId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun removePhoto(@PathVariable id: Long, @PathVariable photoId: Long) {
+    fun removePhoto(@PathVariable id: Long, @PathVariable photoId: Long): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        businessService.removePhoto(id, photoId, currentUser)
+        return when (val result = businessService.removePhoto(id, photoId, currentUser)) {
+            is RemoveBusinessPhotoResult.Success -> ResponseEntity.noContent().build<Unit>()
+            is RemoveBusinessPhotoResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is RemoveBusinessPhotoResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 }

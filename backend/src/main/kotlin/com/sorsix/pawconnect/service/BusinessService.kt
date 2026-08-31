@@ -5,13 +5,16 @@ import com.sorsix.pawconnect.dto.request.CreateBusinessRequest
 import com.sorsix.pawconnect.dto.request.UpdateBusinessRequest
 import com.sorsix.pawconnect.dto.response.BusinessPhotoResponse
 import com.sorsix.pawconnect.dto.response.BusinessResponse
-import com.sorsix.pawconnect.exception.ForbiddenOperationException
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.domain.Business
 import com.sorsix.pawconnect.domain.BusinessPhoto
 import com.sorsix.pawconnect.domain.BusinessType
 import com.sorsix.pawconnect.domain.Municipality
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.AddBusinessPhotoResult
+import com.sorsix.pawconnect.domain.result.CreateBusinessResult
+import com.sorsix.pawconnect.domain.result.DeleteBusinessResult
+import com.sorsix.pawconnect.domain.result.RemoveBusinessPhotoResult
+import com.sorsix.pawconnect.domain.result.UpdateBusinessResult
 import com.sorsix.pawconnect.repository.BusinessPhotoRepository
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
@@ -38,11 +41,11 @@ class BusinessService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun createBusiness(request: CreateBusinessRequest, currentUser: User): BusinessResponse {
+    fun createBusiness(request: CreateBusinessRequest, currentUser: User): CreateBusinessResult {
         val type = businessTypeRepository.findByCode(request.typeCode)
-            ?: throw ResourceNotFoundException("Business type not found: ${request.typeCode}")
+            ?: return CreateBusinessResult.NotFound("Business type not found: ${request.typeCode}")
         val municipality = municipalityRepository.findByCode(request.municipalityCode)
-            ?: throw ResourceNotFoundException("Municipality not found: ${request.municipalityCode}")
+            ?: return CreateBusinessResult.NotFound("Municipality not found: ${request.municipalityCode}")
 
         val explicitCoordinates = request.latitude != null && request.longitude != null
 
@@ -72,13 +75,12 @@ class BusinessService(
 
         val saved = businessRepository.save(business)
         log.info("Business {} created by user {} ({} photo(s))", saved.id, currentUser.id, saved.photos.size)
-        return BusinessResponse.from(saved)
+        return CreateBusinessResult.Success(BusinessResponse.from(saved))
     }
 
     @Transactional(readOnly = true)
-    fun getBusinessOrThrow(id: Long): BusinessResponse {
-        val business = businessRepository.findByIdWithAssociations(id)
-            ?: throw ResourceNotFoundException("Business not found: $id")
+    fun findBusiness(id: Long): BusinessResponse? {
+        val business = businessRepository.findByIdWithAssociations(id) ?: return null
         return BusinessResponse.from(business)
     }
 
@@ -110,14 +112,15 @@ class BusinessService(
     }
 
     @Transactional
-    fun updateBusiness(id: Long, request: UpdateBusinessRequest, currentUser: User): BusinessResponse {
+    fun updateBusiness(id: Long, request: UpdateBusinessRequest, currentUser: User): UpdateBusinessResult {
         val business = businessRepository.findByIdWithAssociations(id)
-            ?: throw ResourceNotFoundException("Business not found: $id")
-        ensureCanManage(business, currentUser)
+            ?: return UpdateBusinessResult.NotFound("Business not found: $id")
+        canManageReason(business, currentUser)?.let { return UpdateBusinessResult.Forbidden(it) }
 
         request.typeCode?.let { code ->
-            business.type = businessTypeRepository.findByCode(code)
-                ?: throw ResourceNotFoundException("Business type not found: $code")
+            val type = businessTypeRepository.findByCode(code)
+                ?: return UpdateBusinessResult.NotFound("Business type not found: $code")
+            business.type = type
         }
         request.name?.let { business.name = it }
         request.description?.let { business.description = it }
@@ -125,8 +128,9 @@ class BusinessService(
         request.email?.let { business.email = it }
         request.address?.let { business.address = it }
         request.municipalityCode?.let { code ->
-            business.municipality = municipalityRepository.findByCode(code)
-                ?: throw ResourceNotFoundException("Municipality not found: $code")
+            val municipality = municipalityRepository.findByCode(code)
+                ?: return UpdateBusinessResult.NotFound("Municipality not found: $code")
+            business.municipality = municipality
         }
 
         if (request.latitude != null && request.longitude != null) {
@@ -141,24 +145,25 @@ class BusinessService(
 
         val updated = businessRepository.save(business)
         log.info("Business {} updated by user {}", updated.id, currentUser.id)
-        return BusinessResponse.from(updated)
+        return UpdateBusinessResult.Success(BusinessResponse.from(updated))
     }
 
     @Transactional
-    fun deleteBusiness(id: Long, currentUser: User) {
+    fun deleteBusiness(id: Long, currentUser: User): DeleteBusinessResult {
         val business = businessRepository.findByIdWithAssociations(id)
-            ?: throw ResourceNotFoundException("Business not found: $id")
-        ensureCanManage(business, currentUser)
+            ?: return DeleteBusinessResult.NotFound("Business not found: $id")
+        canManageReason(business, currentUser)?.let { return DeleteBusinessResult.Forbidden(it) }
         business.deletedAt = Instant.now()
         businessRepository.save(business)
         log.info("Business {} soft-deleted by user {}", business.id, currentUser.id)
+        return DeleteBusinessResult.Success
     }
 
     @Transactional
-    fun addPhoto(businessId: Long, request: BusinessPhotoRequest, currentUser: User): BusinessPhotoResponse {
+    fun addPhoto(businessId: Long, request: BusinessPhotoRequest, currentUser: User): AddBusinessPhotoResult {
         val business = businessRepository.findByIdWithAssociations(businessId)
-            ?: throw ResourceNotFoundException("Business not found: $businessId")
-        ensureCanManage(business, currentUser)
+            ?: return AddBusinessPhotoResult.NotFound("Business not found: $businessId")
+        canManageReason(business, currentUser)?.let { return AddBusinessPhotoResult.Forbidden(it) }
 
         if (request.isPrimary) {
             business.photos.filter { it.isPrimary }.forEach { it.isPrimary = false }
@@ -173,15 +178,15 @@ class BusinessService(
         val savedPhoto = businessPhotoRepository.save(photo)
         businessRepository.save(business)
         log.info("Photo {} added to business {} by user {}", savedPhoto.id, business.id, currentUser.id)
-        return BusinessPhotoResponse.from(savedPhoto)
+        return AddBusinessPhotoResult.Success(BusinessPhotoResponse.from(savedPhoto))
     }
 
     fun uploadAndAddPhoto(
         businessId: Long, file: MultipartFile, isPrimary: Boolean, displayOrder: Int, currentUser: User
-    ): BusinessPhotoResponse {
+    ): AddBusinessPhotoResult {
         val business = businessRepository.findByIdWithAssociations(businessId)
-            ?: throw ResourceNotFoundException("Business not found: $businessId")
-        ensureCanManage(business, currentUser)
+            ?: return AddBusinessPhotoResult.NotFound("Business not found: $businessId")
+        canManageReason(business, currentUser)?.let { return AddBusinessPhotoResult.Forbidden(it) }
 
         val url = blobStorageService.upload(file, "businesses/$businessId")
         log.info("Photo uploaded to blob for business {} by user {}", businessId, currentUser.id)
@@ -191,13 +196,13 @@ class BusinessService(
     }
 
     @Transactional
-    fun removePhoto(businessId: Long, photoId: Long, currentUser: User) {
+    fun removePhoto(businessId: Long, photoId: Long, currentUser: User): RemoveBusinessPhotoResult {
         val business = businessRepository.findByIdWithAssociations(businessId)
-            ?: throw ResourceNotFoundException("Business not found: $businessId")
-        ensureCanManage(business, currentUser)
+            ?: return RemoveBusinessPhotoResult.NotFound("Business not found: $businessId")
+        canManageReason(business, currentUser)?.let { return RemoveBusinessPhotoResult.Forbidden(it) }
 
-        val photo =
-            business.photos.find { it.id == photoId } ?: throw ResourceNotFoundException("Photo not found: $photoId")
+        val photo = business.photos.find { it.id == photoId }
+            ?: return RemoveBusinessPhotoResult.NotFound("Photo not found: $photoId")
         business.photos.remove(photo)
         businessPhotoRepository.delete(photo)
         log.info("Photo {} removed from business {} by user {}", photoId, businessId, currentUser.id)
@@ -206,14 +211,12 @@ class BusinessService(
                     "Failed to delete blob for photo {} (business {}): {}", photoId, businessId, it.message
                 )
             }
+        return RemoveBusinessPhotoResult.Success
     }
 
-    private fun ensureCanManage(business: Business, currentUser: User) {
-        if (currentUser.isAdmin()) return
-        if (business.owner?.id != currentUser.id) {
-            throw ForbiddenOperationException("You do not own this business")
-        }
-    }
+    private fun canManageReason(business: Business, currentUser: User): String? =
+        if (currentUser.isAdmin() || business.owner?.id == currentUser.id) null
+        else "You do not own this business"
 
     private fun normalizePrimaryPhoto(photos: MutableSet<BusinessPhoto>) {
         val primaries = photos.filter { it.isPrimary }
