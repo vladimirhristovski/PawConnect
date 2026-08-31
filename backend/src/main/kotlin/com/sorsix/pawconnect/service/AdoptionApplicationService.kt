@@ -2,11 +2,12 @@ package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.dto.request.ApplicationDecision
 import com.sorsix.pawconnect.dto.request.CreateApplicationRequest
-import com.sorsix.pawconnect.exception.ConflictException
-import com.sorsix.pawconnect.exception.ForbiddenOperationException
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
 import com.sorsix.pawconnect.domain.AdoptionApplication
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.ListApplicationsForListingResult
+import com.sorsix.pawconnect.domain.result.ReviewApplicationResult
+import com.sorsix.pawconnect.domain.result.SubmitApplicationResult
+import com.sorsix.pawconnect.domain.result.WithdrawApplicationResult
 import com.sorsix.pawconnect.repository.AdoptionApplicationRepository
 import com.sorsix.pawconnect.repository.ApplicationStatusRepository
 import com.sorsix.pawconnect.repository.ListingRepository
@@ -30,23 +31,23 @@ class AdoptionApplicationService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun submitApplication(listingId: Long, request: CreateApplicationRequest, currentUser: User): AdoptionApplication {
-        val listing = listingRepository.findById(listingId)
-            .orElseThrow { ResourceNotFoundException("Listing not found: $listingId") }
+    fun submitApplication(listingId: Long, request: CreateApplicationRequest, currentUser: User): SubmitApplicationResult {
+        val listing = listingRepository.findById(listingId).orElse(null)
+            ?: return SubmitApplicationResult.NotFound("Listing not found: $listingId")
 
         if (listing.status.code != ListingStatusCodes.ACTIVE) {
-            throw ConflictException("Listing is not currently accepting applications")
+            return SubmitApplicationResult.Conflict("Listing is not currently accepting applications")
         }
 
         if (listing.postedBy.id == currentUser.id) {
-            throw ForbiddenOperationException("You cannot apply to your own listing")
+            return SubmitApplicationResult.Forbidden("You cannot apply to your own listing")
         }
 
         val existing = applicationRepository.findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
             listingId, currentUser.requireId(), ApplicationStatusCodes.PENDING_STATUSES
         )
         if (existing.isNotEmpty()) {
-            throw ConflictException("You already have a pending application for this listing")
+            return SubmitApplicationResult.Conflict("You already have a pending application for this listing")
         }
 
         val submittedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.SUBMITTED)
@@ -63,8 +64,9 @@ class AdoptionApplicationService(
 
         val saved = applicationRepository.save(application)
         log.info("Application {} submitted by user {} for listing {}", saved.id, currentUser.id, listingId)
-        return applicationRepository.findByIdWithAllAssociations(saved.requireId())
+        val reloaded = applicationRepository.findByIdWithAllAssociations(saved.requireId())
             ?: throw IllegalStateException("Application not found after save")
+        return SubmitApplicationResult.Success(reloaded)
     }
 
     @Transactional(readOnly = true)
@@ -78,27 +80,28 @@ class AdoptionApplicationService(
     }
 
     @Transactional(readOnly = true)
-    fun listApplicationsForListing(listingId: Long, currentUser: User, pageable: Pageable): Page<AdoptionApplication> {
-        val listing = listingRepository.findById(listingId)
-            .orElseThrow { ResourceNotFoundException("Listing not found: $listingId") }
+    fun listApplicationsForListing(listingId: Long, currentUser: User, pageable: Pageable): ListApplicationsForListingResult {
+        val listing = listingRepository.findById(listingId).orElse(null)
+            ?: return ListApplicationsForListingResult.NotFound("Listing not found: $listingId")
         if (listing.postedBy.id != currentUser.id && !currentUser.isAdmin()) {
-            throw ForbiddenOperationException("You are not authorized to view applications for this listing")
+            return ListApplicationsForListingResult.Forbidden("You are not authorized to view applications for this listing")
         }
-        return applicationRepository.findByListing_IdAndDeletedAtIsNull(listingId, pageable)
+        val page = applicationRepository.findByListing_IdAndDeletedAtIsNull(listingId, pageable)
+        return ListApplicationsForListingResult.Success(page)
     }
 
     @Transactional
-    fun reviewApplication(applicationId: Long, decision: ApplicationDecision, currentUser: User): AdoptionApplication {
+    fun reviewApplication(applicationId: Long, decision: ApplicationDecision, currentUser: User): ReviewApplicationResult {
         val app = applicationRepository.findByIdWithAllAssociations(applicationId)
-            ?: throw ResourceNotFoundException("Application not found: $applicationId")
+            ?: return ReviewApplicationResult.NotFound("Application not found: $applicationId")
 
         val listing = app.listing
         if (listing.postedBy.id != currentUser.id && !currentUser.isAdmin()) {
-            throw ForbiddenOperationException("You are not authorized to review this application")
+            return ReviewApplicationResult.Forbidden("You are not authorized to review this application")
         }
 
         if (app.status.code !in ApplicationStatusCodes.PENDING_STATUSES) {
-            throw ConflictException("Application is not in a pending state")
+            return ReviewApplicationResult.Conflict("Application is not in a pending state")
         }
 
         val now = Instant.now()
@@ -132,7 +135,7 @@ class AdoptionApplicationService(
                 listing.id,
                 otherPending.size
             )
-            return saved
+            return ReviewApplicationResult.Success(saved)
         } else {
             val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
                 ?: throw IllegalStateException("REJECTED status not found")
@@ -140,21 +143,21 @@ class AdoptionApplicationService(
 
             val saved = applicationRepository.save(app)
             log.info("Application {} rejected by {}", saved.id, currentUser.id)
-            return saved
+            return ReviewApplicationResult.Success(saved)
         }
     }
 
     @Transactional
-    fun withdrawApplication(applicationId: Long, currentUser: User): AdoptionApplication {
+    fun withdrawApplication(applicationId: Long, currentUser: User): WithdrawApplicationResult {
         val app = applicationRepository.findByIdWithAllAssociations(applicationId)
-            ?: throw ResourceNotFoundException("Application not found: $applicationId")
+            ?: return WithdrawApplicationResult.NotFound("Application not found: $applicationId")
 
         if (app.applicant.id != currentUser.id) {
-            throw ForbiddenOperationException("You are not the applicant")
+            return WithdrawApplicationResult.Forbidden("You are not the applicant")
         }
 
         if (app.status.code !in ApplicationStatusCodes.PENDING_STATUSES) {
-            throw ConflictException("Application cannot be withdrawn in its current status")
+            return WithdrawApplicationResult.Conflict("Application cannot be withdrawn in its current status")
         }
 
         val withdrawnStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.WITHDRAWN)
@@ -162,6 +165,6 @@ class AdoptionApplicationService(
         app.status = withdrawnStatus
         val saved = applicationRepository.save(app)
         log.info("Application {} withdrawn by applicant {}", saved.id, currentUser.id)
-        return saved
+        return WithdrawApplicationResult.Success(saved)
     }
 }

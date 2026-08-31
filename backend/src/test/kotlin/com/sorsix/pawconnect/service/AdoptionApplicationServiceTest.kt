@@ -9,9 +9,10 @@ import com.sorsix.pawconnect.domain.ListingStatus
 import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.dto.request.ApplicationDecision
 import com.sorsix.pawconnect.dto.request.CreateApplicationRequest
-import com.sorsix.pawconnect.exception.ConflictException
-import com.sorsix.pawconnect.exception.ForbiddenOperationException
-import com.sorsix.pawconnect.exception.ResourceNotFoundException
+import com.sorsix.pawconnect.domain.result.ListApplicationsForListingResult
+import com.sorsix.pawconnect.domain.result.ReviewApplicationResult
+import com.sorsix.pawconnect.domain.result.SubmitApplicationResult
+import com.sorsix.pawconnect.domain.result.WithdrawApplicationResult
 import com.sorsix.pawconnect.repository.AdoptionApplicationRepository
 import com.sorsix.pawconnect.repository.ApplicationStatusRepository
 import com.sorsix.pawconnect.repository.ListingRepository
@@ -28,6 +29,7 @@ import org.springframework.data.domain.PageRequest
 import java.util.Optional
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertSame
 
 class AdoptionApplicationServiceTest {
@@ -87,27 +89,24 @@ class AdoptionApplicationServiceTest {
     @Test
     fun `submitApplication throws when listing not found`() {
         every { listingRepository.findById(99L) } returns Optional.empty()
-        assertFailsWith<ResourceNotFoundException> {
-            service.submitApplication(99L, CreateApplicationRequest(), mockUser(id = 2L))
-        }
+        val result = service.submitApplication(99L, CreateApplicationRequest(), mockUser(id = 2L))
+        assertIs<SubmitApplicationResult.NotFound>(result)
     }
 
     @Test
     fun `submitApplication throws conflict when listing is not ACTIVE`() {
         val listing = mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.DRAFT)
         every { listingRepository.findById(10L) } returns Optional.of(listing)
-        assertFailsWith<ConflictException> {
-            service.submitApplication(10L, CreateApplicationRequest(), mockUser(id = 2L))
-        }
+        val result = service.submitApplication(10L, CreateApplicationRequest(), mockUser(id = 2L))
+        assertIs<SubmitApplicationResult.Conflict>(result)
     }
 
     @Test
     fun `submitApplication forbids applying to your own listing`() {
         val listing = mockListing(id = 10L, ownerId = 7L)
         every { listingRepository.findById(10L) } returns Optional.of(listing)
-        assertFailsWith<ForbiddenOperationException> {
-            service.submitApplication(10L, CreateApplicationRequest(), mockUser(id = 7L))
-        }
+        val result = service.submitApplication(10L, CreateApplicationRequest(), mockUser(id = 7L))
+        assertIs<SubmitApplicationResult.Forbidden>(result)
     }
 
     @Test
@@ -119,9 +118,8 @@ class AdoptionApplicationServiceTest {
                 10L, 2L, ApplicationStatusCodes.PENDING_STATUSES
             )
         } returns listOf(mockApplication())
-        assertFailsWith<ConflictException> {
-            service.submitApplication(10L, CreateApplicationRequest(), mockUser(id = 2L))
-        }
+        val result = service.submitApplication(10L, CreateApplicationRequest(), mockUser(id = 2L))
+        assertIs<SubmitApplicationResult.Conflict>(result)
     }
 
     @Test
@@ -161,7 +159,8 @@ class AdoptionApplicationServiceTest {
         assertEquals("Hi", slot.captured.message)
         assertEquals("071222333", slot.captured.contactPhone)
         assertEquals("applicant@mail.test", slot.captured.contactEmail)
-        assertSame(savedMock, result)
+        assertIs<SubmitApplicationResult.Success>(result)
+        assertSame(savedMock, result.application)
     }
 
     @Test
@@ -192,17 +191,15 @@ class AdoptionApplicationServiceTest {
     @Test
     fun `listApplicationsForListing throws when listing not found`() {
         every { listingRepository.findById(99L) } returns Optional.empty()
-        assertFailsWith<ResourceNotFoundException> {
-            service.listApplicationsForListing(99L, mockUser(), PageRequest.of(0, 10))
-        }
+        val result = service.listApplicationsForListing(99L, mockUser(), PageRequest.of(0, 10))
+        assertIs<ListApplicationsForListingResult.NotFound>(result)
     }
 
     @Test
     fun `listApplicationsForListing forbids a non-owner non-admin`() {
         every { listingRepository.findById(10L) } returns Optional.of(mockListing(id = 10L, ownerId = 1L))
-        assertFailsWith<ForbiddenOperationException> {
-            service.listApplicationsForListing(10L, mockUser(id = 2L), PageRequest.of(0, 10))
-        }
+        val result = service.listApplicationsForListing(10L, mockUser(id = 2L), PageRequest.of(0, 10))
+        assertIs<ListApplicationsForListingResult.Forbidden>(result)
     }
 
     @Test
@@ -226,18 +223,16 @@ class AdoptionApplicationServiceTest {
     @Test
     fun `reviewApplication throws when application not found`() {
         every { applicationRepository.findByIdWithAllAssociations(99L) } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.reviewApplication(99L, ApplicationDecision.APPROVE, mockUser())
-        }
+        val result = service.reviewApplication(99L, ApplicationDecision.APPROVE, mockUser())
+        assertIs<ReviewApplicationResult.NotFound>(result)
     }
 
     @Test
     fun `reviewApplication forbids a reviewer who is neither listing owner nor admin`() {
         val app = mockApplication(id = 100L, listing = mockListing(id = 10L, ownerId = 1L))
         every { applicationRepository.findByIdWithAllAssociations(100L) } returns app
-        assertFailsWith<ForbiddenOperationException> {
-            service.reviewApplication(100L, ApplicationDecision.APPROVE, mockUser(id = 2L))
-        }
+        val result = service.reviewApplication(100L, ApplicationDecision.APPROVE, mockUser(id = 2L))
+        assertIs<ReviewApplicationResult.Forbidden>(result)
     }
 
     @Test
@@ -248,9 +243,8 @@ class AdoptionApplicationServiceTest {
             statusCode = ApplicationStatusCodes.APPROVED
         )
         every { applicationRepository.findByIdWithAllAssociations(100L) } returns app
-        assertFailsWith<ConflictException> {
-            service.reviewApplication(100L, ApplicationDecision.REJECT, mockUser(id = 1L))
-        }
+        val result = service.reviewApplication(100L, ApplicationDecision.REJECT, mockUser(id = 1L))
+        assertIs<ReviewApplicationResult.Conflict>(result)
     }
 
     @Test
@@ -314,18 +308,16 @@ class AdoptionApplicationServiceTest {
     @Test
     fun `withdrawApplication throws when application not found`() {
         every { applicationRepository.findByIdWithAllAssociations(99L) } returns null
-        assertFailsWith<ResourceNotFoundException> {
-            service.withdrawApplication(99L, mockUser())
-        }
+        val result = service.withdrawApplication(99L, mockUser())
+        assertIs<WithdrawApplicationResult.NotFound>(result)
     }
 
     @Test
     fun `withdrawApplication forbids anyone other than the applicant`() {
         val app = mockApplication(id = 100L, applicant = mockUser(id = 2L))
         every { applicationRepository.findByIdWithAllAssociations(100L) } returns app
-        assertFailsWith<ForbiddenOperationException> {
-            service.withdrawApplication(100L, mockUser(id = 3L))
-        }
+        val result = service.withdrawApplication(100L, mockUser(id = 3L))
+        assertIs<WithdrawApplicationResult.Forbidden>(result)
     }
 
     @Test
@@ -336,9 +328,8 @@ class AdoptionApplicationServiceTest {
             statusCode = ApplicationStatusCodes.REJECTED
         )
         every { applicationRepository.findByIdWithAllAssociations(100L) } returns app
-        assertFailsWith<ConflictException> {
-            service.withdrawApplication(100L, mockUser(id = 2L))
-        }
+        val result = service.withdrawApplication(100L, mockUser(id = 2L))
+        assertIs<WithdrawApplicationResult.Conflict>(result)
     }
 
     @Test

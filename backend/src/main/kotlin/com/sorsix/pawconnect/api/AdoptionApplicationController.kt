@@ -1,5 +1,10 @@
 package com.sorsix.pawconnect.api
 
+import com.sorsix.pawconnect.common.problemResponse
+import com.sorsix.pawconnect.domain.result.ListApplicationsForListingResult
+import com.sorsix.pawconnect.domain.result.ReviewApplicationResult
+import com.sorsix.pawconnect.domain.result.SubmitApplicationResult
+import com.sorsix.pawconnect.domain.result.WithdrawApplicationResult
 import com.sorsix.pawconnect.dto.request.ApplicationDecision
 import com.sorsix.pawconnect.dto.request.CreateApplicationRequest
 import com.sorsix.pawconnect.dto.response.ApplicationResponse
@@ -10,6 +15,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -18,22 +24,30 @@ class AdoptionApplicationController(
 ) {
 
     @PostMapping("/api/listings/{listingId}/applications")
-    @ResponseStatus(HttpStatus.CREATED)
     fun submitApplication(
         @PathVariable listingId: Long, @Valid @RequestBody request: CreateApplicationRequest
-    ): ApplicationResponse {
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val app = applicationService.submitApplication(listingId, request, currentUser)
-        return ApplicationResponse.from(app)
+        return when (val result = applicationService.submitApplication(listingId, request, currentUser)) {
+            is SubmitApplicationResult.Success ->
+                ResponseEntity.status(HttpStatus.CREATED).body(ApplicationResponse.from(result.application))
+            is SubmitApplicationResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is SubmitApplicationResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
+            is SubmitApplicationResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @GetMapping("/api/listings/{listingId}/applications")
     fun listApplicationsForListing(
         @PathVariable listingId: Long, @PageableDefault(size = 20) pageable: Pageable
-    ): Page<ApplicationResponse> {
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val page = applicationService.listApplicationsForListing(listingId, currentUser, pageable)
-        return page.map { ApplicationResponse.from(it) }
+        return when (val result = applicationService.listApplicationsForListing(listingId, currentUser, pageable)) {
+            is ListApplicationsForListingResult.Success ->
+                ResponseEntity.ok(result.applications.map { ApplicationResponse.from(it) })
+            is ListApplicationsForListingResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is ListApplicationsForListingResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @GetMapping("/api/applications/mine")
@@ -46,16 +60,24 @@ class AdoptionApplicationController(
     @PatchMapping("/api/applications/{id}/review")
     fun reviewApplication(
         @PathVariable id: Long, @RequestParam decision: ApplicationDecision
-    ): ApplicationResponse {
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val app = applicationService.reviewApplication(id, decision, currentUser)
-        return ApplicationResponse.from(app)
+        return when (val result = applicationService.reviewApplication(id, decision, currentUser)) {
+            is ReviewApplicationResult.Success -> ResponseEntity.ok(ApplicationResponse.from(result.application))
+            is ReviewApplicationResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is ReviewApplicationResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
+            is ReviewApplicationResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 
     @PostMapping("/api/applications/{id}/withdraw")
-    fun withdrawApplication(@PathVariable id: Long): ApplicationResponse {
+    fun withdrawApplication(@PathVariable id: Long): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
-        val app = applicationService.withdrawApplication(id, currentUser)
-        return ApplicationResponse.from(app)
+        return when (val result = applicationService.withdrawApplication(id, currentUser)) {
+            is WithdrawApplicationResult.Success -> ResponseEntity.ok(ApplicationResponse.from(result.application))
+            is WithdrawApplicationResult.NotFound -> problemResponse(HttpStatus.NOT_FOUND, result.message)
+            is WithdrawApplicationResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
+            is WithdrawApplicationResult.Forbidden -> problemResponse(HttpStatus.FORBIDDEN, result.message)
+        }
     }
 }
