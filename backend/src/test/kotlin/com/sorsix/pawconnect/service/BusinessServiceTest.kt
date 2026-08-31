@@ -9,6 +9,7 @@ import com.sorsix.pawconnect.domain.BusinessType
 import com.sorsix.pawconnect.domain.Municipality
 import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.BusinessRepository
+import com.sorsix.pawconnect.repository.BusinessPhotoRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository
 import io.mockk.*
@@ -25,13 +26,21 @@ import kotlin.test.assertNotNull
 class BusinessServiceTest {
 
     private val businessRepository = mockk<BusinessRepository>()
+    private val businessPhotoRepository = mockk<BusinessPhotoRepository>()
     private val businessTypeRepository = mockk<BusinessTypeRepository>()
     private val municipalityRepository = mockk<MunicipalityRepository>()
+    private val blobStorageService = mockk<BlobStorageService>()
     private lateinit var service: BusinessService
 
     @BeforeEach
     fun setup() {
-        service = BusinessService(businessRepository, businessTypeRepository, municipalityRepository)
+        service = BusinessService(
+            businessRepository,
+            businessPhotoRepository,
+            businessTypeRepository,
+            municipalityRepository,
+            blobStorageService
+        )
     }
 
     private fun mockUser(id: Long = 1L, admin: Boolean = false): User {
@@ -109,8 +118,7 @@ class BusinessServiceTest {
     fun `createBusiness should throw when type not found`() {
         every { businessTypeRepository.findByCode("UNKNOWN") } returns null
         val request = CreateBusinessRequest(
-            typeCode = "UNKNOWN", name = "Test", phone = "123",
-            address = "St", municipalityCode = "SK"
+            typeCode = "UNKNOWN", name = "Test", phone = "123", address = "St", municipalityCode = "SK"
         )
         assertFailsWith<ResourceNotFoundException> {
             service.createBusiness(request, mockUser())
@@ -124,8 +132,7 @@ class BusinessServiceTest {
         every { businessTypeRepository.findByCode("SHELTER") } returns type
         every { municipalityRepository.findByCode("BAD") } returns null
         val request = CreateBusinessRequest(
-            typeCode = "SHELTER", name = "Test", phone = "123",
-            address = "St", municipalityCode = "BAD"
+            typeCode = "SHELTER", name = "Test", phone = "123", address = "St", municipalityCode = "BAD"
         )
         assertFailsWith<ResourceNotFoundException> {
             service.createBusiness(request, mockUser())

@@ -29,6 +29,7 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
             LEFT JOIN FETCH b.type
             LEFT JOIN FETCH b.municipality
             LEFT JOIN FETCH b.owner
+            LEFT JOIN FETCH b.photos
         """
     }
 

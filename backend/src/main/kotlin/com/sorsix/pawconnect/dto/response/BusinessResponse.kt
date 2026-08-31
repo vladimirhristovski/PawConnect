@@ -17,7 +17,8 @@ data class BusinessResponse(
     val municipalityName: String,
     val ownerUsername: String?,
     val latitude: BigDecimal?,
-    val longitude: BigDecimal?
+    val longitude: BigDecimal?,
+    val photos: List<BusinessPhotoResponse>
 ) {
     companion object {
         fun from(business: Business): BusinessResponse {
@@ -34,7 +35,8 @@ data class BusinessResponse(
                 municipalityName = business.municipality.name,
                 ownerUsername = business.owner?.username,
                 latitude = business.latitude,
-                longitude = business.longitude
+                longitude = business.longitude,
+                photos = business.photos.map { BusinessPhotoResponse.from(it) }.sortedBy { it.displayOrder }
             )
         }
     }

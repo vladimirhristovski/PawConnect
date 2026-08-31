@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
 interface BusinessRepository : JpaRepository<Business, Long>, JpaSpecificationExecutor<Business> {
-    @Query("SELECT b FROM Business b JOIN FETCH b.type JOIN FETCH b.municipality LEFT JOIN FETCH b.owner WHERE b.id = :id")
+    @Query("SELECT b FROM Business b JOIN FETCH b.type JOIN FETCH b.municipality LEFT JOIN FETCH b.owner LEFT JOIN FETCH b.photos WHERE b.id = :id")
     fun findByIdWithAssociations(@Param("id") id: Long): Business?
 
     fun findByAddressGeocodedFalseAndDeletedAtIsNull(): List<Business>

@@ -42,4 +42,9 @@ class Business(
     @Column(name = "address_geocoded", nullable = false)
     var addressGeocoded: Boolean = false,
 
-    ) : SoftDeletableEntity()
+    ) : SoftDeletableEntity() {
+
+    @OneToMany(mappedBy = "business", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OrderBy("displayOrder ASC")
+    var photos: MutableSet<BusinessPhoto> = LinkedHashSet()
+}
