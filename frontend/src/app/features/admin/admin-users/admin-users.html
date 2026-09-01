@@ -1,0 +1,70 @@
+<div class="page-header">
+  <h2>Admin · Users</h2>
+</div>
+<nav class="admin-tabs">
+  <a routerLink="/admin/users" class="active">Users</a> ·
+  <a routerLink="/admin/listings">Listings</a> ·
+  <a routerLink="/admin/applications">Applications</a>
+</nav>
+
+<div class="filters card">
+  <label>
+    Status
+    <select [(ngModel)]="activeFilter" (ngModelChange)="search()">
+      <option value="">All</option>
+      <option value="true">Active</option>
+      <option value="false">Suspended</option>
+    </select>
+  </label>
+  <label>
+    Role
+    <input [(ngModel)]="roleFilter" (change)="search()" placeholder="e.g. ADMIN" />
+  </label>
+</div>
+
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
+@if (adminService.users(); as page) {
+  @if (page.content.length > 0) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Roles</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of page.content; track user.id) {
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.roles.join(', ') }}</td>
+            <td>
+              <span class="badge">{{ user.isActive ? 'Active' : 'Suspended' }}</span>
+            </td>
+            <td>
+              <button (click)="toggleActive(user.id, user.isActive)">
+                {{ user.isActive ? 'Suspend' : 'Reactivate' }}
+              </button>
+              <button class="danger" (click)="remove(user.id, user.username)">Delete</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <app-pagination
+      [current]="page.number"
+      [totalPages]="page.totalPages"
+      (pageChange)="goToPage($event)"
+    />
+  } @else {
+    <p class="empty-state">No users found.</p>
+  }
+} @else {
+  <p>Loading…</p>
+}

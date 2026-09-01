@@ -44,6 +44,10 @@ export class AuthService {
     });
   }
 
+  deleteAccount() {
+    return this.http.delete<void>(`${this.baseUrl}/me`);
+  }
+
   forgotPassword(email: string) {
     return this.http.post<void>(`${this.baseUrl}/forgot-password`, { email });
   }

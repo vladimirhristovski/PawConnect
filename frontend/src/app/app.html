@@ -3,9 +3,13 @@
   <nav>
     <a routerLink="/listings">Adopt</a>
     <a routerLink="/businesses">Businesses</a>
-    @if (auth.currentUser()) {
+    @if (auth.currentUser(); as user) {
       <a routerLink="/listings/mine">My Listings</a>
       <a routerLink="/applications/mine">My Applications</a>
+      @if (user.roles.includes('ADMIN')) {
+        <a routerLink="/admin/users">Admin</a>
+      }
+      <a routerLink="/account">Account</a>
       <button class="link-btn" (click)="auth.logout()">Logout</button>
     } @else {
       <a routerLink="/login">Login</a>

@@ -1,7 +1,7 @@
 INSERT INTO users (username, email, password, first_name, last_name, is_active)
 SELECT 'admin',
        'admin@pawconnect.com',
-       '$2a$10$7Z9p5JNlXwOqK7VZ4r5nA.jxXUvW3YmLnWqEfJtR8sNQo2P6J0K9e',
+       '$2a$10$.ZYeX2YXtmy9UbEH.FQdWuim8X0JM7nil56cmML/J3cKAX3bLc8sW',
        'Admin',
        'User',
        true WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');

@@ -1,0 +1,21 @@
+.admin-tabs {
+  margin-bottom: 1rem;
+  color: #555;
+}
+.admin-tabs a.active {
+  font-weight: 600;
+  color: #222;
+  text-decoration: none;
+}
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-end;
+}
+.filters label {
+  margin-bottom: 0;
+}
+.table td button {
+  margin-right: 0.4rem;
+}

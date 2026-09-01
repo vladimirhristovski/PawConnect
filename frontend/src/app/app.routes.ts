@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
+import { adminGuard } from './core/guards/admin-guard';
 
 export const routes: Routes = [
   {
@@ -104,6 +105,36 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/businesses/business-photo-manager/business-photo-manager').then(
         (m) => m.BusinessPhotoManager,
+      ),
+  },
+  {
+    path: 'account',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/account/account').then((m) => m.Account),
+  },
+  {
+    path: 'admin',
+    pathMatch: 'full',
+    redirectTo: 'admin/users',
+  },
+  {
+    path: 'admin/users',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/admin/admin-users/admin-users').then((m) => m.AdminUsers),
+  },
+  {
+    path: 'admin/listings',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/admin/admin-listings/admin-listings').then((m) => m.AdminListings),
+  },
+  {
+    path: 'admin/applications',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./features/admin/admin-applications/admin-applications').then(
+        (m) => m.AdminApplications,
       ),
   },
   { path: '**', redirectTo: '' },

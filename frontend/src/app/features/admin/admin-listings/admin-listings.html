@@ -1,0 +1,58 @@
+<div class="page-header">
+  <h2>Admin · Listings</h2>
+</div>
+<nav class="admin-tabs">
+  <a routerLink="/admin/users">Users</a> ·
+  <a routerLink="/admin/listings" class="active">Listings</a> ·
+  <a routerLink="/admin/applications">Applications</a>
+</nav>
+
+<div class="filters card">
+  <label>
+    Status
+    <select [(ngModel)]="statusFilter" (ngModelChange)="search()">
+      <option value="">All</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ s }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+@if (adminService.listings(); as page) {
+  @if (page.content.length > 0) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Pet</th>
+          <th>Posted by</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (listing of page.content; track listing.id) {
+          <tr>
+            <td>{{ listing.pet.name }}</td>
+            <td>{{ listing.postedBy }}</td>
+            <td>
+              <span class="badge">{{ listing.statusName }}</span>
+            </td>
+            <td>{{ listing.createdAt | date: 'mediumDate' }}</td>
+            <td><a [routerLink]="['/listings', listing.id]">View</a></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <app-pagination
+      [current]="page.number"
+      [totalPages]="page.totalPages"
+      (pageChange)="goToPage($event)"
+    />
+  } @else {
+    <p class="empty-state">No listings found.</p>
+  }
+} @else {
+  <p>Loading…</p>
+}
