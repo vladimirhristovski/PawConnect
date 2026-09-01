@@ -13,7 +13,6 @@ import org.springframework.security.authentication.DisabledException
 import org.springframework.validation.BindingResult
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
-import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import java.net.URI
@@ -21,14 +20,11 @@ import java.net.URI
 class GlobalExceptionHandlerTest {
 
     private val handler = GlobalExceptionHandler()
-    private val request = mockk<WebRequest> {
-        every { getDescription(false) } returns "uri=/test"
-    }
 
     @Test
     fun `handleIllegalArgument returns BAD_REQUEST`() {
         val ex = IllegalArgumentException("Username taken")
-        val response = handler.handleIllegalArgument(ex, request)
+        val response = handler.handleIllegalArgument(ex)
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals("Username taken", response.body?.detail)
         assertEquals(URI.create("about:blank"), response.body?.type)
@@ -37,7 +33,7 @@ class GlobalExceptionHandlerTest {
     @Test
     fun `handleBadCredentials returns UNAUTHORIZED`() {
         val ex = BadCredentialsException("Invalid creds")
-        val response = handler.handleBadCredentials(ex, request)
+        val response = handler.handleBadCredentials(ex)
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
         assertEquals("Invalid username or password", response.body?.detail)
     }
@@ -50,7 +46,7 @@ class GlobalExceptionHandlerTest {
         }
         val parameter = mockk<MethodParameter>(relaxed = true)
         val ex = MethodArgumentNotValidException(parameter, bindingResult)
-        val response = handler.handleValidation(ex, request)
+        val response = handler.handleValidation(ex)
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals("Validation failed", response.body?.detail)
@@ -65,7 +61,7 @@ class GlobalExceptionHandlerTest {
     fun `handleHttpMessageNotReadable returns BAD_REQUEST`() {
         val httpInputMessage = mockk<HttpInputMessage>()
         val ex = HttpMessageNotReadableException("Malformed JSON", httpInputMessage)
-        val response = handler.handleHttpMessageNotReadable(ex, request)
+        val response = handler.handleHttpMessageNotReadable(ex)
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals("Malformed JSON request", response.body?.detail)
         assertEquals(URI.create("about:blank"), response.body?.type)
@@ -74,14 +70,14 @@ class GlobalExceptionHandlerTest {
     @Test
     fun `handleGeneric returns INTERNAL_SERVER_ERROR`() {
         val ex = RuntimeException("Unexpected")
-        val response = handler.handleGeneric(ex, request)
+        val response = handler.handleGeneric(ex)
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode)
         assertEquals("An unexpected error occurred", response.body?.detail)
     }
 
     @Test
     fun `handleDisabled returns UNAUTHORIZED`() {
-        val response = handler.handleDisabled(DisabledException("disabled"), request)
+        val response = handler.handleDisabled(DisabledException("disabled"))
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
         assertEquals("Account is deactivated", response.body?.detail)
     }
@@ -93,7 +89,7 @@ class GlobalExceptionHandlerTest {
         every { ex.value } returns "abc"
         every { ex.requiredType } returns Long::class.javaObjectType
 
-        val response = handler.handleTypeMismatch(ex, request)
+        val response = handler.handleTypeMismatch(ex)
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals("id", response.body?.properties?.get("parameter"))
@@ -102,20 +98,20 @@ class GlobalExceptionHandlerTest {
 
     @Test
     fun `handleMaxUploadSize returns PAYLOAD_TOO_LARGE`() {
-        val response = handler.handleMaxUploadSize(MaxUploadSizeExceededException(5), request)
+        val response = handler.handleMaxUploadSize(MaxUploadSizeExceededException(5))
         assertEquals(HttpStatus.PAYLOAD_TOO_LARGE, response.statusCode)
     }
 
     @Test
     fun `handleBlobStorage returns BAD_GATEWAY`() {
-        val response = handler.handleBlobStorage(BlobStorageException("blob down"), request)
+        val response = handler.handleBlobStorage(BlobStorageException("blob down"))
         assertEquals(HttpStatus.BAD_GATEWAY, response.statusCode)
         assertEquals("blob down", response.body?.detail)
     }
 
     @Test
     fun `handleUnauthorized returns UNAUTHORIZED`() {
-        val response = handler.handleUnauthorized(UnauthorizedException("no session"), request)
+        val response = handler.handleUnauthorized(UnauthorizedException("no session"))
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
         assertEquals("no session", response.body?.detail)
     }

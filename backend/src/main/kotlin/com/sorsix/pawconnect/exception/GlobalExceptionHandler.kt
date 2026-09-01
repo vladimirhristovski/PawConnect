@@ -1,5 +1,6 @@
 package com.sorsix.pawconnect.exception
 
+import com.sorsix.pawconnect.common.problemResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -11,86 +12,65 @@ import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
-import java.net.URI
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
     private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
-    private fun problem(
-        status: HttpStatus,
-        detail: String,
-        request: WebRequest,
-        properties: Map<String, Any?> = emptyMap()
-    ): ResponseEntity<ProblemDetail> {
-        val pd = ProblemDetail.forStatusAndDetail(status, detail)
-        pd.type = URI.create("about:blank")
-        pd.instance = URI.create(request.getDescription(false))
-        properties.forEach { (key, value) -> pd.setProperty(key, value) }
-        return ResponseEntity.status(status).body(pd)
-    }
-
     @ExceptionHandler(IllegalArgumentException::class)
-    fun handleIllegalArgument(ex: IllegalArgumentException, request: WebRequest): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.BAD_REQUEST, ex.message ?: "Invalid request", request)
+    fun handleIllegalArgument(ex: IllegalArgumentException): ResponseEntity<ProblemDetail> =
+        problemResponse(HttpStatus.BAD_REQUEST, ex.message ?: "Invalid request")
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
-    fun handleTypeMismatch(
-        ex: MethodArgumentTypeMismatchException, request: WebRequest
-    ): ResponseEntity<ProblemDetail> {
+    fun handleTypeMismatch(ex: MethodArgumentTypeMismatchException): ResponseEntity<ProblemDetail> {
         val message =
             "Failed to convert parameter '${ex.name}' with value '${ex.value}' to required type '${ex.requiredType?.simpleName}'"
-        return problem(
-            HttpStatus.BAD_REQUEST, message, request,
+        return problemResponse(
+            HttpStatus.BAD_REQUEST, message,
             mapOf("parameter" to ex.name, "value" to ex.value)
         )
     }
 
     @ExceptionHandler(BadCredentialsException::class)
-    fun handleBadCredentials(ex: BadCredentialsException, request: WebRequest): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.UNAUTHORIZED, "Invalid username or password", request)
+    fun handleBadCredentials(ex: BadCredentialsException): ResponseEntity<ProblemDetail> =
+        problemResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password")
 
     @ExceptionHandler(DisabledException::class)
-    fun handleDisabled(ex: DisabledException, request: WebRequest): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.UNAUTHORIZED, "Account is deactivated", request)
+    fun handleDisabled(ex: DisabledException): ResponseEntity<ProblemDetail> =
+        problemResponse(HttpStatus.UNAUTHORIZED, "Account is deactivated")
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleValidation(ex: MethodArgumentNotValidException, request: WebRequest): ResponseEntity<ProblemDetail> {
+    fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ProblemDetail> {
         val errors = ex.bindingResult.allErrors.map {
             if (it is FieldError) mapOf("field" to it.field, "message" to it.defaultMessage)
             else mapOf("message" to it.defaultMessage)
         }
-        return problem(HttpStatus.BAD_REQUEST, "Validation failed", request, mapOf("errors" to errors))
+        return problemResponse(HttpStatus.BAD_REQUEST, "Validation failed", mapOf("errors" to errors))
     }
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleHttpMessageNotReadable(
-        ex: HttpMessageNotReadableException, request: WebRequest
-    ): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.BAD_REQUEST, "Malformed JSON request", request)
+    fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<ProblemDetail> =
+        problemResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request")
 
     @ExceptionHandler(MaxUploadSizeExceededException::class)
-    fun handleMaxUploadSize(
-        ex: MaxUploadSizeExceededException, request: WebRequest
-    ): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size", request)
+    fun handleMaxUploadSize(ex: MaxUploadSizeExceededException): ResponseEntity<ProblemDetail> =
+        problemResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size")
 
     @ExceptionHandler(BlobStorageException::class)
-    fun handleBlobStorage(ex: BlobStorageException, request: WebRequest): ResponseEntity<ProblemDetail> {
+    fun handleBlobStorage(ex: BlobStorageException): ResponseEntity<ProblemDetail> {
         log.error("Blob storage operation failed", ex)
-        return problem(HttpStatus.BAD_GATEWAY, ex.message ?: "File storage error", request)
+        return problemResponse(HttpStatus.BAD_GATEWAY, ex.message ?: "File storage error")
     }
 
     @ExceptionHandler(Exception::class)
-    fun handleGeneric(ex: Exception, request: WebRequest): ResponseEntity<ProblemDetail> {
+    fun handleGeneric(ex: Exception): ResponseEntity<ProblemDetail> {
         log.error("Unexpected error", ex)
-        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request)
+        return problemResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred")
     }
 
     @ExceptionHandler(UnauthorizedException::class)
-    fun handleUnauthorized(ex: UnauthorizedException, request: WebRequest): ResponseEntity<ProblemDetail> =
-        problem(HttpStatus.UNAUTHORIZED, ex.message ?: "Not authenticated", request)
+    fun handleUnauthorized(ex: UnauthorizedException): ResponseEntity<ProblemDetail> =
+        problemResponse(HttpStatus.UNAUTHORIZED, ex.message ?: "Not authenticated")
 }

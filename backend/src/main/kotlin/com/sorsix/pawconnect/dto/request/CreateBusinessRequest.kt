@@ -1,6 +1,9 @@
 package com.sorsix.pawconnect.dto.request
 
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 
 data class CreateBusinessRequest(
@@ -8,10 +11,10 @@ data class CreateBusinessRequest(
     @field:NotBlank val name: String,
     val description: String? = null,
     @field:NotBlank val phone: String,
-    val email: String? = null,
+    @field:Email @field:Size(max = 255) val email: String? = null,
     @field:NotBlank val address: String,
     @field:NotBlank val municipalityCode: String,
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
-    val photos: List<BusinessPhotoRequest> = emptyList()
+    @field:Valid val photos: List<BusinessPhotoRequest> = emptyList()
 )

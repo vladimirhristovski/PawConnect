@@ -1,17 +1,20 @@
 package com.sorsix.pawconnect.dto.request
 
+import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.PositiveOrZero
+import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.time.Instant
 
 data class CreateListingRequest(
     val petId: Long? = null,
-    val pet: CreatePetRequest? = null,
+    @field:Valid val pet: CreatePetRequest? = null,
     val businessId: Long? = null,
     @field:NotBlank val municipalityCode: String,
-    val title: String? = null,
-    val description: String? = null,
-    val adoptionFee: BigDecimal = BigDecimal.ZERO,
+    @field:Size(max = 150) val title: String? = null,
+    @field:Size(max = 5000) val description: String? = null,
+    @field:PositiveOrZero val adoptionFee: BigDecimal = BigDecimal.ZERO,
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
     val expiresAt: Instant? = null,

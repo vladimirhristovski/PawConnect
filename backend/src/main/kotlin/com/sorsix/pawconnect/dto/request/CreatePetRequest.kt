@@ -2,8 +2,11 @@ package com.sorsix.pawconnect.dto.request
 
 import com.sorsix.pawconnect.domain.Gender
 import com.sorsix.pawconnect.domain.Size
+import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.PositiveOrZero
+import jakarta.validation.constraints.Size as SizeConstraint
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -13,11 +16,11 @@ data class CreatePetRequest(
     val breedCodes: List<String> = emptyList(),
     @field:NotNull val gender: Gender,
     val size: Size? = null,
-    val age: Long? = null,
+    @field:PositiveOrZero val age: Long? = null,
     val birthDate: LocalDate? = null,
-    val weightKg: BigDecimal? = null,
-    val description: String? = null,
+    @field:PositiveOrZero val weightKg: BigDecimal? = null,
+    @field:SizeConstraint(max = 5000) val description: String? = null,
     val goodWithKids: Boolean = false,
     val goodWithOtherPets: Boolean = false,
-    val photos: List<PetPhotoRequest> = emptyList()
+    @field:Valid val photos: List<PetPhotoRequest> = emptyList()
 )
