@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.dto.request.*
+import com.sorsix.pawconnect.exception.UnauthorizedException
 import com.sorsix.pawconnect.domain.PasswordResetToken
 import com.sorsix.pawconnect.domain.RefreshToken
 import com.sorsix.pawconnect.domain.Role
@@ -335,6 +336,39 @@ class AuthServiceTest {
             authService.resetPassword(request)
         }
         verify { userRepository wasNot called }
+    }
+
+    @Test
+    fun `deleteOwnAccount should delete the authenticated user`() {
+        val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
+        val auth = UsernamePasswordAuthenticationToken(CustomUserDetails(user), null, emptyList())
+        SecurityContextHolder.getContext().authentication = auth
+        every { userService.deleteUser(1L) } returns true
+
+        authService.deleteOwnAccount()
+
+        verify { userService.deleteUser(1L) }
+    }
+
+    @Test
+    fun `deleteOwnAccount should throw when not authenticated`() {
+        SecurityContextHolder.clearContext()
+        assertThrows(UnauthorizedException::class.java) {
+            authService.deleteOwnAccount()
+        }
+        verify { userService wasNot called }
+    }
+
+    @Test
+    fun `deleteOwnAccount should throw when the user no longer exists`() {
+        val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
+        val auth = UsernamePasswordAuthenticationToken(CustomUserDetails(user), null, emptyList())
+        SecurityContextHolder.getContext().authentication = auth
+        every { userService.deleteUser(1L) } returns false
+
+        assertThrows(IllegalStateException::class.java) {
+            authService.deleteOwnAccount()
+        }
     }
 
     @Test

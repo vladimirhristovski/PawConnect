@@ -256,6 +256,5 @@ class ListingService(
     }
 
     private fun ownershipDenialReason(listing: Listing, currentUser: User): String? =
-        if (currentUser.isAdmin() || listing.postedBy.id == currentUser.id) null
-        else "You do not own this listing"
+        denialReason(currentUser.isAdmin() || listing.postedBy.id == currentUser.id, "You do not own this listing")
 }

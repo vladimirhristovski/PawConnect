@@ -24,9 +24,11 @@ class PetController(
 ) {
 
     @GetMapping("/{id}")
-    fun getPet(@PathVariable id: Long): ResponseEntity<*> =
-        petService.findPet(id)?.let { ResponseEntity.ok(PetResponse.from(it)) }
+    fun getPet(@PathVariable id: Long): ResponseEntity<*> {
+        val currentUser = authService.getCurrentUser()
+        return petService.getVisiblePet(id, currentUser)?.let { ResponseEntity.ok(PetResponse.from(it)) }
             ?: problemResponse(HttpStatus.NOT_FOUND, "Pet not found: $id")
+    }
 
     @PutMapping("/{id}")
     fun updatePet(@PathVariable id: Long, @Valid @RequestBody request: UpdatePetRequest): ResponseEntity<*> {

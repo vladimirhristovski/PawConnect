@@ -7,6 +7,7 @@ import com.sorsix.pawconnect.exception.BlobStorageException
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
+import java.io.ByteArrayInputStream
 import java.util.UUID
 
 @Service
@@ -27,6 +28,11 @@ class AzureBlobStorageService(
             throw IllegalArgumentException("File too large (max 5MB)")
         }
 
+        val bytes = file.bytes
+        if (detectImageContentType(bytes) != file.contentType) {
+            throw IllegalArgumentException("File content does not match declared type: ${file.contentType}")
+        }
+
         val extension = when (file.contentType) {
             "image/jpeg" -> "jpg"
             "image/png" -> "png"
@@ -37,8 +43,8 @@ class AzureBlobStorageService(
 
         return try {
             val blobClient = containerClient.getBlobClient(blobName)
-            file.inputStream.use { stream ->
-                blobClient.upload(stream, file.size, true)
+            ByteArrayInputStream(bytes).use { stream ->
+                blobClient.upload(stream, bytes.size.toLong(), true)
             }
             blobClient.setHttpHeaders(BlobHttpHeaders().setContentType(file.contentType))
             blobClient.blobUrl
@@ -65,5 +71,25 @@ class AzureBlobStorageService(
         } catch (ex: Exception) {
             null
         }
+    }
+
+    private fun detectImageContentType(bytes: ByteArray): String? = when {
+        bytes.size >= 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte() ->
+            "image/jpeg"
+
+        bytes.size >= 8 && bytes.copyOfRange(0, 8).contentEquals(PNG_SIGNATURE) ->
+            "image/png"
+
+        bytes.size >= 12 &&
+            String(bytes, 0, 4, Charsets.US_ASCII) == "RIFF" &&
+            String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" ->
+            "image/webp"
+
+        else -> null
+    }
+
+    companion object {
+        private val PNG_SIGNATURE =
+            byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
     }
 }

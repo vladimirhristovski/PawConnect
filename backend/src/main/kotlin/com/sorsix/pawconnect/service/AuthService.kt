@@ -208,7 +208,9 @@ class AuthService(
     @Transactional
     fun deleteOwnAccount() {
         val user = getCurrentUser() ?: throw UnauthorizedException("Not authenticated")
-        userService.deleteUser(user.requireId())
+        if (!userService.deleteUser(user.requireId())) {
+            throw IllegalStateException("Current user no longer exists")
+        }
     }
 
     fun getCurrentUser(): User? {

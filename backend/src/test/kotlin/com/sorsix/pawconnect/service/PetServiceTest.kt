@@ -6,6 +6,7 @@ import com.sorsix.pawconnect.domain.PetBreed
 import com.sorsix.pawconnect.domain.PetPhoto
 import com.sorsix.pawconnect.domain.PetSpecies
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.common.ListingStatusCodes
 import com.sorsix.pawconnect.dto.request.CreatePetRequest
 import com.sorsix.pawconnect.dto.request.PetPhotoRequest
 import com.sorsix.pawconnect.dto.request.UpdatePetRequest
@@ -147,6 +148,53 @@ class PetServiceTest {
     fun `findPet returns null when the pet is missing`() {
         every { petRepository.findByIdWithAllAssociations(3L) } returns null
         assertEquals(null, service.findPet(3L))
+    }
+
+    @Test
+    fun `getVisiblePet returns null when the pet is missing`() {
+        every { petRepository.findByIdWithAllAssociations(3L) } returns null
+        assertEquals(null, service.getVisiblePet(3L, null))
+    }
+
+    @Test
+    fun `getVisiblePet returns the pet to anyone when its listing is publicly visible`() {
+        val pet = mockk<Pet>(relaxed = true)
+        every { petRepository.findByIdWithAllAssociations(3L) } returns pet
+        every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(3L, ListingStatusCodes.VISIBLE_PUBLIC) } returns true
+        assertEquals(pet, service.getVisiblePet(3L, null))
+    }
+
+    @Test
+    fun `getVisiblePet hides a pet whose only listing is a draft from an anonymous caller`() {
+        val pet = mockk<Pet>(relaxed = true)
+        every { petRepository.findByIdWithAllAssociations(3L) } returns pet
+        every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(3L, ListingStatusCodes.VISIBLE_PUBLIC) } returns false
+        assertEquals(null, service.getVisiblePet(3L, null))
+    }
+
+    @Test
+    fun `getVisiblePet shows a draft pet to the listing owner`() {
+        val pet = mockk<Pet>(relaxed = true)
+        every { petRepository.findByIdWithAllAssociations(3L) } returns pet
+        every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(3L, ListingStatusCodes.VISIBLE_PUBLIC) } returns false
+        every { listingRepository.existsByPet_IdAndPostedBy_Id(3L, 1L) } returns true
+        assertEquals(pet, service.getVisiblePet(3L, mockUser(id = 1L)))
+    }
+
+    @Test
+    fun `getVisiblePet hides a draft pet from an unrelated authenticated user`() {
+        val pet = mockk<Pet>(relaxed = true)
+        every { petRepository.findByIdWithAllAssociations(3L) } returns pet
+        every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(3L, ListingStatusCodes.VISIBLE_PUBLIC) } returns false
+        every { listingRepository.existsByPet_IdAndPostedBy_Id(3L, 2L) } returns false
+        assertEquals(null, service.getVisiblePet(3L, mockUser(id = 2L)))
+    }
+
+    @Test
+    fun `getVisiblePet shows a draft pet to an admin regardless of ownership`() {
+        val pet = mockk<Pet>(relaxed = true)
+        every { petRepository.findByIdWithAllAssociations(3L) } returns pet
+        assertEquals(pet, service.getVisiblePet(3L, mockUser(id = 99L, admin = true)))
     }
 
     @Test

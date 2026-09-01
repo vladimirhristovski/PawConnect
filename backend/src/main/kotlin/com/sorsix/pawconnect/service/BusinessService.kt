@@ -19,6 +19,7 @@ import com.sorsix.pawconnect.repository.BusinessPhotoRepository
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository
+import com.sorsix.pawconnect.common.denialReason
 import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
@@ -215,8 +216,7 @@ class BusinessService(
     }
 
     private fun canManageReason(business: Business, currentUser: User): String? =
-        if (currentUser.isAdmin() || business.owner?.id == currentUser.id) null
-        else "You do not own this business"
+        denialReason(currentUser.isAdmin() || business.owner?.id == currentUser.id, "You do not own this business")
 
     private fun normalizePrimaryPhoto(photos: MutableSet<BusinessPhoto>) {
         val primaries = photos.filter { it.isPrimary }

@@ -11,6 +11,8 @@ import com.sorsix.pawconnect.domain.result.CreatePetResult
 import com.sorsix.pawconnect.domain.result.RemovePetPhotoResult
 import com.sorsix.pawconnect.domain.result.UpdatePetResult
 import com.sorsix.pawconnect.repository.*
+import com.sorsix.pawconnect.common.ListingStatusCodes
+import com.sorsix.pawconnect.common.denialReason
 import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -75,6 +77,15 @@ class PetService(
 
     @Transactional(readOnly = true)
     fun findPet(id: Long): Pet? = petRepository.findByIdWithAllAssociations(id)
+
+    @Transactional(readOnly = true)
+    fun getVisiblePet(id: Long, currentUser: User?): Pet? {
+        val pet = petRepository.findByIdWithAllAssociations(id) ?: return null
+        if (currentUser != null && currentUser.isAdmin()) return pet
+        if (listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(id, ListingStatusCodes.VISIBLE_PUBLIC)) return pet
+        if (currentUser != null && listingRepository.existsByPet_IdAndPostedBy_Id(id, currentUser.requireId())) return pet
+        return null
+    }
 
     @Transactional
     fun updatePet(id: Long, request: UpdatePetRequest, currentUser: User): UpdatePetResult {
@@ -166,11 +177,10 @@ class PetService(
         return RemovePetPhotoResult.Success
     }
 
-    private fun canManagePetReason(pet: Pet, currentUser: User): String? {
-        if (currentUser.isAdmin()) return null
-        val ownsListing = listingRepository.existsByPet_IdAndPostedBy_Id(pet.requireId(), currentUser.requireId())
-        return if (ownsListing) null else "You do not own any listing for this pet"
-    }
+    private fun canManagePetReason(pet: Pet, currentUser: User): String? = denialReason(
+        currentUser.isAdmin() || listingRepository.existsByPet_IdAndPostedBy_Id(pet.requireId(), currentUser.requireId()),
+        "You do not own any listing for this pet"
+    )
 
     private fun normalizePrimaryPhoto(photos: MutableList<PetPhoto>) {
         val primaries = photos.filter { it.isPrimary }
