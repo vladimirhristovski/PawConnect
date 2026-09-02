@@ -97,6 +97,7 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
     )
     fun findAllWithAssociations(@Param("statusCode") statusCode: String?, pageable: Pageable): Page<Listing>
 
+    @Query("SELECT l FROM Listing l JOIN FETCH l.municipality WHERE l.latitude IS NULL AND l.deletedAt IS NULL")
     fun findByLatitudeIsNullAndDeletedAtIsNull(): List<Listing>
 
     @Query(

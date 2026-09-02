@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
 
 @Component
 class GeocodingRetryJob(
@@ -20,7 +19,6 @@ class GeocodingRetryJob(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(fixedDelayString = "\${app.geocoding.retry-interval}")
-    @Transactional
     @CacheEvict("municipalities", allEntries = true)
     fun retryMissingCoordinates() {
         val municipalitiesResolved = backfillMunicipalities()
@@ -39,7 +37,9 @@ class GeocodingRetryJob(
         val municipalities = municipalityRepository.findByLatitudeIsNull()
         var resolved = 0
         for (municipality in municipalities) {
-            val coordinates = runCatching { geocodingService.geocode(municipality.geocodeQuery()) }.getOrNull()
+            val coordinates = runCatching { geocodingService.geocode(municipality.geocodeQuery()) }
+                .onFailure { log.warn("Failed to geocode municipality {}: {}", municipality.id, it.message) }
+                .getOrNull()
             if (coordinates != null) {
                 municipality.latitude = coordinates.latitude
                 municipality.longitude = coordinates.longitude
@@ -55,7 +55,9 @@ class GeocodingRetryJob(
         val businesses = businessRepository.findByAddressGeocodedFalseAndDeletedAtIsNull()
         var upgraded = 0
         for (business in businesses) {
-            val coordinates = runCatching { geocodingService.geocode(business.address) }.getOrNull()
+            val coordinates = runCatching { geocodingService.geocode(business.address) }
+                .onFailure { log.warn("Failed to geocode business {}: {}", business.id, it.message) }
+                .getOrNull()
             if (coordinates != null) {
                 business.latitude = coordinates.latitude
                 business.longitude = coordinates.longitude

@@ -68,6 +68,9 @@ app:
   geocoding:
     retry-interval: PT6H
 
+  listings:
+    expiry-check-interval: PT1H
+
 azure:
   storage:
     connection-string: ${AZURE_STORAGE_CONNECTION_STRING}

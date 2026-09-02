@@ -8,6 +8,14 @@ import org.springframework.data.repository.query.Param
 interface MunicipalityRepository : JpaRepository<Municipality, Long> {
     fun findByCode(code: String): Municipality?
 
+    @Query(
+        """
+        SELECT m FROM Municipality m
+        LEFT JOIN FETCH m.city c
+        LEFT JOIN FETCH c.country
+        WHERE m.latitude IS NULL
+    """
+    )
     fun findByLatitudeIsNull(): List<Municipality>
 
     @Query(
