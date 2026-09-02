@@ -37,7 +37,7 @@ export class Register {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err.error?.message ?? 'Registration failed.');
+        this.error.set(err.error?.detail ?? 'Registration failed.');
       },
     });
   }

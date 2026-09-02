@@ -31,7 +31,7 @@ export class ResetPassword {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err.error?.message ?? 'Reset failed — the link may have expired.');
+        this.error.set(err.error?.detail ?? 'Reset failed — the link may have expired.');
       },
     });
   }

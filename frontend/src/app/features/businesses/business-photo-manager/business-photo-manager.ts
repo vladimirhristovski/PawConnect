@@ -63,7 +63,7 @@ export class BusinessPhotoManager {
       },
       error: (err) => {
         this.saving.set(false);
-        this.saveError.set(err.error?.message ?? 'Could not save business details.');
+        this.saveError.set(err.error?.detail ?? 'Could not save business details.');
       },
     });
   }
@@ -86,7 +86,7 @@ export class BusinessPhotoManager {
       },
       error: (err) => {
         this.uploading.set(false);
-        this.uploadError.set(err.error?.message ?? 'Upload failed.');
+        this.uploadError.set(err.error?.detail ?? 'Upload failed.');
       },
     });
     input.value = '';

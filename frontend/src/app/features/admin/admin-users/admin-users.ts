@@ -43,7 +43,7 @@ export class AdminUsers implements OnInit {
     this.error.set(null);
     this.adminService.updateUserStatus(id, { active: !currentlyActive }).subscribe({
       next: () => this.search(),
-      error: (err) => this.error.set(err.error?.message ?? 'Could not update user status.'),
+      error: (err) => this.error.set(err.error?.detail ?? 'Could not update user status.'),
     });
   }
 
@@ -52,7 +52,7 @@ export class AdminUsers implements OnInit {
     this.error.set(null);
     this.adminService.deleteUser(id).subscribe({
       next: () => this.search(),
-      error: (err) => this.error.set(err.error?.message ?? 'Could not delete user.'),
+      error: (err) => this.error.set(err.error?.detail ?? 'Could not delete user.'),
     });
   }
 }

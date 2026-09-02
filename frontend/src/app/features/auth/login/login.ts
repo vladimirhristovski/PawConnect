@@ -25,7 +25,7 @@ export class Login {
       next: () => this.router.navigate(['/']),
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err.error?.message ?? 'Invalid username or password.');
+        this.error.set(err.error?.detail ?? 'Invalid username or password.');
       },
     });
   }

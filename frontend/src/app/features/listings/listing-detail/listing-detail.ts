@@ -48,7 +48,7 @@ export class ListingDetail {
     this.applicationService.submit(listing.id, this.applicationForm).subscribe({
       next: () => this.applicationSent.set(true),
       error: (err) =>
-        this.applicationError.set(err.error?.message ?? 'Could not submit application.'),
+        this.applicationError.set(err.error?.detail ?? 'Could not submit application.'),
     });
   }
 

@@ -143,7 +143,7 @@ export class BusinessForm {
           ]);
         },
         error: (err) => {
-          this.uploadError.set(err.error?.message ?? 'Upload failed.');
+          this.uploadError.set(err.error?.detail ?? 'Upload failed.');
         },
         complete: () => {
           remaining -= 1;
@@ -172,7 +172,7 @@ export class BusinessForm {
         next: (updated) => this.router.navigate(['/businesses', updated.id]),
         error: (err) => {
           this.submitting.set(false);
-          this.error.set(err.error?.message ?? 'Could not save changes.');
+          this.error.set(err.error?.detail ?? 'Could not save changes.');
         },
       });
     } else {
@@ -184,7 +184,7 @@ export class BusinessForm {
         next: (created) => this.router.navigate(['/businesses', created.id]),
         error: (err) => {
           this.submitting.set(false);
-          this.error.set(err.error?.message ?? 'Could not create business.');
+          this.error.set(err.error?.detail ?? 'Could not create business.');
         },
       });
     }

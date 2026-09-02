@@ -197,7 +197,7 @@ export class ListingForm {
         next: (updated) => this.router.navigate(['/listings', updated.id]),
         error: (err) => {
           this.submitting.set(false);
-          this.error.set(err.error?.message ?? 'Could not save changes.');
+          this.error.set(err.error?.detail ?? 'Could not save changes.');
         },
       });
     } else {
@@ -216,7 +216,7 @@ export class ListingForm {
         next: (created) => this.router.navigate(['/listings', created.id]),
         error: (err) => {
           this.submitting.set(false);
-          this.error.set(err.error?.message ?? 'Could not create listing.');
+          this.error.set(err.error?.detail ?? 'Could not create listing.');
         },
       });
     }

@@ -71,7 +71,7 @@ export class PetPhotoManager {
     this.saving.set(true);
     this.petService.update(Number(this.id()), this.model).subscribe({
       next: () => { this.saving.set(false); this.saveSuccess.set(true); this.petService.loadOne(Number(this.id())); },
-      error: err => { this.saving.set(false); this.saveError.set(err.error?.message ?? 'Could not save pet details.'); }
+      error: err => { this.saving.set(false); this.saveError.set(err.error?.detail ?? 'Could not save pet details.'); }
     });
   }
 
@@ -88,7 +88,7 @@ export class PetPhotoManager {
 
     this.petService.uploadPhoto(Number(this.id()), file, isPrimary, nextOrder).subscribe({
       next: () => { this.uploading.set(false); this.petService.loadOne(Number(this.id())); },
-      error: err => { this.uploading.set(false); this.uploadError.set(err.error?.message ?? 'Upload failed.'); }
+      error: err => { this.uploading.set(false); this.uploadError.set(err.error?.detail ?? 'Upload failed.'); }
     });
     input.value = '';
   }

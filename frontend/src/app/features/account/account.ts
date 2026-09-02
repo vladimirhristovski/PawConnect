@@ -30,7 +30,7 @@ export class Account {
       next: () => this.auth.clearSession(),
       error: (err) => {
         this.deleting.set(false);
-        this.error.set(err.error?.message ?? 'Could not delete account.');
+        this.error.set(err.error?.detail ?? 'Could not delete account.');
       },
     });
   }
