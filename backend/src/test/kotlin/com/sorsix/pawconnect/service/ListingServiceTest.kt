@@ -118,6 +118,7 @@ class ListingServiceTest {
 
     @Test
     fun `createListing rejects providing both petId and pet`() {
+        every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         assertFailsWith<IllegalArgumentException> {
             service.createListing(createRequest(petId = 1L, pet = mockk()), mockUser())
         }
@@ -125,6 +126,7 @@ class ListingServiceTest {
 
     @Test
     fun `createListing rejects providing neither petId nor pet`() {
+        every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         assertFailsWith<IllegalArgumentException> {
             service.createListing(createRequest(petId = null, pet = null), mockUser())
         }
@@ -132,6 +134,7 @@ class ListingServiceTest {
 
     @Test
     fun `createListing throws when petId does not resolve`() {
+        every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         every { petRepository.findById(5L) } returns Optional.empty()
         val result = service.createListing(createRequest(petId = 5L), mockUser())
         assertIs<CreateListingResult.NotFound>(result)
@@ -141,6 +144,7 @@ class ListingServiceTest {
     fun `createListing throws conflict when the pet already has an open listing`() {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
+        every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         every { petRepository.findById(5L) } returns Optional.of(pet)
         every { pet.createdBy } returns mockUser(id = 1L)
         every {
@@ -152,11 +156,6 @@ class ListingServiceTest {
 
     @Test
     fun `createListing throws when the municipality code is unknown`() {
-        val pet = mockk<Pet>(relaxed = true)
-        every { pet.id } returns 5L
-        every { petRepository.findById(5L) } returns Optional.of(pet)
-        every { pet.createdBy } returns mockUser(id = 1L)
-        every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns null
         val result = service.createListing(createRequest(petId = 5L), mockUser())
         assertIs<CreateListingResult.NotFound>(result)
@@ -164,17 +163,22 @@ class ListingServiceTest {
 
     @Test
     fun `createListing forbids attaching a business the user does not own`() {
-        val pet = mockk<Pet>(relaxed = true)
-        every { pet.id } returns 5L
-        every { petRepository.findById(5L) } returns Optional.of(pet)
-        every { pet.createdBy } returns mockUser(id = 1L)
-        every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         val business = mockk<Business>(relaxed = true)
         every { business.owner } returns mockUser(id = 2L)
         every { businessRepository.findById(77L) } returns Optional.of(business)
         val result = service.createListing(createRequest(petId = 5L, businessId = 77L), mockUser(id = 1L))
         assertIs<CreateListingResult.Forbidden>(result)
+    }
+
+    @Test
+    fun `createListing does not create a pet when the municipality is unknown`() {
+        every { municipalityRepository.findByCode("SK-CENTAR") } returns null
+
+        val result = service.createListing(createRequest(petId = null, pet = mockk(relaxed = true)), mockUser())
+
+        assertIs<CreateListingResult.NotFound>(result)
+        verify(exactly = 0) { petService.createPet(any(), any()) }
     }
 
     @Test
@@ -260,6 +264,7 @@ class ListingServiceTest {
     fun `createListing forbids attaching a pet the user does not own`() {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
+        every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         every { petRepository.findById(5L) } returns Optional.of(pet)
         every { pet.createdBy } returns mockUser(id = 999L)
         val result = service.createListing(createRequest(petId = 5L), mockUser(id = 1L))

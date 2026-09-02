@@ -30,6 +30,9 @@ spring:
           auth: true
           starttls:
             enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
   servlet:
     multipart:
@@ -70,6 +73,9 @@ app:
 
   listings:
     expiry-check-interval: PT1H
+
+  tokens:
+    cleanup-interval: PT24H
 
 azure:
   storage:

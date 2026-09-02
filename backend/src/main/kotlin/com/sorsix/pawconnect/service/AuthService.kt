@@ -3,9 +3,12 @@ package com.sorsix.pawconnect.service
 import com.sorsix.pawconnect.dto.request.*
 import com.sorsix.pawconnect.dto.response.AuthResponse
 import com.sorsix.pawconnect.dto.response.UserResponse
-import com.sorsix.pawconnect.exception.UnauthorizedException
 import com.sorsix.pawconnect.domain.PasswordResetToken
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.DeleteOwnAccountResult
+import com.sorsix.pawconnect.domain.result.RefreshTokenResult
+import com.sorsix.pawconnect.domain.result.RegisterResult
+import com.sorsix.pawconnect.domain.result.ResetPasswordResult
 import com.sorsix.pawconnect.repository.PasswordResetTokenRepository
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.RoleRepository
@@ -56,12 +59,12 @@ class AuthService(
     }
 
     @Transactional
-    fun register(request: RegisterRequest): UserResponse {
+    fun register(request: RegisterRequest): RegisterResult {
         if (userRepository.existsByUsernameAndDeletedAtIsNull(request.username)) {
-            throw IllegalArgumentException("Username already taken")
+            return RegisterResult.Conflict("Username already taken")
         }
         if (userRepository.existsByEmailAndDeletedAtIsNull(request.email)) {
-            throw IllegalArgumentException("Email already registered")
+            return RegisterResult.Conflict("Email already registered")
         }
 
         val user = User(
@@ -89,7 +92,7 @@ class AuthService(
             throw IllegalArgumentException(message)
         }
         log.info("User registered: {}", saved.id)
-        return UserResponse.from(saved)
+        return RegisterResult.Success(saved)
     }
 
     @Transactional
@@ -115,9 +118,9 @@ class AuthService(
     }
 
     @Transactional
-    fun refreshToken(refreshToken: String): AuthResponse {
+    fun refreshToken(refreshToken: String): RefreshTokenResult {
         val rt = jwtService.verifyRefreshToken(refreshToken)
-            ?: throw IllegalArgumentException("Invalid or expired refresh token")
+            ?: return RefreshTokenResult.Invalid("Invalid or expired refresh token")
 
         val user = rt.user
         rt.revokedAt = Instant.now()
@@ -130,10 +133,12 @@ class AuthService(
 
         log.info("Refresh token rotated for user {}", user.id)
 
-        return AuthResponse(
-            accessToken = newAccess,
-            refreshToken = newRawRefresh,
-            expiresIn = accessTokenTtl / 1000
+        return RefreshTokenResult.Success(
+            AuthResponse(
+                accessToken = newAccess,
+                refreshToken = newRawRefresh,
+                expiresIn = accessTokenTtl / 1000
+            )
         )
     }
 
@@ -180,16 +185,16 @@ class AuthService(
         return true
     }
     @Transactional
-    fun resetPassword(request: ResetPasswordRequest): Boolean {
+    fun resetPassword(request: ResetPasswordRequest): ResetPasswordResult {
         val tokenHash = hashToken(request.token)
-        val resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
-            .orElseThrow { IllegalArgumentException("Invalid token") }
+        val resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash).orElse(null)
+            ?: return ResetPasswordResult.Invalid("Invalid token")
 
         if (resetToken.usedAt != null) {
-            throw IllegalArgumentException("Token already used")
+            return ResetPasswordResult.Invalid("Token already used")
         }
         if (resetToken.expiresAt.isBefore(Instant.now())) {
-            throw IllegalArgumentException("Token expired")
+            return ResetPasswordResult.Invalid("Token expired")
         }
 
         val user = resetToken.user
@@ -202,15 +207,15 @@ class AuthService(
 
         log.info("Password reset completed for user {}", user.id)
 
-        return true
+        return ResetPasswordResult.Success
     }
 
     @Transactional
-    fun deleteOwnAccount() {
-        val user = getCurrentUser() ?: throw UnauthorizedException("Not authenticated")
-        if (!userService.deleteUser(user.requireId())) {
-            throw IllegalStateException("Current user no longer exists")
+    fun deleteOwnAccount(currentUser: User): DeleteOwnAccountResult {
+        if (!userService.deleteUser(currentUser.requireId())) {
+            return DeleteOwnAccountResult.NotFound("Current user no longer exists")
         }
+        return DeleteOwnAccountResult.Success
     }
 
     fun getCurrentUser(): User? {

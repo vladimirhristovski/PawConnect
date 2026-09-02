@@ -40,6 +40,18 @@ class ListingService(
 
     @Transactional
     fun createListing(request: CreateListingRequest, currentUser: User): CreateListingResult {
+        val municipality = municipalityRepository.findByCode(request.municipalityCode)
+            ?: return CreateListingResult.NotFound("Municipality not found: ${request.municipalityCode}")
+
+        var business: Business? = null
+        request.businessId?.let { id ->
+            business = businessRepository.findById(id).orElse(null)
+                ?: return CreateListingResult.NotFound("Business not found: $id")
+            if (business.owner?.id != currentUser.id && !currentUser.isAdmin()) {
+                return CreateListingResult.Forbidden("You do not own this business")
+            }
+        }
+
         val pet = when {
             request.petId != null && request.pet != null -> throw IllegalArgumentException("Provide either petId or pet, not both")
 
@@ -63,18 +75,6 @@ class ListingService(
             )
         ) {
             return CreateListingResult.Conflict("This pet already has an open listing")
-        }
-
-        val municipality = municipalityRepository.findByCode(request.municipalityCode)
-            ?: return CreateListingResult.NotFound("Municipality not found: ${request.municipalityCode}")
-
-        var business: Business? = null
-        request.businessId?.let { id ->
-            business = businessRepository.findById(id).orElse(null)
-                ?: return CreateListingResult.NotFound("Business not found: $id")
-            if (business.owner?.id != currentUser.id && !currentUser.isAdmin()) {
-                return CreateListingResult.Forbidden("You do not own this business")
-            }
         }
 
         val initialStatusCode = if (request.saveAsDraft) ListingStatusCodes.DRAFT else ListingStatusCodes.ACTIVE

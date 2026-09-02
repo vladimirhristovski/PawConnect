@@ -1,11 +1,14 @@
 package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.dto.request.*
-import com.sorsix.pawconnect.exception.UnauthorizedException
 import com.sorsix.pawconnect.domain.PasswordResetToken
 import com.sorsix.pawconnect.domain.RefreshToken
 import com.sorsix.pawconnect.domain.Role
 import com.sorsix.pawconnect.domain.User
+import com.sorsix.pawconnect.domain.result.DeleteOwnAccountResult
+import com.sorsix.pawconnect.domain.result.RefreshTokenResult
+import com.sorsix.pawconnect.domain.result.RegisterResult
+import com.sorsix.pawconnect.domain.result.ResetPasswordResult
 import com.sorsix.pawconnect.repository.PasswordResetTokenRepository
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.RoleRepository
@@ -27,6 +30,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.Instant
 import java.util.*
+import kotlin.test.assertIs
 
 class AuthServiceTest {
 
@@ -98,37 +102,40 @@ class AuthServiceTest {
         every { passwordEncoder.encode(request.password) } returns "encoded"
         every { userRepository.save(any()) } returns savedUser
 
-        val response = authService.register(request)
+        val result = authService.register(request)
 
-        assertEquals("john_doe", response.username)
-        assertEquals("john@example.com", response.email)
-        assertEquals("John", response.firstName)
-        assertEquals("Doe", response.lastName)
-        assertEquals("123456789", response.phone)
-        assertTrue(response.roles.contains("USER"))
+        val success = assertIs<RegisterResult.Success>(result)
+        assertEquals("john_doe", success.user.username)
+        assertEquals("john@example.com", success.user.email)
+        assertEquals("John", success.user.firstName)
+        assertEquals("Doe", success.user.lastName)
+        assertEquals("123456789", success.user.phone)
+        assertTrue(success.user.roles.any { it.name == "USER" })
         verify(exactly = 1) { userRepository.save(any()) }
     }
 
     @Test
-    fun `register should throw when username already taken`() {
+    fun `register should conflict when username already taken`() {
         val request = RegisterRequest("john", "john@mail.com", "pass", null, null, null)
         every { userRepository.existsByUsernameAndDeletedAtIsNull(request.username) } returns true
 
-        assertThrows(IllegalArgumentException::class.java) {
-            authService.register(request)
-        }
+        val result = authService.register(request)
+
+        val conflict = assertIs<RegisterResult.Conflict>(result)
+        assertEquals("Username already taken", conflict.message)
         verify(exactly = 0) { userRepository.save(any()) }
     }
 
     @Test
-    fun `register should throw when email already registered`() {
+    fun `register should conflict when email already registered`() {
         val request = RegisterRequest("john", "john@mail.com", "pass", null, null, null)
         every { userRepository.existsByUsernameAndDeletedAtIsNull(request.username) } returns false
         every { userRepository.existsByEmailAndDeletedAtIsNull(request.email) } returns true
 
-        assertThrows(IllegalArgumentException::class.java) {
-            authService.register(request)
-        }
+        val result = authService.register(request)
+
+        val conflict = assertIs<RegisterResult.Conflict>(result)
+        assertEquals("Email already registered", conflict.message)
         verify(exactly = 0) { userRepository.save(any()) }
     }
 
@@ -203,11 +210,12 @@ class AuthServiceTest {
         every { jwtService.generateRefreshToken(user) } returns newRefreshPair
         every { refreshTokenRepository.save(newRefreshPair.second) } returns newRefreshPair.second
 
-        val response = authService.refreshToken("old_token")
+        val result = authService.refreshToken("old_token")
 
-        assertEquals("new_access", response.accessToken)
-        assertEquals("new_raw_refresh", response.refreshToken)
-        assertEquals(900, response.expiresIn)
+        val success = assertIs<RefreshTokenResult.Success>(result)
+        assertEquals("new_access", success.response.accessToken)
+        assertEquals("new_raw_refresh", success.response.refreshToken)
+        assertEquals(900, success.response.expiresIn)
 
         assertNotNull(oldRefreshToken.revokedAt)
         verify { refreshTokenRepository.save(oldRefreshToken) }
@@ -215,11 +223,13 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `refreshToken should throw when token invalid`() {
+    fun `refreshToken should be invalid when token unknown`() {
         every { jwtService.verifyRefreshToken("invalid") } returns null
-        assertThrows(IllegalArgumentException::class.java) {
-            authService.refreshToken("invalid")
-        }
+
+        val result = authService.refreshToken("invalid")
+
+        val invalid = assertIs<RefreshTokenResult.Invalid>(result)
+        assertEquals("Invalid or expired refresh token", invalid.message)
     }
 
     @Test
@@ -278,7 +288,7 @@ class AuthServiceTest {
         val request = ResetPasswordRequest(rawToken, "newPass123")
         val result = authService.resetPassword(request)
 
-        assertTrue(result)
+        assertEquals(ResetPasswordResult.Success, result)
         assertEquals("newEncoded", user.password)
         assertNotNull(resetToken.usedAt)
         verify { userRepository.save(user) }
@@ -286,20 +296,21 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `resetPassword should throw when token not found`() {
+    fun `resetPassword should be invalid when token not found`() {
         val rawToken = "invalid"
         val tokenHash = authService.hashToken(rawToken)
         every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns Optional.empty()
 
         val request = ResetPasswordRequest(rawToken, "newPass")
-        assertThrows(IllegalArgumentException::class.java) {
-            authService.resetPassword(request)
-        }
+        val result = authService.resetPassword(request)
+
+        val invalid = assertIs<ResetPasswordResult.Invalid>(result)
+        assertEquals("Invalid token", invalid.message)
         verify { userRepository wasNot called }
     }
 
     @Test
-    fun `resetPassword should throw when token already used`() {
+    fun `resetPassword should be invalid when token already used`() {
         val user = User("john", "john@mail.com", "old", null, null, null).apply { id = 1L }
         val rawToken = "usedToken"
         val tokenHash = authService.hashToken(rawToken)
@@ -312,14 +323,15 @@ class AuthServiceTest {
         every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns Optional.of(resetToken)
 
         val request = ResetPasswordRequest(rawToken, "newPass")
-        assertThrows(IllegalArgumentException::class.java) {
-            authService.resetPassword(request)
-        }
+        val result = authService.resetPassword(request)
+
+        val invalid = assertIs<ResetPasswordResult.Invalid>(result)
+        assertEquals("Token already used", invalid.message)
         verify { userRepository wasNot called }
     }
 
     @Test
-    fun `resetPassword should throw when token expired`() {
+    fun `resetPassword should be invalid when token expired`() {
         val user = User("john", "john@mail.com", "old", null, null, null).apply { id = 1L }
         val rawToken = "expiredToken"
         val tokenHash = authService.hashToken(rawToken)
@@ -332,43 +344,33 @@ class AuthServiceTest {
         every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns Optional.of(resetToken)
 
         val request = ResetPasswordRequest(rawToken, "newPass")
-        assertThrows(IllegalArgumentException::class.java) {
-            authService.resetPassword(request)
-        }
+        val result = authService.resetPassword(request)
+
+        val invalid = assertIs<ResetPasswordResult.Invalid>(result)
+        assertEquals("Token expired", invalid.message)
         verify { userRepository wasNot called }
     }
 
     @Test
-    fun `deleteOwnAccount should delete the authenticated user`() {
+    fun `deleteOwnAccount should delete the given user`() {
         val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
-        val auth = UsernamePasswordAuthenticationToken(CustomUserDetails(user), null, emptyList())
-        SecurityContextHolder.getContext().authentication = auth
         every { userService.deleteUser(1L) } returns true
 
-        authService.deleteOwnAccount()
+        val result = authService.deleteOwnAccount(user)
 
+        assertEquals(DeleteOwnAccountResult.Success, result)
         verify { userService.deleteUser(1L) }
     }
 
     @Test
-    fun `deleteOwnAccount should throw when not authenticated`() {
-        SecurityContextHolder.clearContext()
-        assertThrows(UnauthorizedException::class.java) {
-            authService.deleteOwnAccount()
-        }
-        verify { userService wasNot called }
-    }
-
-    @Test
-    fun `deleteOwnAccount should throw when the user no longer exists`() {
+    fun `deleteOwnAccount should return NotFound when the user no longer exists`() {
         val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
-        val auth = UsernamePasswordAuthenticationToken(CustomUserDetails(user), null, emptyList())
-        SecurityContextHolder.getContext().authentication = auth
         every { userService.deleteUser(1L) } returns false
 
-        assertThrows(IllegalStateException::class.java) {
-            authService.deleteOwnAccount()
-        }
+        val result = authService.deleteOwnAccount(user)
+
+        val notFound = assertIs<DeleteOwnAccountResult.NotFound>(result)
+        assertEquals("Current user no longer exists", notFound.message)
     }
 
     @Test

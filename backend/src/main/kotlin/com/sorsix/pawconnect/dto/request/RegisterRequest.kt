@@ -14,7 +14,12 @@ data class RegisterRequest(
 
     @field:NotBlank @field:NotNull @field:Size(min = 6, max = 100)    val password: String,
 
+    @field:Size(max = 100)
     val firstName: String? = null,
+
+    @field:Size(max = 100)
     val lastName: String? = null,
+
+    @field:Size(max = 30)
     val phone: String? = null
 )

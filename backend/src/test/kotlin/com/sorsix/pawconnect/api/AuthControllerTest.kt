@@ -128,7 +128,7 @@ class AuthControllerTest {
         } When {
             post("/api/auth/register")
         } Then {
-            statusCode(400)
+            statusCode(409)
             body("detail", containsString("Username already taken"))
         }
     }
