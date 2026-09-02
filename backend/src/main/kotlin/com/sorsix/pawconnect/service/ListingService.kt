@@ -12,7 +12,9 @@ import com.sorsix.pawconnect.domain.result.PublishListingResult
 import com.sorsix.pawconnect.domain.result.UpdateListingResult
 import com.sorsix.pawconnect.common.*
 import com.sorsix.pawconnect.repository.*
+import org.hibernate.exception.ConstraintViolationException
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -44,12 +46,16 @@ class ListingService(
             request.petId != null -> petRepository.findById(request.petId).orElse(null)
                 ?: return CreateListingResult.NotFound("Pet not found: ${request.petId}")
 
-            request.pet != null -> when (val result = petService.createPet(request.pet)) {
+            request.pet != null -> when (val result = petService.createPet(request.pet, currentUser)) {
                 is CreatePetResult.Success -> result.pet
                 is CreatePetResult.NotFound -> return CreateListingResult.NotFound(result.message)
             }
 
             else -> throw IllegalArgumentException("Either petId or pet must be provided")
+        }
+
+        if (request.petId != null && !currentUser.isAdmin() && pet.createdBy.id != currentUser.id) {
+            return CreateListingResult.Forbidden("You do not own this pet")
         }
 
         if (listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(
@@ -89,7 +95,15 @@ class ListingService(
             expiresAt = request.expiresAt
         )
 
-        val saved = listingRepository.save(listing)
+        val saved = try {
+            listingRepository.save(listing)
+        } catch (ex: DataIntegrityViolationException) {
+            val constraintName = (ex.cause as? ConstraintViolationException)?.constraintName
+            if (constraintName == "uq_listings_pet_open") {
+                throw IllegalArgumentException("This pet already has an open listing")
+            }
+            throw ex
+        }
         log.info("Listing {} created by user {} (status {})", saved.id, currentUser.id, status.code)
         val reloaded = findListingWithAssociations(saved.requireId())
             ?: return CreateListingResult.NotFound("Listing not found: ${saved.id}")

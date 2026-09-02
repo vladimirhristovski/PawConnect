@@ -30,6 +30,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class PetServiceTest {
@@ -87,7 +88,7 @@ class PetServiceTest {
     @Test
     fun `createPet throws when species not found`() {
         every { petSpeciesRepository.findByCode("CAT") } returns null
-        val result = service.createPet(request(speciesCode = "CAT"))
+        val result = service.createPet(request(speciesCode = "CAT"), mockUser())
         assertIs<CreatePetResult.NotFound>(result)
         verify(exactly = 0) { petRepository.save(any()) }
     }
@@ -96,7 +97,7 @@ class PetServiceTest {
     fun `createPet throws when a requested breed code does not exist`() {
         every { petSpeciesRepository.findByCode("DOG") } returns mockSpecies()
         every { petBreedRepository.findByCodeIn(listOf("A", "B")) } returns listOf(mockBreed("A"))
-        val result = service.createPet(request(breedCodes = listOf("A", "B")))
+        val result = service.createPet(request(breedCodes = listOf("A", "B")), mockUser())
         assertIs<CreatePetResult.NotFound>(result)
     }
 
@@ -108,12 +109,14 @@ class PetServiceTest {
         every { petRepository.save(capture(petSlot)) } answers { firstArg<Pet>().apply { id = 7L } }
         val reloaded = mockk<Pet>(relaxed = true)
         every { petRepository.findByIdWithAllAssociations(7L) } returns reloaded
+        val currentUser = mockUser(id = 1L)
 
-        val result = service.createPet(request(name = "Bella"))
+        val result = service.createPet(request(name = "Bella"), currentUser)
 
         val saved = petSlot.first()
         assertEquals("Bella", saved.name)
         assertEquals(species, saved.species)
+        assertSame(currentUser, saved.createdBy)
         assertIs<CreatePetResult.Success>(result)
         assertEquals(reloaded, result.pet)
     }
@@ -126,7 +129,7 @@ class PetServiceTest {
         every { petRepository.findByIdWithAllAssociations(9L) } answers { petSlot.last() }
 
         service.createPet(
-            request(photos = listOf(PetPhotoRequest(url = "a"), PetPhotoRequest(url = "b")))
+            request(photos = listOf(PetPhotoRequest(url = "a"), PetPhotoRequest(url = "b"))), mockUser()
         )
 
         val photos = petSlot.last().photos
@@ -177,7 +180,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { petRepository.findByIdWithAllAssociations(3L) } returns pet
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(3L, ListingStatusCodes.VISIBLE_PUBLIC) } returns false
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(3L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         assertEquals(pet, service.getVisiblePet(3L, mockUser(id = 1L)))
     }
 
@@ -186,7 +189,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { petRepository.findByIdWithAllAssociations(3L) } returns pet
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(3L, ListingStatusCodes.VISIBLE_PUBLIC) } returns false
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(3L, 2L) } returns false
+        every { pet.createdBy } returns mockUser(id = 999L)
         assertEquals(null, service.getVisiblePet(3L, mockUser(id = 2L)))
     }
 
@@ -209,7 +212,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 2L) } returns false
+        every { pet.createdBy } returns mockUser(id = 999L)
         val result = service.updatePet(5L, UpdatePetRequest(name = "x"), mockUser(id = 2L))
         assertIs<UpdatePetResult.Forbidden>(result)
     }
@@ -219,7 +222,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { petRepository.save(any()) } returns pet
 
         service.updatePet(5L, UpdatePetRequest(name = "Milo", goodWithKids = true), mockUser(id = 1L))
@@ -240,7 +243,7 @@ class PetServiceTest {
         service.updatePet(5L, UpdatePetRequest(name = "AdminName"), mockUser(id = 99L, admin = true))
 
         verify { pet.name = "AdminName" }
-        verify(exactly = 0) { listingRepository.existsByPet_IdAndPostedBy_Id(any(), any()) }
+        verify(exactly = 0) { pet.createdBy }
     }
 
     @Test
@@ -248,7 +251,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { petRepository.save(any()) } returns pet
 
         service.updatePet(5L, UpdatePetRequest(breedCodes = emptyList()), mockUser(id = 1L))
@@ -261,7 +264,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { petSpeciesRepository.findByCode("ZEBRA") } returns null
 
         val result = service.updatePet(5L, UpdatePetRequest(speciesCode = "ZEBRA"), mockUser(id = 1L))
@@ -276,7 +279,7 @@ class PetServiceTest {
         every { pet.id } returns 5L
         every { pet.photos } returns mutableListOf(existing)
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { petPhotoRepository.save(any()) } answers { firstArg() }
         every { petRepository.save(any()) } returns pet
 
@@ -291,7 +294,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 2L) } returns false
+        every { pet.createdBy } returns mockUser(id = 999L)
         val result = service.addPhoto(5L, PetPhotoRequest(url = "x"), mockUser(id = 2L))
         assertIs<AddPetPhotoResult.Forbidden>(result)
     }
@@ -303,7 +306,7 @@ class PetServiceTest {
         every { pet.id } returns 5L
         every { pet.photos } returns mutableListOf()
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { blobStorageService.upload(file, "pets/5") } returns "https://blob/pets/5/x.jpg"
         val photoSlot = slot<PetPhoto>()
         every { petPhotoRepository.save(capture(photoSlot)) } answers { photoSlot.captured }
@@ -321,7 +324,7 @@ class PetServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 2L) } returns false
+        every { pet.createdBy } returns mockUser(id = 999L)
 
         val result = service.uploadAndAddPhoto(5L, file, isPrimary = false, displayOrder = 0, currentUser = mockUser(id = 2L))
         assertIs<AddPetPhotoResult.Forbidden>(result)
@@ -334,7 +337,7 @@ class PetServiceTest {
         every { pet.id } returns 5L
         every { pet.photos } returns mutableListOf(mockPhoto(id = 1L))
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
 
         val result = service.removePhoto(5L, 999L, mockUser(id = 1L))
         assertIs<RemovePetPhotoResult.NotFound>(result)
@@ -347,7 +350,7 @@ class PetServiceTest {
         every { pet.id } returns 5L
         every { pet.photos } returns mutableListOf(photo)
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { petPhotoRepository.delete(photo) } returns Unit
         every { blobStorageService.delete("https://blob/p2") } returns Unit
 
@@ -364,7 +367,7 @@ class PetServiceTest {
         every { pet.id } returns 5L
         every { pet.photos } returns mutableListOf(photo)
         every { petRepository.findByIdWithAllAssociations(5L) } returns pet
-        every { listingRepository.existsByPet_IdAndPostedBy_Id(5L, 1L) } returns true
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { petPhotoRepository.delete(photo) } returns Unit
         every { blobStorageService.delete("https://blob/p2") } throws RuntimeException("blob down")
 

@@ -31,7 +31,7 @@ class PetService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun createPet(request: CreatePetRequest): CreatePetResult {
+    fun createPet(request: CreatePetRequest, currentUser: User): CreatePetResult {
         val species = petSpeciesRepository.findByCode(request.speciesCode)
             ?: return CreatePetResult.NotFound("Species not found: ${request.speciesCode}")
 
@@ -45,7 +45,7 @@ class PetService(
         } else mutableSetOf()
 
         val pet = Pet(
-            name = request.name, species = species, gender = request.gender
+            name = request.name, species = species, gender = request.gender, createdBy = currentUser
         ).apply {
             size = request.size
             age = request.age
@@ -83,7 +83,7 @@ class PetService(
         val pet = petRepository.findByIdWithAllAssociations(id) ?: return null
         if (currentUser != null && currentUser.isAdmin()) return pet
         if (listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(id, ListingStatusCodes.VISIBLE_PUBLIC)) return pet
-        if (currentUser != null && listingRepository.existsByPet_IdAndPostedBy_Id(id, currentUser.requireId())) return pet
+        if (currentUser != null && pet.createdBy.id == currentUser.id) return pet
         return null
     }
 
@@ -178,8 +178,8 @@ class PetService(
     }
 
     private fun canManagePetReason(pet: Pet, currentUser: User): String? = denialReason(
-        currentUser.isAdmin() || listingRepository.existsByPet_IdAndPostedBy_Id(pet.requireId(), currentUser.requireId()),
-        "You do not own any listing for this pet"
+        currentUser.isAdmin() || pet.createdBy.id == currentUser.id,
+        "You do not own this pet"
     )
 
     private fun normalizePrimaryPhoto(photos: MutableList<PetPhoto>) {

@@ -21,6 +21,10 @@ class Pet(
     @Enumerated(EnumType.STRING)
     var gender: Gender,
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by", nullable = false)
+    var createdBy: User,
+
     @Enumerated(EnumType.STRING)
     var size: Size? = null,
 

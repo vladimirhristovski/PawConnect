@@ -29,8 +29,10 @@ import com.sorsix.pawconnect.repository.PetRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.hibernate.exception.ConstraintViolationException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import java.math.BigDecimal
@@ -140,6 +142,7 @@ class ListingServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findById(5L) } returns Optional.of(pet)
+        every { pet.createdBy } returns mockUser(id = 1L)
         every {
             listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(5L, ListingStatusCodes.OPEN_STATUSES)
         } returns true
@@ -152,6 +155,7 @@ class ListingServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findById(5L) } returns Optional.of(pet)
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns null
         val result = service.createListing(createRequest(petId = 5L), mockUser())
@@ -163,6 +167,7 @@ class ListingServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findById(5L) } returns Optional.of(pet)
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         val business = mockk<Business>(relaxed = true)
@@ -173,10 +178,31 @@ class ListingServiceTest {
     }
 
     @Test
+    fun `createListing translates a racing open-listing conflict into a clean error`() {
+        val pet = mockk<Pet>(relaxed = true)
+        every { pet.id } returns 5L
+        every { petRepository.findById(5L) } returns Optional.of(pet)
+        every { pet.createdBy } returns mockUser(id = 1L)
+        every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
+        every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
+        every { listingStatusRepository.findByCode(ListingStatusCodes.ACTIVE) } returns mockListingStatus(ListingStatusCodes.ACTIVE)
+        val constraintViolation = ConstraintViolationException(
+            "duplicate key", java.sql.SQLException("duplicate key"), "uq_listings_pet_open"
+        )
+        every { listingRepository.save(any()) } throws DataIntegrityViolationException("insert failed", constraintViolation)
+
+        val ex = assertFailsWith<IllegalArgumentException> {
+            service.createListing(createRequest(petId = 5L), mockUser(id = 1L))
+        }
+        assertEquals("This pet already has an open listing", ex.message)
+    }
+
+    @Test
     fun `createListing uses the DRAFT status when saveAsDraft is set`() {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findById(5L) } returns Optional.of(pet)
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         val draft = mockListingStatus(ListingStatusCodes.DRAFT)
@@ -197,7 +223,7 @@ class ListingServiceTest {
     fun `createListing creates an inline pet and defaults latitude longitude to the municipality`() {
         val inlinePet = mockk<Pet>(relaxed = true)
         every { inlinePet.id } returns 5L
-        every { petService.createPet(any()) } returns CreatePetResult.Success(inlinePet)
+        every { petService.createPet(any(), any()) } returns CreatePetResult.Success(inlinePet)
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         val municipality = mockMunicipality(lat = BigDecimal("41.1"), lng = BigDecimal("20.2"))
         every { municipalityRepository.findByCode("SK-CENTAR") } returns municipality
@@ -211,7 +237,7 @@ class ListingServiceTest {
             mockUser(id = 1L)
         )
 
-        verify { petService.createPet(any()) }
+        verify { petService.createPet(any(), any()) }
         assertEquals(BigDecimal("41.1"), listingSlot.first().latitude)
         assertEquals(BigDecimal("20.2"), listingSlot.first().longitude)
     }
@@ -221,12 +247,23 @@ class ListingServiceTest {
         val pet = mockk<Pet>(relaxed = true)
         every { pet.id } returns 5L
         every { petRepository.findById(5L) } returns Optional.of(pet)
+        every { pet.createdBy } returns mockUser(id = 1L)
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         every { listingStatusRepository.findByCode(ListingStatusCodes.ACTIVE) } returns null
         assertFailsWith<IllegalStateException> {
             service.createListing(createRequest(petId = 5L), mockUser())
         }
+    }
+
+    @Test
+    fun `createListing forbids attaching a pet the user does not own`() {
+        val pet = mockk<Pet>(relaxed = true)
+        every { pet.id } returns 5L
+        every { petRepository.findById(5L) } returns Optional.of(pet)
+        every { pet.createdBy } returns mockUser(id = 999L)
+        val result = service.createListing(createRequest(petId = 5L), mockUser(id = 1L))
+        assertIs<CreateListingResult.Forbidden>(result)
     }
 
     @Test

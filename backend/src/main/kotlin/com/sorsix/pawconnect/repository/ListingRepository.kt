@@ -33,8 +33,6 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
         """
     }
 
-    fun existsByPet_IdAndPostedBy_Id(petId: Long, userId: Long): Boolean
-
     fun existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(petId: Long, codes: Collection<String>): Boolean
 
     fun findByPostedBy_IdAndDeletedAtIsNull(userId: Long, pageable: Pageable): Page<Listing>

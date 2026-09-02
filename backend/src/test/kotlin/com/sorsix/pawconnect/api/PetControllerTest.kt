@@ -294,7 +294,7 @@ class PetControllerTest {
             put("/api/pets/$petId")
         } Then {
             statusCode(403)
-            body("detail", equalTo("You do not own any listing for this pet"))
+            body("detail", equalTo("You do not own this pet"))
         }
     }
 
