@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.dto.request
 
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.PositiveOrZero
 import jakarta.validation.constraints.Size
@@ -17,6 +18,6 @@ data class CreateListingRequest(
     @field:PositiveOrZero val adoptionFee: BigDecimal = BigDecimal.ZERO,
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
-    val expiresAt: Instant? = null,
+    @field:Future val expiresAt: Instant? = null,
     val saveAsDraft: Boolean = false
 )

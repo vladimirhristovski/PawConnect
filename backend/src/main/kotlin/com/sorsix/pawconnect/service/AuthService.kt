@@ -15,9 +15,9 @@ import com.sorsix.pawconnect.repository.RoleRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
+import com.sorsix.pawconnect.common.constraintName
 import com.sorsix.pawconnect.common.requireId
 import jakarta.mail.internet.MimeMessage
-import org.hibernate.exception.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
@@ -83,8 +83,7 @@ class AuthService(
         val saved = try {
             userRepository.save(user)
         } catch (ex: DataIntegrityViolationException) {
-            val constraintName = (ex.cause as? ConstraintViolationException)?.constraintName
-            val message = when (constraintName) {
+            val message = when (ex.constraintName()) {
                 "uq_users_username_active" -> "Username already taken"
                 "uq_users_email_active" -> "Email already registered"
                 else -> "Username or email already registered"

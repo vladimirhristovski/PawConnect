@@ -436,6 +436,44 @@ class ListingServiceTest {
     }
 
     @Test
+    fun `rejectPendingApplications rejects across multiple listings with a null reviewer`() {
+        val listingA = mockListing(id = 20L)
+        val listingB = mockListing(id = 21L)
+        val appA = mockk<AdoptionApplication>(relaxed = true)
+        val appB = mockk<AdoptionApplication>(relaxed = true)
+        every {
+            adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(20L, ApplicationStatusCodes.PENDING_STATUSES)
+        } returns listOf(appA)
+        every {
+            adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(21L, ApplicationStatusCodes.PENDING_STATUSES)
+        } returns listOf(appB)
+        val rejected = mockAppStatus(ApplicationStatusCodes.REJECTED)
+        every { applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED) } returns rejected
+        every { adoptionApplicationRepository.saveAll(any<List<AdoptionApplication>>()) } returns listOf(appA, appB)
+
+        val count = service.rejectPendingApplications(listOf(listingA, listingB), reviewedBy = null)
+
+        assertEquals(2, count)
+        verify { appA.status = rejected }
+        verify { appB.status = rejected }
+        verify { appA.reviewedBy = null }
+        verify { appB.reviewedBy = null }
+    }
+
+    @Test
+    fun `rejectPendingApplications returns zero without touching status lookup when nothing is pending`() {
+        val listing = mockListing(id = 22L)
+        every {
+            adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(22L, ApplicationStatusCodes.PENDING_STATUSES)
+        } returns emptyList()
+
+        val count = service.rejectPendingApplications(listOf(listing), reviewedBy = null)
+
+        assertEquals(0, count)
+        verify(exactly = 0) { applicationStatusRepository.findByCode(any()) }
+    }
+
+    @Test
     fun `deleteListing forbids a non-owner`() {
         every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L)
         assertIs<DeleteListingResult.Forbidden>(service.deleteListing(10L, mockUser(id = 2L)))

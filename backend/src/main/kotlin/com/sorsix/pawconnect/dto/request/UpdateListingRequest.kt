@@ -1,5 +1,6 @@
 package com.sorsix.pawconnect.dto.request
 
+import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.PositiveOrZero
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
@@ -12,5 +13,5 @@ data class UpdateListingRequest(
     val municipalityCode: String? = null,
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
-    val expiresAt: Instant? = null
+    @field:Future val expiresAt: Instant? = null
 )

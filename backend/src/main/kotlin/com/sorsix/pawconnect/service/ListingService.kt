@@ -12,7 +12,6 @@ import com.sorsix.pawconnect.domain.result.PublishListingResult
 import com.sorsix.pawconnect.domain.result.UpdateListingResult
 import com.sorsix.pawconnect.common.*
 import com.sorsix.pawconnect.repository.*
-import org.hibernate.exception.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
@@ -47,9 +46,8 @@ class ListingService(
         request.businessId?.let { id ->
             business = businessRepository.findById(id).orElse(null)
                 ?: return CreateListingResult.NotFound("Business not found: $id")
-            if (business.owner?.id != currentUser.id && !currentUser.isAdmin()) {
-                return CreateListingResult.Forbidden("You do not own this business")
-            }
+            denialReason(currentUser.isAdmin() || business.owner?.id == currentUser.id, "You do not own this business")
+                ?.let { return CreateListingResult.Forbidden(it) }
         }
 
         val pet = when {
@@ -66,8 +64,9 @@ class ListingService(
             else -> throw IllegalArgumentException("Either petId or pet must be provided")
         }
 
-        if (request.petId != null && !currentUser.isAdmin() && pet.createdBy.id != currentUser.id) {
-            return CreateListingResult.Forbidden("You do not own this pet")
+        if (request.petId != null) {
+            denialReason(currentUser.isAdmin() || pet.createdBy.id == currentUser.id, "You do not own this pet")
+                ?.let { return CreateListingResult.Forbidden(it) }
         }
 
         if (listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(
@@ -98,8 +97,7 @@ class ListingService(
         val saved = try {
             listingRepository.save(listing)
         } catch (ex: DataIntegrityViolationException) {
-            val constraintName = (ex.cause as? ConstraintViolationException)?.constraintName
-            if (constraintName == "uq_listings_pet_open") {
+            if (ex.constraintName() == "uq_listings_pet_open") {
                 throw IllegalArgumentException("This pet already has an open listing")
             }
             throw ex
@@ -227,23 +225,10 @@ class ListingService(
             ?: throw IllegalStateException("CANCELLED status not found")
         listing.status = cancelledStatus
 
-        val pendingApps = adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
-            listing.requireId(), ApplicationStatusCodes.PENDING_STATUSES
-        )
-        if (pendingApps.isNotEmpty()) {
-            val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
-                ?: throw IllegalStateException("REJECTED status not found")
-            val now = Instant.now()
-            pendingApps.forEach { app ->
-                app.status = rejectedStatus
-                app.reviewedBy = currentUser
-                app.reviewedAt = now
-            }
-            adoptionApplicationRepository.saveAll(pendingApps)
-        }
+        val rejectedCount = rejectPendingApplications(listOf(listing), reviewedBy = currentUser)
 
         val saved = listingRepository.save(listing)
-        log.info("Listing {} cancelled by user {}; {} pending application(s) rejected", listing.id, currentUser.id, pendingApps.size)
+        log.info("Listing {} cancelled by user {}; {} pending application(s) rejected", listing.id, currentUser.id, rejectedCount)
         val reloaded = findListingWithAssociations(saved.requireId())
             ?: return CancelListingResult.NotFound("Listing not found: ${saved.id}")
         return CancelListingResult.Success(reloaded)
@@ -267,6 +252,27 @@ class ListingService(
         listing.status = adoptedStatus
         listingRepository.save(listing)
         log.info("Listing {} marked adopted", listing.id)
+    }
+
+    @Transactional
+    fun rejectPendingApplications(listings: List<Listing>, reviewedBy: User?): Int {
+        val pendingApps = listings.flatMap { listing ->
+            adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
+                listing.requireId(), ApplicationStatusCodes.PENDING_STATUSES
+            )
+        }
+        if (pendingApps.isEmpty()) return 0
+
+        val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
+            ?: throw IllegalStateException("REJECTED status not found")
+        val now = Instant.now()
+        pendingApps.forEach { app ->
+            app.status = rejectedStatus
+            app.reviewedBy = reviewedBy
+            app.reviewedAt = now
+        }
+        adoptionApplicationRepository.saveAll(pendingApps)
+        return pendingApps.size
     }
 
     private fun ownershipDenialReason(listing: Listing, currentUser: User): String? =
