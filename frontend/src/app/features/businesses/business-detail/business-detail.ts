@@ -1,7 +1,7 @@
 import { Component, inject, input, effect } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { BusinessService } from '../../../core/services/business';
-import { AuthService } from '../../../core/services/auth';
+import { BusinessService } from '../../../core/services/business.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-business-detail',

@@ -1,21 +1,23 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { AdminService } from '../../../core/services/admin';
+import { AdminService } from '../../../core/services/admin.service';
 import { Pagination } from '../../../shared/pagination/pagination';
-import { ApplicationStatusCode } from '../../../core/models/application.model';
+import { ApplicationStatusCode } from '../../../core/models/application';
 
 @Component({
   selector: 'app-admin-applications',
-  imports: [FormsModule, RouterLink, Pagination, DatePipe],
+  imports: [FormField, RouterLink, Pagination, DatePipe],
   templateUrl: './admin-applications.html',
   styleUrl: './admin-applications.css',
 })
-export class AdminApplications implements OnInit {
+export class AdminApplications {
   protected adminService = inject(AdminService);
 
-  statusFilter = '';
+  filterModel = signal({ status: '' });
+  filterForm = form(this.filterModel);
+
   statuses: ApplicationStatusCode[] = [
     'SUBMITTED',
     'UNDER_REVIEW',
@@ -25,15 +27,15 @@ export class AdminApplications implements OnInit {
     'CLOSED',
   ];
 
-  ngOnInit(): void {
+  constructor() {
     this.search();
   }
 
   search(): void {
-    this.adminService.searchApplications(this.statusFilter || undefined, 0);
+    this.adminService.searchApplications(this.filterModel().status || undefined, 0);
   }
 
   goToPage(page: number): void {
-    this.adminService.searchApplications(this.statusFilter || undefined, page);
+    this.adminService.searchApplications(this.filterModel().status || undefined, page);
   }
 }

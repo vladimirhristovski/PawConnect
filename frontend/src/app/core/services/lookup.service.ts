@@ -1,7 +1,7 @@
 import { Service, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { Species, Breed, BusinessType, Country, City, Municipality } from '../models/lookup.model';
+import { Species, Breed, BusinessType, Country, City, Municipality } from '../models/lookup';
 
 @Service()
 export class LookupService {

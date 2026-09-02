@@ -1,7 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { ListingService } from '../../../core/services/listing';
+import { ListingService } from '../../../core/services/listing.service';
 import { Pagination } from '../../../shared/pagination/pagination';
 
 @Component({
@@ -9,12 +9,13 @@ import { Pagination } from '../../../shared/pagination/pagination';
   imports: [RouterLink, Pagination, DatePipe],
   templateUrl: './my-listings.html',
 })
-export class MyListings implements OnInit {
+export class MyListings {
   protected listingService = inject(ListingService);
 
-  ngOnInit(): void {
+  constructor() {
     this.listingService.loadMine(0);
   }
+
   goToPage(page: number): void {
     this.listingService.loadMine(page);
   }

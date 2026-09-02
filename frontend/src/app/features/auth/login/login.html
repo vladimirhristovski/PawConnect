@@ -1,22 +1,38 @@
 <div class="auth-card card">
   <h2>Log in</h2>
-  <form (ngSubmit)="submit()">
+  <form [formRoot]="loginForm">
     <label
-      >Username <input name="username" [(ngModel)]="username" required autocomplete="username"
-    /></label>
+      >Username
+      <input type="text" [formField]="loginForm.username" autocomplete="username" />
+      @if (loginForm.username().dirty() && loginForm.username().invalid()) {
+        <div class="errors">
+          @for (error of loginForm.username().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </label>
     <label
       >Password
-      <input
-        name="password"
-        type="password"
-        [(ngModel)]="password"
-        required
-        autocomplete="current-password"
-    /></label>
+      <input type="password" [formField]="loginForm.password" autocomplete="current-password" />
+      @if (loginForm.password().dirty() && loginForm.password().invalid()) {
+        <div class="errors">
+          @for (error of loginForm.password().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </label>
     @if (error()) {
       <p class="error">{{ error() }}</p>
     }
-    <button type="submit" [disabled]="loading()">{{ loading() ? 'Logging in…' : 'Log in' }}</button>
+    <button type="submit" [disabled]="!loginForm().valid() || loginForm().submitting()">
+      @if (loginForm().submitting()) {
+        Logging in…
+      } @else {
+        Log in
+      }
+    </button>
   </form>
   <p>
     <a routerLink="/forgot-password">Forgot password?</a> · No account?

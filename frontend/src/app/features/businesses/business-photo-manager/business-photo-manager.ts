@@ -1,13 +1,14 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
-import { BusinessService } from '../../../core/services/business';
-import { LookupService } from '../../../core/services/lookup';
-import { UpdateBusinessRequest } from '../../../core/models/business.model';
+import { firstValueFrom } from 'rxjs';
+import { BusinessService } from '../../../core/services/business.service';
+import { LookupService } from '../../../core/services/lookup.service';
+import { UpdateBusinessRequest } from '../../../core/models/business';
 
 @Component({
   selector: 'app-business-photo-manager',
-  imports: [FormsModule, RouterLink],
+  imports: [FormField, FormRoot, RouterLink],
   templateUrl: './business-photo-manager.html',
   styleUrl: './business-photo-manager.css',
 })
@@ -17,13 +18,54 @@ export class BusinessPhotoManager {
 
   id = input.required<string>();
 
-  model: UpdateBusinessRequest = {};
-  saving = signal(false);
-  saveError = signal<string | null>(null);
+  detailsModel = signal<BusinessDetailsForm>({
+    typeCode: '',
+    name: '',
+    description: '',
+    phone: '',
+    email: '',
+    address: '',
+    municipalityCode: '',
+  });
   saveSuccess = signal(false);
+  saveError = signal<string | null>(null);
 
   uploading = signal(false);
   uploadError = signal<string | null>(null);
+
+  detailsForm = form(
+    this.detailsModel,
+    (path) => {
+      required(path.name, { message: 'Name is required' });
+    },
+    {
+      submission: {
+        action: async (form) => {
+          this.saveError.set(null);
+          this.saveSuccess.set(false);
+          const value = form().value();
+          const payload: UpdateBusinessRequest = {
+            typeCode: value.typeCode,
+            name: value.name,
+            description: value.description || undefined,
+            phone: value.phone,
+            email: value.email || undefined,
+            address: value.address,
+            municipalityCode: value.municipalityCode,
+          };
+          try {
+            await firstValueFrom(this.businessService.update(Number(this.id()), payload));
+            this.saveSuccess.set(true);
+            this.businessService.loadOne(Number(this.id()));
+          } catch (err) {
+            const detail = (err as { error?: { detail?: string } }).error?.detail;
+            this.saveError.set(detail ?? 'Could not save business details.');
+          }
+          return;
+        },
+      },
+    },
+  );
 
   constructor() {
     this.lookup.loadBusinessTypes();
@@ -35,36 +77,17 @@ export class BusinessPhotoManager {
     effect(() => {
       const biz = this.businessService.selected();
       if (biz) {
-        this.model = {
+        this.detailsModel.set({
           typeCode: biz.typeCode,
           name: biz.name,
-          description: biz.description ?? undefined,
+          description: biz.description ?? '',
           phone: biz.phone,
-          email: biz.email ?? undefined,
+          email: biz.email ?? '',
           address: biz.address,
           municipalityCode: biz.municipalityCode,
-          latitude: biz.latitude ?? undefined,
-          longitude: biz.longitude ?? undefined,
-        };
+        });
         this.lookup.loadMunicipalities();
       }
-    });
-  }
-
-  saveDetails(): void {
-    this.saveError.set(null);
-    this.saveSuccess.set(false);
-    this.saving.set(true);
-    this.businessService.update(Number(this.id()), this.model).subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.saveSuccess.set(true);
-        this.businessService.loadOne(Number(this.id()));
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.saveError.set(err.error?.detail ?? 'Could not save business details.');
-      },
     });
   }
 
@@ -98,4 +121,14 @@ export class BusinessPhotoManager {
       .removePhoto(Number(this.id()), photoId)
       .subscribe(() => this.businessService.loadOne(Number(this.id())));
   }
+}
+
+interface BusinessDetailsForm {
+  typeCode: string;
+  name: string;
+  description: string;
+  phone: string;
+  email: string;
+  address: string;
+  municipalityCode: string;
 }

@@ -1,31 +1,37 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { email, form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/services/auth';
+import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-forgot-password',
-  imports: [FormsModule, RouterLink],
+  imports: [FormField, FormRoot, RouterLink],
   templateUrl: './forgot-password.html',
   styleUrl: './forgot-password.css',
 })
 export class ForgotPassword {
   private auth = inject(AuthService);
-  email = '';
-  loading = signal(false);
+
+  forgotModel = signal({ email: '' });
   sent = signal(false);
 
-  submit(): void {
-    this.loading.set(true);
-    this.auth.forgotPassword(this.email).subscribe({
-      next: () => {
-        this.loading.set(false);
-        this.sent.set(true);
+  forgotForm = form(
+    this.forgotModel,
+    (path) => {
+      required(path.email, { message: 'Email is required' });
+      email(path.email, { message: 'Enter a valid email' });
+    },
+    {
+      submission: {
+        action: async (form) => {
+          await firstValueFrom(this.auth.forgotPassword(form().value().email)).catch(
+            () => undefined,
+          );
+          this.sent.set(true);
+          return;
+        },
       },
-      error: () => {
-        this.loading.set(false);
-        this.sent.set(true);
-      },
-    });
-  }
+    },
+  );
 }

@@ -1,30 +1,67 @@
-<form class="business-form card" (ngSubmit)="submit()">
+<form class="business-form card" [formRoot]="businessForm">
   <h2>{{ isEdit() ? 'Edit business' : 'Add a business' }}</h2>
 
-  <label>Name <input name="name" [(ngModel)]="model.name" required /></label>
+  <label
+    >Name
+    <input [formField]="businessForm.name" />
+    @if (businessForm.name().dirty() && businessForm.name().invalid()) {
+      <div class="errors">
+        @for (error of businessForm.name().errors(); track error.kind) {
+          <p>{{ error.message }}</p>
+        }
+      </div>
+    }
+  </label>
 
   <label
     >Type
-    <select name="typeCode" [(ngModel)]="model.typeCode" required>
-      <option [ngValue]="undefined">Select…</option>
+    <select [formField]="businessForm.typeCode">
+      <option value="">Select…</option>
       @for (t of lookup.businessTypes(); track t.code) {
         <option [value]="t.code">{{ t.name }}</option>
       }
     </select>
+    @if (businessForm.typeCode().dirty() && businessForm.typeCode().invalid()) {
+      <div class="errors">
+        @for (error of businessForm.typeCode().errors(); track error.kind) {
+          <p>{{ error.message }}</p>
+        }
+      </div>
+    }
   </label>
 
   <label
-    >Description <textarea name="description" rows="3" [(ngModel)]="model.description"></textarea>
+    >Description <textarea rows="3" [formField]="businessForm.description"></textarea>
   </label>
-  <label>Phone <input name="phone" [(ngModel)]="model.phone" required /></label>
-  <label>Email <input name="email" type="email" [(ngModel)]="model.email" /></label>
-  <label>Address <input name="address" [(ngModel)]="model.address" required /></label>
+  <label
+    >Phone
+    <input [formField]="businessForm.phone" />
+    @if (businessForm.phone().dirty() && businessForm.phone().invalid()) {
+      <div class="errors">
+        @for (error of businessForm.phone().errors(); track error.kind) {
+          <p>{{ error.message }}</p>
+        }
+      </div>
+    }
+  </label>
+  <label>Email <input type="email" [formField]="businessForm.email" /></label>
+  <label
+    >Address
+    <input [formField]="businessForm.address" />
+    @if (businessForm.address().dirty() && businessForm.address().invalid()) {
+      <div class="errors">
+        @for (error of businessForm.address().errors(); track error.kind) {
+          <p>{{ error.message }}</p>
+        }
+      </div>
+    }
+  </label>
 
   @if (!isEdit()) {
     <label
       >Country
-      <select [(ngModel)]="countryCode" name="country" (ngModelChange)="onCountryChange()">
-        <option [ngValue]="undefined">Select…</option>
+      <select [formField]="businessForm.countryCode" (change)="onCountryChange()">
+        <option value="">Select…</option>
         @for (c of lookup.countries(); track c.code) {
           <option [value]="c.code">{{ c.name }}</option>
         }
@@ -32,13 +69,8 @@
     </label>
     <label
       >City
-      <select
-        [(ngModel)]="cityCode"
-        name="city"
-        (ngModelChange)="onCityChange()"
-        [disabled]="!countryCode"
-      >
-        <option [ngValue]="undefined">Select…</option>
+      <select [formField]="businessForm.cityCode" (change)="onCityChange()">
+        <option value="">Select…</option>
         @for (c of lookup.cities(); track c.code) {
           <option [value]="c.code">{{ c.name }}</option>
         }
@@ -47,19 +79,24 @@
   }
   <label
     >Municipality
-    <select name="municipalityCode" [(ngModel)]="model.municipalityCode" required>
-      <option [ngValue]="undefined">Select…</option>
+    <select [formField]="businessForm.municipalityCode">
+      <option value="">Select…</option>
       @for (m of lookup.municipalities(); track m.code) {
         <option [value]="m.code">{{ m.name }}</option>
       }
     </select>
+    @if (businessForm.municipalityCode().dirty() && businessForm.municipalityCode().invalid()) {
+      <div class="errors">
+        @for (error of businessForm.municipalityCode().errors(); track error.kind) {
+          <p>{{ error.message }}</p>
+        }
+      </div>
+    }
   </label>
 
+  <label>Latitude <input type="number" step="0.000001" [formField]="businessForm.latitude" /></label>
   <label
-    >Latitude <input name="latitude" type="number" step="0.000001" [(ngModel)]="model.latitude"
-  /></label>
-  <label
-    >Longitude <input name="longitude" type="number" step="0.000001" [(ngModel)]="model.longitude"
+    >Longitude <input type="number" step="0.000001" [formField]="businessForm.longitude"
   /></label>
   <div class="location-actions">
     <button type="button" (click)="useMyLocation()" [disabled]="locating()">
@@ -118,7 +155,9 @@
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
-  <button type="submit" [disabled]="submitting()">
-    {{ submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create business' }}
+  <button type="submit" [disabled]="!businessForm().valid() || businessForm().submitting()">
+    {{
+      businessForm().submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create business'
+    }}
   </button>
 </form>

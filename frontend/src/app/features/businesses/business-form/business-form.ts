@@ -1,21 +1,22 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { disabled, form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
-import { BusinessService } from '../../../core/services/business';
-import { LookupService } from '../../../core/services/lookup';
-import { PhotoService } from '../../../core/services/photo';
+import { firstValueFrom } from 'rxjs';
+import { BusinessService } from '../../../core/services/business.service';
+import { LookupService } from '../../../core/services/lookup.service';
+import { PhotoService } from '../../../core/services/photo.service';
 import {
   CreateBusinessRequest,
   UpdateBusinessRequest,
   StagedBusinessPhoto,
-} from '../../../core/models/business.model';
-import { Coordinates } from '../../../core/models/coordinates.model';
+} from '../../../core/models/business';
+import { Coordinates } from '../../../core/models/coordinates';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
 
 @Component({
   selector: 'app-business-form',
-  imports: [FormsModule, RouterLink, MapPicker],
+  imports: [FormField, FormRoot, RouterLink, MapPicker],
   templateUrl: './business-form.html',
   styleUrl: './business-form.css',
 })
@@ -27,26 +28,81 @@ export class BusinessForm {
 
   id = input<string>();
 
-  model: CreateBusinessRequest = {
+  formModel = signal<BusinessFormModel>({
     typeCode: '',
     name: '',
+    description: '',
     phone: '',
+    email: '',
     address: '',
     municipalityCode: '',
-  };
-  countryCode?: string;
-  cityCode?: string;
+    latitude: null,
+    longitude: null,
+    countryCode: '',
+    cityCode: '',
+  });
 
   stagedPhotos = signal<StagedBusinessPhoto[]>([]);
   uploading = signal(false);
   uploadError = signal<string | null>(null);
-
-  submitting = signal(false);
   error = signal<string | null>(null);
 
   locating = signal(false);
   locationError = signal<string | null>(null);
   showMapPicker = signal(false);
+
+  businessForm = form(
+    this.formModel,
+    (path) => {
+      required(path.name, { message: 'Name is required' });
+      required(path.typeCode, { message: 'Type is required' });
+      required(path.phone, { message: 'Phone is required' });
+      required(path.address, { message: 'Address is required' });
+      required(path.municipalityCode, { message: 'Municipality is required' });
+      disabled(path.cityCode, { when: ({ valueOf }) => !valueOf(path.countryCode) });
+    },
+    {
+      submission: {
+        action: async (form) => {
+          this.error.set(null);
+          const value = form().value();
+          const base = {
+            typeCode: value.typeCode,
+            name: value.name,
+            description: value.description || undefined,
+            phone: value.phone,
+            email: value.email || undefined,
+            address: value.address,
+            municipalityCode: value.municipalityCode,
+            latitude: value.latitude ?? undefined,
+            longitude: value.longitude ?? undefined,
+          };
+          try {
+            if (this.isEdit()) {
+              const payload: UpdateBusinessRequest = base;
+              const updated = await firstValueFrom(
+                this.businessService.update(Number(this.id()), payload),
+              );
+              this.router.navigate(['/businesses', updated.id]);
+            } else {
+              const payload: CreateBusinessRequest = {
+                ...base,
+                photos: this.stagedPhotos().map(({ previewName, ...rest }) => rest),
+              };
+              const created = await firstValueFrom(this.businessService.create(payload));
+              this.router.navigate(['/businesses', created.id]);
+            }
+          } catch (err) {
+            const detail = (err as { error?: { detail?: string } }).error?.detail;
+            this.error.set(
+              detail ?? (this.isEdit() ? 'Could not save changes.' : 'Could not create business.'),
+            );
+          }
+          return;
+        },
+      },
+    },
+  );
 
   constructor() {
     this.lookup.loadBusinessTypes();
@@ -60,17 +116,19 @@ export class BusinessForm {
     effect(() => {
       const existing = this.businessService.selected();
       if (existing && this.isEdit()) {
-        this.model = {
+        this.formModel.set({
           typeCode: existing.typeCode,
           name: existing.name,
-          description: existing.description ?? undefined,
+          description: existing.description ?? '',
           phone: existing.phone,
-          email: existing.email ?? undefined,
+          email: existing.email ?? '',
           address: existing.address,
           municipalityCode: existing.municipalityCode,
-          latitude: existing.latitude ?? undefined,
-          longitude: existing.longitude ?? undefined,
-        };
+          latitude: existing.latitude ?? null,
+          longitude: existing.longitude ?? null,
+          countryCode: '',
+          cityCode: '',
+        });
         this.lookup.loadMunicipalities();
       }
     });
@@ -81,14 +139,13 @@ export class BusinessForm {
   }
 
   onCountryChange(): void {
-    this.cityCode = undefined;
-    this.model.municipalityCode = '';
-    this.lookup.loadCities(this.countryCode);
+    this.formModel.update((m) => ({ ...m, cityCode: '', municipalityCode: '' }));
+    this.lookup.loadCities(this.formModel().countryCode || undefined);
   }
 
   onCityChange(): void {
-    this.model.municipalityCode = '';
-    this.lookup.loadMunicipalities(this.cityCode);
+    this.formModel.update((m) => ({ ...m, municipalityCode: '' }));
+    this.lookup.loadMunicipalities(this.formModel().cityCode || undefined);
   }
 
   useMyLocation(): void {
@@ -97,8 +154,7 @@ export class BusinessForm {
     getCurrentPosition()
       .then((coords) => {
         this.locating.set(false);
-        this.model.latitude = coords.lat;
-        this.model.longitude = coords.lng;
+        this.formModel.update((m) => ({ ...m, latitude: coords.lat, longitude: coords.lng }));
       })
       .catch((err: Error) => {
         this.locating.set(false);
@@ -107,8 +163,9 @@ export class BusinessForm {
   }
 
   currentCoordinates(): Coordinates | null {
-    if (this.model.latitude == null || this.model.longitude == null) return null;
-    return { lat: this.model.latitude, lng: this.model.longitude };
+    const { latitude, longitude } = this.formModel();
+    if (latitude == null || longitude == null) return null;
+    return { lat: latitude, lng: longitude };
   }
 
   openMapPicker(): void {
@@ -116,8 +173,7 @@ export class BusinessForm {
   }
 
   onMapConfirmed(coords: Coordinates): void {
-    this.model.latitude = coords.lat;
-    this.model.longitude = coords.lng;
+    this.formModel.update((m) => ({ ...m, latitude: coords.lat, longitude: coords.lng }));
     this.showMapPicker.set(false);
   }
 
@@ -161,32 +217,18 @@ export class BusinessForm {
   removeStaged(photo: StagedBusinessPhoto): void {
     this.stagedPhotos.update((list) => list.filter((p) => p.url !== photo.url));
   }
+}
 
-  submit(): void {
-    this.error.set(null);
-    this.submitting.set(true);
-
-    if (this.isEdit()) {
-      const payload: UpdateBusinessRequest = { ...this.model };
-      this.businessService.update(Number(this.id()), payload).subscribe({
-        next: (updated) => this.router.navigate(['/businesses', updated.id]),
-        error: (err) => {
-          this.submitting.set(false);
-          this.error.set(err.error?.detail ?? 'Could not save changes.');
-        },
-      });
-    } else {
-      const payload: CreateBusinessRequest = {
-        ...this.model,
-        photos: this.stagedPhotos().map(({ previewName, ...rest }) => rest),
-      };
-      this.businessService.create(payload).subscribe({
-        next: (created) => this.router.navigate(['/businesses', created.id]),
-        error: (err) => {
-          this.submitting.set(false);
-          this.error.set(err.error?.detail ?? 'Could not create business.');
-        },
-      });
-    }
-  }
+interface BusinessFormModel {
+  typeCode: string;
+  name: string;
+  description: string;
+  phone: string;
+  email: string;
+  address: string;
+  municipalityCode: string;
+  latitude: number | null;
+  longitude: number | null;
+  countryCode: string;
+  cityCode: string;
 }

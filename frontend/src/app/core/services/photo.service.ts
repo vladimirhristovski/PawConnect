@@ -1,7 +1,7 @@
 import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { TempUploadResponse } from '../models/pet.model';
+import { TempUploadResponse } from '../models/pet';
 
 @Service()
 export class PhotoService {

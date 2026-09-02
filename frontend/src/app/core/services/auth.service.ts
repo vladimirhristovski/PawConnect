@@ -1,9 +1,9 @@
 import { Service, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap, switchMap } from 'rxjs';
+import { tap, switchMap, catchError, of, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthResponse, User, LoginRequest, RegisterRequest } from '../models/user.model';
+import { AuthResponse, User, LoginRequest, RegisterRequest } from '../models/user';
 
 const ACCESS_KEY = 'pc_access_token';
 const REFRESH_KEY = 'pc_refresh_token';
@@ -56,9 +56,14 @@ export class AuthService {
     return this.http.post<void>(`${this.baseUrl}/reset-password`, { token, newPassword });
   }
 
-  restoreSession(): void {
-    if (!this.accessToken()) return;
-    this.fetchCurrentUser().subscribe({ error: () => this.clearSession() });
+  restoreSession(): Observable<User | null> {
+    if (!this.accessToken()) return of(null);
+    return this.fetchCurrentUser().pipe(
+      catchError(() => {
+        this.clearTokens();
+        return of(null);
+      }),
+    );
   }
 
   private fetchCurrentUser() {
@@ -78,10 +83,14 @@ export class AuthService {
   }
 
   clearSession(): void {
+    this.clearTokens();
+    this.router.navigate(['/login']);
+  }
+
+  private clearTokens(): void {
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
     this.accessToken.set(null);
     this.currentUser.set(null);
-    this.router.navigate(['/login']);
   }
 }

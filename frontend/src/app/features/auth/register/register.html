@@ -1,24 +1,55 @@
 <div class="auth-card card">
   <h2>Create an account</h2>
-  <form (ngSubmit)="submit()">
+  <form [formRoot]="registerForm">
     <label
-      >Username <input name="username" [(ngModel)]="model.username" required minlength="3"
-    /></label>
-    <label>Email <input name="email" type="email" [(ngModel)]="model.email" required /></label>
+      >Username
+      <input type="text" [formField]="registerForm.username" />
+      @if (registerForm.username().dirty() && registerForm.username().invalid()) {
+        <div class="errors">
+          @for (error of registerForm.username().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </label>
+    <label
+      >Email
+      <input type="email" [formField]="registerForm.email" />
+      @if (registerForm.email().dirty() && registerForm.email().invalid()) {
+        <div class="errors">
+          @for (error of registerForm.email().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </label>
     <label
       >Password
-      <input name="password" type="password" [(ngModel)]="model.password" required minlength="6"
-    /></label>
-    <label>First name <input name="firstName" [(ngModel)]="model.firstName" /></label>
-    <label>Last name <input name="lastName" [(ngModel)]="model.lastName" /></label>
-    <label>Phone <input name="phone" [(ngModel)]="model.phone" /></label>
+      <input type="password" [formField]="registerForm.password" />
+      @if (registerForm.password().dirty() && registerForm.password().invalid()) {
+        <div class="errors">
+          @for (error of registerForm.password().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </label>
+    <label>First name <input type="text" [formField]="registerForm.firstName" /></label>
+    <label>Last name <input type="text" [formField]="registerForm.lastName" /></label>
+    <label>Phone <input type="text" [formField]="registerForm.phone" /></label>
     @if (error()) {
       <p class="error">{{ error() }}</p>
     }
     @if (success()) {
       <p class="success">Account created — you can log in now.</p>
     }
-    <button type="submit" [disabled]="loading()">{{ loading() ? 'Creating…' : 'Register' }}</button>
+    <button type="submit" [disabled]="!registerForm().valid() || registerForm().submitting()">
+      @if (registerForm().submitting()) {
+        Creating…
+      } @else {
+        Register
+      }
+    </button>
   </form>
   <p>Already have an account? <a routerLink="/login">Log in</a></p>
 </div>

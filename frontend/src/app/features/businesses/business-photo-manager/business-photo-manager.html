@@ -3,14 +3,24 @@
   <p><a [routerLink]="['/businesses', biz.id]">← Back to business</a></p>
 
   <div class="manager-layout">
-    <form class="card" (ngSubmit)="saveDetails()">
+    <form class="card" [formRoot]="detailsForm">
       <h3>Business details</h3>
 
-      <label>Name <input name="name" [(ngModel)]="model.name" required /></label>
+      <label
+        >Name
+        <input [formField]="detailsForm.name" />
+        @if (detailsForm.name().dirty() && detailsForm.name().invalid()) {
+          <div class="errors">
+            @for (error of detailsForm.name().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
+      </label>
 
       <label
         >Type
-        <select name="typeCode" [(ngModel)]="model.typeCode">
+        <select [formField]="detailsForm.typeCode">
           @for (t of lookup.businessTypes(); track t.code) {
             <option [value]="t.code">{{ t.name }}</option>
           }
@@ -19,14 +29,14 @@
 
       <label
         >Description
-        <textarea name="description" rows="3" [(ngModel)]="model.description"></textarea>
+        <textarea rows="3" [formField]="detailsForm.description"></textarea>
       </label>
-      <label>Phone <input name="phone" [(ngModel)]="model.phone" /></label>
-      <label>Email <input name="email" type="email" [(ngModel)]="model.email" /></label>
-      <label>Address <input name="address" [(ngModel)]="model.address" /></label>
+      <label>Phone <input [formField]="detailsForm.phone" /></label>
+      <label>Email <input type="email" [formField]="detailsForm.email" /></label>
+      <label>Address <input [formField]="detailsForm.address" /></label>
       <label
         >Municipality
-        <select name="municipalityCode" [(ngModel)]="model.municipalityCode">
+        <select [formField]="detailsForm.municipalityCode">
           @for (m of lookup.municipalities(); track m.code) {
             <option [value]="m.code">{{ m.name }}</option>
           }
@@ -40,8 +50,12 @@
         <p class="success">Saved.</p>
       }
 
-      <button type="submit" [disabled]="saving()">
-        {{ saving() ? 'Saving…' : 'Save details' }}
+      <button type="submit" [disabled]="!detailsForm().valid() || detailsForm().submitting()">
+        @if (detailsForm().submitting()) {
+          Saving…
+        } @else {
+          Save details
+        }
       </button>
     </form>
 

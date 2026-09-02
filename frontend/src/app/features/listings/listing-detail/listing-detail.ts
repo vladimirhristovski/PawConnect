@@ -1,14 +1,15 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
-import { ListingService } from '../../../core/services/listing';
-import { ApplicationService } from '../../../core/services/application';
-import { AuthService } from '../../../core/services/auth';
-import { CreateApplicationRequest } from '../../../core/models/application.model';
+import { firstValueFrom } from 'rxjs';
+import { ListingService } from '../../../core/services/listing.service';
+import { ApplicationService } from '../../../core/services/application.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { CreateApplicationRequest } from '../../../core/models/application';
 
 @Component({
   selector: 'app-listing-detail',
-  imports: [FormsModule, RouterLink],
+  imports: [FormField, FormRoot, RouterLink],
   templateUrl: './listing-detail.html',
   styleUrl: './listing-detail.css',
 })
@@ -20,9 +21,33 @@ export class ListingDetail {
 
   id = input.required<string>();
 
-  applicationForm: CreateApplicationRequest = {};
+  applicationModel = signal<ApplicationForm>({ message: '', contactPhone: '', contactEmail: '' });
   applicationSent = signal(false);
   applicationError = signal<string | null>(null);
+
+  applicationForm = form(this.applicationModel, () => {}, {
+    submission: {
+      action: async (form) => {
+        const listing = this.listingService.selected();
+        if (!listing) return;
+        this.applicationError.set(null);
+        const value = form().value();
+        const payload: CreateApplicationRequest = {
+          message: value.message || undefined,
+          contactPhone: value.contactPhone || undefined,
+          contactEmail: value.contactEmail || undefined,
+        };
+        try {
+          await firstValueFrom(this.applicationService.submit(listing.id, payload));
+          this.applicationSent.set(true);
+        } catch (err) {
+          const detail = (err as { error?: { detail?: string } }).error?.detail;
+          this.applicationError.set(detail ?? 'Could not submit application.');
+        }
+        return;
+      },
+    },
+  });
 
   constructor() {
     effect(() => {
@@ -41,23 +66,10 @@ export class ListingDetail {
     return listing.pet.breeds.map((b) => b.name).join(', ');
   }
 
-  submitApplication(): void {
-    const listing = this.listingService.selected();
-    if (!listing) return;
-    this.applicationError.set(null);
-    this.applicationService.submit(listing.id, this.applicationForm).subscribe({
-      next: () => this.applicationSent.set(true),
-      error: (err) =>
-        this.applicationError.set(err.error?.detail ?? 'Could not submit application.'),
-    });
-  }
-
   publish(): void {
     const listing = this.listingService.selected();
     if (!listing) return;
-    this.listingService
-      .publish(listing.id)
-      .subscribe(() => this.listingService.loadOne(listing.id));
+    this.listingService.publish(listing.id).subscribe(() => this.listingService.loadOne(listing.id));
   }
 
   cancel(): void {
@@ -70,8 +82,12 @@ export class ListingDetail {
     const listing = this.listingService.selected();
     if (!listing) return;
     if (!confirm('Delete this listing permanently?')) return;
-    this.listingService
-      .delete(listing.id)
-      .subscribe(() => this.router.navigate(['/listings/mine']));
+    this.listingService.delete(listing.id).subscribe(() => this.router.navigate(['/listings/mine']));
   }
+}
+
+interface ApplicationForm {
+  message: string;
+  contactPhone: string;
+  contactEmail: string;
 }

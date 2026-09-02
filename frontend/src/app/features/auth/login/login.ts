@@ -1,11 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/services/auth';
+import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, RouterLink],
+  imports: [FormField, FormRoot, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
@@ -13,20 +14,29 @@ export class Login {
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  username = '';
-  password = '';
-  loading = signal(false);
+  loginModel = signal({ username: '', password: '' });
   error = signal<string | null>(null);
 
-  submit(): void {
-    this.error.set(null);
-    this.loading.set(true);
-    this.auth.login({ username: this.username, password: this.password }).subscribe({
-      next: () => this.router.navigate(['/']),
-      error: (err) => {
-        this.loading.set(false);
-        this.error.set(err.error?.detail ?? 'Invalid username or password.');
+  loginForm = form(
+    this.loginModel,
+    (path) => {
+      required(path.username, { message: 'Username is required' });
+      required(path.password, { message: 'Password is required' });
+    },
+    {
+      submission: {
+        action: async (form) => {
+          this.error.set(null);
+          try {
+            await firstValueFrom(this.auth.login(form().value()));
+            this.router.navigate(['/']);
+          } catch (err) {
+            const detail = (err as { error?: { detail?: string } }).error?.detail;
+            this.error.set(detail ?? 'Invalid username or password.');
+          }
+          return;
+        },
       },
-    });
-  }
+    },
+  );
 }

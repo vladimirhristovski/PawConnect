@@ -64,17 +64,17 @@
       } @else if (auth.isAuthenticated()) {
         <div class="apply-box">
           <h3>Apply to adopt</h3>
-          <form (ngSubmit)="submitApplication()">
+          <form [formRoot]="applicationForm">
             <label
               >Message
-              <textarea [(ngModel)]="applicationForm.message" name="message" rows="3"></textarea>
+              <textarea [formField]="applicationForm.message" rows="3"></textarea>
             </label>
             <label
-              >Contact phone <input [(ngModel)]="applicationForm.contactPhone" name="contactPhone"
+              >Contact phone <input [formField]="applicationForm.contactPhone"
             /></label>
             <label
               >Contact email
-              <input [(ngModel)]="applicationForm.contactEmail" name="contactEmail" type="email"
+              <input [formField]="applicationForm.contactEmail" type="email"
             /></label>
             @if (applicationError()) {
               <p class="error">{{ applicationError() }}</p>
@@ -82,7 +82,12 @@
             @if (applicationSent()) {
               <p class="success">Application submitted!</p>
             }
-            <button type="submit" [disabled]="applicationSent()">Submit application</button>
+            <button
+              type="submit"
+              [disabled]="applicationSent() || applicationForm().submitting()"
+            >
+              Submit application
+            </button>
           </form>
         </div>
       } @else {

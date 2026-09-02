@@ -10,8 +10,8 @@
     <h3>Filters</h3>
     <label
       >Type
-      <select [(ngModel)]="filters.typeCode" (ngModelChange)="onFilterChange()">
-        <option [ngValue]="undefined">Any</option>
+      <select [formField]="filterForm.typeCode" (change)="onFilterChange()">
+        <option value="">Any</option>
         @for (t of lookup.businessTypes(); track t.code) {
           <option [value]="t.code">{{ t.name }}</option>
         }
@@ -19,26 +19,21 @@
     </label>
     <label
       >Municipality
-      <select [(ngModel)]="filters.municipalityCode" (ngModelChange)="onFilterChange()">
-        <option [ngValue]="undefined">Any</option>
+      <select [formField]="filterForm.municipalityCode" (change)="onFilterChange()">
+        <option value="">Any</option>
         @for (m of lookup.municipalities(); track m.code) {
           <option [value]="m.code">{{ m.name }}</option>
         }
       </select>
     </label>
     <label class="checkbox"
-      ><input type="checkbox" [ngModel]="useNearby()" (ngModelChange)="toggleNearby()" /> Search
-      near me</label
+      ><input type="checkbox" [checked]="useNearby()" (change)="toggleNearby()" /> Search near
+      me</label
     >
     @if (useNearby()) {
       <label
         >Radius (km)
-        <input
-          type="number"
-          min="1"
-          [(ngModel)]="filters.radiusKm"
-          (ngModelChange)="onFilterChange()"
-        />
+        <input type="number" [formField]="filterForm.radiusKm" (change)="onFilterChange()" />
       </label>
       @if (locating()) {
         <p>Locating you…</p>

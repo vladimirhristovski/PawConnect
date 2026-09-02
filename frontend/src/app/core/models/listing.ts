@@ -1,5 +1,5 @@
-import { PetSummary, Pet, CreatePetRequest } from './pet.model';
-import { Business } from './business.model';
+import { PetSummary, Pet, CreatePetRequest } from './pet';
+import { Business } from './business';
 
 export type ListingStatusCode = 'DRAFT' | 'ACTIVE' | 'ADOPTED' | 'EXPIRED' | 'CANCELLED';
 

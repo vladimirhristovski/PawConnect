@@ -1,4 +1,4 @@
-import { Coordinates } from '../../core/models/coordinates.model';
+import { Coordinates } from '../../core/models/coordinates';
 
 export function getCurrentPosition(options?: PositionOptions): Promise<Coordinates> {
   return new Promise((resolve, reject) => {

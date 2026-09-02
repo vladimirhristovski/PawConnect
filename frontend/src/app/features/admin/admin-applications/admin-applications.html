@@ -9,7 +9,7 @@
 <div class="filters card">
   <label>
     Status
-    <select [(ngModel)]="statusFilter" (ngModelChange)="search()">
+    <select [formField]="filterForm.status" (change)="search()">
       <option value="">All</option>
       @for (s of statuses; track s) {
         <option [value]="s">{{ s }}</option>

@@ -1,11 +1,11 @@
 import { Service, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { User } from '../models/user.model';
-import { Listing } from '../models/listing.model';
-import { Application } from '../models/application.model';
-import { Page } from '../models/page.model';
-import { UserSearchParams, UpdateUserStatusRequest } from '../models/admin.model';
+import { User } from '../models/user';
+import { Listing } from '../models/listing';
+import { Application } from '../models/application';
+import { Page } from '../models/page';
+import { UserSearchParams, UpdateUserStatusRequest } from '../models/admin';
 
 @Service()
 export class AdminService {

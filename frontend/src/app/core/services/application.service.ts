@@ -5,8 +5,8 @@ import {
   Application,
   ApplicationDecision,
   CreateApplicationRequest,
-} from '../models/application.model';
-import { Page } from '../models/page.model';
+} from '../models/application';
+import { Page } from '../models/page';
 
 @Service()
 export class ApplicationService {

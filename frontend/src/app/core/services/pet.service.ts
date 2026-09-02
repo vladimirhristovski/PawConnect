@@ -1,7 +1,7 @@
 import { Service, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { Pet, UpdatePetRequest, PetPhoto, PetPhotoRequest } from '../models/pet.model';
+import { Pet, UpdatePetRequest, PetPhoto, PetPhotoRequest } from '../models/pet';
 
 @Service()
 export class PetService {

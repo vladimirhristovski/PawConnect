@@ -3,18 +3,24 @@
   <p><a [routerLink]="['/listings']">← Back to listings</a></p>
 
   <div class="manager-layout">
-    <form class="card" (ngSubmit)="saveDetails()">
+    <form class="card" [formRoot]="detailsForm">
       <h3>Pet details</h3>
 
-      <label>Name <input name="name" [(ngModel)]="model.name" required /></label>
+      <label
+        >Name
+        <input [formField]="detailsForm.name" />
+        @if (detailsForm.name().dirty() && detailsForm.name().invalid()) {
+          <div class="errors">
+            @for (error of detailsForm.name().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
+      </label>
 
       <label
         >Species
-        <select
-          name="speciesCode"
-          [(ngModel)]="model.speciesCode"
-          (ngModelChange)="onSpeciesChange()"
-        >
+        <select [formField]="detailsForm.speciesCode" (change)="onSpeciesChange()">
           @for (s of lookup.species(); track s.code) {
             <option [value]="s.code">{{ s.name }}</option>
           }
@@ -37,7 +43,7 @@
 
       <label
         >Gender
-        <select name="gender" [(ngModel)]="model.gender">
+        <select [formField]="detailsForm.gender">
           <option value="MALE">Male</option>
           <option value="FEMALE">Female</option>
           <option value="UNKNOWN">Unknown</option>
@@ -45,30 +51,29 @@
       </label>
       <label
         >Size
-        <select name="size" [(ngModel)]="model.size">
-          <option [ngValue]="undefined">Unspecified</option>
+        <select [formField]="detailsForm.size">
+          <option value="">Unspecified</option>
           <option value="SMALL">Small</option>
           <option value="MEDIUM">Medium</option>
           <option value="LARGE">Large</option>
         </select>
       </label>
-      <label>Age (years) <input name="age" type="number" min="0" [(ngModel)]="model.age" /></label>
-      <label>Birth date <input name="birthDate" type="date" [(ngModel)]="model.birthDate" /></label>
+      <label>Age (years) <input type="number" [formField]="detailsForm.age" /></label>
+      <label>Birth date <input type="date" [formField]="detailsForm.birthDate" /></label>
       <label
         >Weight (kg)
-        <input name="weightKg" type="number" min="0" step="0.1" [(ngModel)]="model.weightKg"
+        <input type="number" step="0.1" [formField]="detailsForm.weightKg"
       /></label>
       <label class="checkbox"
-        ><input type="checkbox" name="goodWithKids" [(ngModel)]="model.goodWithKids" /> Good with
-        kids</label
+        ><input type="checkbox" [formField]="detailsForm.goodWithKids" /> Good with kids</label
       >
       <label class="checkbox"
-        ><input type="checkbox" name="goodWithOtherPets" [(ngModel)]="model.goodWithOtherPets" />
-        Good with other pets</label
+        ><input type="checkbox" [formField]="detailsForm.goodWithOtherPets" /> Good with other
+        pets</label
       >
       <label
         >Description
-        <textarea name="description" rows="3" [(ngModel)]="model.description"></textarea>
+        <textarea rows="3" [formField]="detailsForm.description"></textarea>
       </label>
 
       @if (saveError()) {
@@ -78,8 +83,12 @@
         <p class="success">Saved.</p>
       }
 
-      <button type="submit" [disabled]="saving()">
-        {{ saving() ? 'Saving…' : 'Save details' }}
+      <button type="submit" [disabled]="!detailsForm().valid() || detailsForm().submitting()">
+        @if (detailsForm().submitting()) {
+          Saving…
+        } @else {
+          Save details
+        }
       </button>
     </form>
 

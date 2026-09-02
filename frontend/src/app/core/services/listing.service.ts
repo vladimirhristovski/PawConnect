@@ -7,8 +7,8 @@ import {
   CreateListingRequest,
   UpdateListingRequest,
   ListingSearchParams,
-} from '../models/listing.model';
-import { Page } from '../models/page.model';
+} from '../models/listing';
+import { Page } from '../models/page';
 
 @Service()
 export class ListingService {

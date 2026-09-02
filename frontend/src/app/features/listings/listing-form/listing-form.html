@@ -1,25 +1,37 @@
-<form class="listing-form card" (ngSubmit)="submit()">
+<form class="listing-form card" [formRoot]="listingForm">
   <h2>{{ isEdit() ? 'Edit listing' : 'List a pet for adoption' }}</h2>
 
   @if (!isEdit()) {
     <fieldset>
       <legend>Pet details</legend>
-      <label>Name <input name="petName" [(ngModel)]="pet.name" required /></label>
+      <label
+        >Name
+        <input [formField]="listingForm.petName" />
+        @if (listingForm.petName().dirty() && listingForm.petName().invalid()) {
+          <div class="errors">
+            @for (error of listingForm.petName().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
+      </label>
       <label
         >Species
-        <select
-          name="speciesCode"
-          [(ngModel)]="pet.speciesCode"
-          required
-          (ngModelChange)="onSpeciesChange()"
-        >
-          <option [ngValue]="undefined">Select…</option>
+        <select [formField]="listingForm.speciesCode" (change)="onSpeciesChange()">
+          <option value="">Select…</option>
           @for (s of lookup.species(); track s.code) {
             <option [value]="s.code">{{ s.name }}</option>
           }
         </select>
+        @if (listingForm.speciesCode().dirty() && listingForm.speciesCode().invalid()) {
+          <div class="errors">
+            @for (error of listingForm.speciesCode().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
       </label>
-      @if (pet.speciesCode) {
+      @if (formModel().speciesCode) {
         <fieldset class="breeds">
           <legend>Breeds</legend>
           @for (b of lookup.breeds(); track b.code) {
@@ -36,7 +48,7 @@
       }
       <label
         >Gender
-        <select name="gender" [(ngModel)]="pet.gender" required>
+        <select [formField]="listingForm.gender">
           <option value="MALE">Male</option>
           <option value="FEMALE">Female</option>
           <option value="UNKNOWN">Unknown</option>
@@ -44,30 +56,29 @@
       </label>
       <label
         >Size
-        <select name="size" [(ngModel)]="pet.size">
-          <option [ngValue]="undefined">Unspecified</option>
+        <select [formField]="listingForm.size">
+          <option value="">Unspecified</option>
           <option value="SMALL">Small</option>
           <option value="MEDIUM">Medium</option>
           <option value="LARGE">Large</option>
         </select>
       </label>
-      <label>Age (years) <input name="age" type="number" min="0" [(ngModel)]="pet.age" /></label>
-      <label>Birth date <input name="birthDate" type="date" [(ngModel)]="pet.birthDate" /></label>
+      <label>Age (years) <input type="number" [formField]="listingForm.age" /></label>
+      <label>Birth date <input type="date" [formField]="listingForm.birthDate" /></label>
       <label
         >Weight (kg)
-        <input name="weightKg" type="number" min="0" step="0.1" [(ngModel)]="pet.weightKg"
+        <input type="number" step="0.1" [formField]="listingForm.weightKg"
       /></label>
       <label class="checkbox"
-        ><input type="checkbox" name="goodWithKids" [(ngModel)]="pet.goodWithKids" /> Good with
-        kids</label
+        ><input type="checkbox" [formField]="listingForm.goodWithKids" /> Good with kids</label
       >
       <label class="checkbox"
-        ><input type="checkbox" name="goodWithOtherPets" [(ngModel)]="pet.goodWithOtherPets" /> Good
-        with other pets</label
+        ><input type="checkbox" [formField]="listingForm.goodWithOtherPets" /> Good with other
+        pets</label
       >
       <label
         >Description
-        <textarea name="petDescription" rows="3" [(ngModel)]="pet.description"></textarea>
+        <textarea rows="3" [formField]="listingForm.petDescription"></textarea>
       </label>
       <label
         >Photos <input type="file" accept="image/*" multiple (change)="onFilesSelected($event)"
@@ -99,20 +110,37 @@
 
   <fieldset>
     <legend>Listing details</legend>
-    <label>Title <input name="title" [(ngModel)]="listing.title" /></label>
+    <label>Title <input [formField]="listingForm.title" /></label>
     <label
       >Description
-      <textarea name="description" rows="3" [(ngModel)]="listing.description"></textarea>
+      <textarea rows="3" [formField]="listingForm.listingDescription"></textarea>
     </label>
     <label
       >Adoption fee
-      <input name="adoptionFee" type="number" min="0" [(ngModel)]="listing.adoptionFee"
-    /></label>
-    <label>Expires at <input name="expiresAt" type="date" [(ngModel)]="expiresAtDate" /></label>
+      <input type="number" [formField]="listingForm.adoptionFee" />
+      @if (listingForm.adoptionFee().dirty() && listingForm.adoptionFee().invalid()) {
+        <div class="errors">
+          @for (error of listingForm.adoptionFee().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </label>
+    <label
+      >Expires at
+      <input type="date" [formField]="listingForm.expiresAtDate" />
+      @if (listingForm.expiresAtDate().dirty() && listingForm.expiresAtDate().invalid()) {
+        <div class="errors">
+          @for (error of listingForm.expiresAtDate().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </label>
     <label
       >Country
-      <select [(ngModel)]="countryCode" name="country" (ngModelChange)="onCountryChange()">
-        <option [ngValue]="undefined">Select…</option>
+      <select [formField]="listingForm.countryCode" (change)="onCountryChange()">
+        <option value="">Select…</option>
         @for (c of lookup.countries(); track c.code) {
           <option [value]="c.code">{{ c.name }}</option>
         }
@@ -120,13 +148,8 @@
     </label>
     <label
       >City
-      <select
-        [(ngModel)]="cityCode"
-        name="city"
-        (ngModelChange)="onCityChange()"
-        [disabled]="!countryCode"
-      >
-        <option [ngValue]="undefined">Select…</option>
+      <select [formField]="listingForm.cityCode" (change)="onCityChange()">
+        <option value="">Select…</option>
         @for (c of lookup.cities(); track c.code) {
           <option [value]="c.code">{{ c.name }}</option>
         }
@@ -134,21 +157,23 @@
     </label>
     <label
       >Municipality
-      <select
-        name="municipalityCode"
-        [(ngModel)]="listing.municipalityCode"
-        required
-        [disabled]="!cityCode"
-      >
-        <option [ngValue]="undefined">Select…</option>
+      <select [formField]="listingForm.municipalityCode">
+        <option value="">Select…</option>
         @for (m of lookup.municipalities(); track m.code) {
           <option [value]="m.code">{{ m.name }}</option>
         }
       </select>
+      @if (listingForm.municipalityCode().dirty() && listingForm.municipalityCode().invalid()) {
+        <div class="errors">
+          @for (error of listingForm.municipalityCode().errors(); track error.kind) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
     </label>
 
     <label class="checkbox">
-      <input type="checkbox" name="manualLocation" [(ngModel)]="manualLocation" />
+      <input type="checkbox" [formField]="listingForm.manualLocation" />
       Enter coordinates manually
     </label>
 
@@ -167,34 +192,16 @@
       />
     }
 
-    @if (manualLocation) {
+    @if (formModel().manualLocation) {
+      <label>Latitude <input type="number" step="0.000001" [formField]="listingForm.latitude" /></label>
       <label
-        >Latitude
-        <input
-          name="latitude"
-          type="number"
-          step="0.000001"
-          min="-90"
-          max="90"
-          [(ngModel)]="listing.latitude"
-        />
-      </label>
-      <label
-        >Longitude
-        <input
-          name="longitude"
-          type="number"
-          step="0.000001"
-          min="-180"
-          max="180"
-          [(ngModel)]="listing.longitude"
-        />
-      </label>
-    } @else if (listing.latitude != null && listing.longitude != null) {
-      <p>Pinned at {{ listing.latitude }}, {{ listing.longitude }}</p>
+        >Longitude <input type="number" step="0.000001" [formField]="listingForm.longitude"
+      /></label>
+    } @else if (formModel().latitude != null && formModel().longitude != null) {
+      <p>Pinned at {{ formModel().latitude }}, {{ formModel().longitude }}</p>
     }
 
-    @if (listing.latitude != null || listing.longitude != null) {
+    @if (formModel().latitude != null || formModel().longitude != null) {
       <button type="button" class="link-btn" (click)="clearLocation()">Clear</button>
     }
     @if (locationError()) {
@@ -203,7 +210,7 @@
 
     @if (!isEdit()) {
       <label class="checkbox"
-        ><input type="checkbox" name="saveAsDraft" [(ngModel)]="saveAsDraft" /> Save as draft (don't
+        ><input type="checkbox" [formField]="listingForm.saveAsDraft" /> Save as draft (don't
         publish yet)</label
       >
     }
@@ -212,7 +219,7 @@
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
-  <button type="submit" [disabled]="submitting()">
-    {{ submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create listing' }}
+  <button type="submit" [disabled]="!listingForm().valid() || listingForm().submitting()">
+    {{ listingForm().submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create listing' }}
   </button>
 </form>

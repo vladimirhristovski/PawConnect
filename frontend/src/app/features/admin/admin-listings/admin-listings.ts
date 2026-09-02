@@ -1,32 +1,34 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { AdminService } from '../../../core/services/admin';
+import { AdminService } from '../../../core/services/admin.service';
 import { Pagination } from '../../../shared/pagination/pagination';
-import { ListingStatusCode } from '../../../core/models/listing.model';
+import { ListingStatusCode } from '../../../core/models/listing';
 
 @Component({
   selector: 'app-admin-listings',
-  imports: [FormsModule, RouterLink, Pagination, DatePipe],
+  imports: [FormField, RouterLink, Pagination, DatePipe],
   templateUrl: './admin-listings.html',
   styleUrl: './admin-listings.css',
 })
-export class AdminListings implements OnInit {
+export class AdminListings {
   protected adminService = inject(AdminService);
 
-  statusFilter = '';
+  filterModel = signal({ status: '' });
+  filterForm = form(this.filterModel);
+
   statuses: ListingStatusCode[] = ['DRAFT', 'ACTIVE', 'ADOPTED', 'EXPIRED', 'CANCELLED'];
 
-  ngOnInit(): void {
+  constructor() {
     this.search();
   }
 
   search(): void {
-    this.adminService.searchListings(this.statusFilter || undefined, 0);
+    this.adminService.searchListings(this.filterModel().status || undefined, 0);
   }
 
   goToPage(page: number): void {
-    this.adminService.searchListings(this.statusFilter || undefined, page);
+    this.adminService.searchListings(this.filterModel().status || undefined, page);
   }
 }

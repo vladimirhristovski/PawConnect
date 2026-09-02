@@ -1,11 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot, minLength, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/services/auth';
+import { firstValueFrom } from 'rxjs';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-reset-password',
-  imports: [FormsModule, RouterLink],
+  imports: [FormField, FormRoot, RouterLink],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.css',
 })
@@ -15,24 +16,33 @@ export class ResetPassword {
   private router = inject(Router);
 
   token = this.route.snapshot.queryParamMap.get('token') ?? '';
-  newPassword = '';
-  loading = signal(false);
+  resetModel = signal({ newPassword: '' });
   error = signal<string | null>(null);
   success = signal(false);
 
-  submit(): void {
-    this.error.set(null);
-    this.loading.set(true);
-    this.auth.resetPassword(this.token, this.newPassword).subscribe({
-      next: () => {
-        this.loading.set(false);
-        this.success.set(true);
-        setTimeout(() => this.router.navigate(['/login']), 1200);
+  resetForm = form(
+    this.resetModel,
+    (path) => {
+      required(path.newPassword, { message: 'Password is required' });
+      minLength(path.newPassword, 6, { message: 'Password must be at least 6 characters' });
+    },
+    {
+      submission: {
+        action: async (form) => {
+          this.error.set(null);
+          try {
+            await firstValueFrom(
+              this.auth.resetPassword(this.token, form().value().newPassword),
+            );
+            this.success.set(true);
+            setTimeout(() => this.router.navigate(['/login']), 1200);
+          } catch (err) {
+            const detail = (err as { error?: { detail?: string } }).error?.detail;
+            this.error.set(detail ?? 'Reset failed — the link may have expired.');
+          }
+          return;
+        },
       },
-      error: (err) => {
-        this.loading.set(false);
-        this.error.set(err.error?.detail ?? 'Reset failed — the link may have expired.');
-      },
-    });
-  }
+    },
+  );
 }

@@ -1,15 +1,15 @@
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
+import { form, FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, skip } from 'rxjs/operators';
-import { BusinessService } from '../../../core/services/business';
-import { LookupService } from '../../../core/services/lookup';
-import { AuthService } from '../../../core/services/auth';
+import { BusinessService } from '../../../core/services/business.service';
+import { LookupService } from '../../../core/services/lookup.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Pagination } from '../../../shared/pagination/pagination';
-import { BusinessSearchParams, Business } from '../../../core/models/business.model';
-import { Coordinates } from '../../../core/models/coordinates.model';
+import { BusinessSearchParams, Business } from '../../../core/models/business';
+import { Coordinates } from '../../../core/models/coordinates';
 import { getCurrentPosition, haversineDistanceKm } from '../../../shared/geo/geo-utils';
 import {
   ParamSchema,
@@ -31,13 +31,19 @@ const FILTER_SCHEMA: ParamSchema<BusinessSearchParams> = {
   size: 'number',
 };
 
+const EMPTY_FILTER_FORM: BusinessFilterForm = {
+  typeCode: '',
+  municipalityCode: '',
+  radiusKm: null,
+};
+
 @Component({
   selector: 'app-business-search',
-  imports: [FormsModule, RouterLink, Pagination],
+  imports: [FormField, RouterLink, Pagination],
   templateUrl: './business-search.html',
   styleUrl: './business-search.css',
 })
-export class BusinessSearch implements OnInit {
+export class BusinessSearch {
   protected businessService = inject(BusinessService);
   protected lookup = inject(LookupService);
   protected auth = inject(AuthService);
@@ -46,6 +52,9 @@ export class BusinessSearch implements OnInit {
   private router = inject(Router);
 
   filters: BusinessSearchParams = { ...DEFAULT_FILTERS };
+  filterModel = signal<BusinessFilterForm>({ ...EMPTY_FILTER_FORM });
+  filterForm = form(this.filterModel);
+
   useNearby = signal(false);
   locating = signal(false);
   locationError = signal<string | null>(null);
@@ -58,19 +67,15 @@ export class BusinessSearch implements OnInit {
     this.filterChange$
       .pipe(debounceTime(FILTER_DEBOUNCE_MS), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.runSearch());
-  }
 
-  ngOnInit(): void {
     this.lookup.loadBusinessTypes();
     this.lookup.loadMunicipalities();
 
     this.filters = readFiltersFromParams(this.route.snapshot.queryParamMap, FILTER_SCHEMA, {
       ...DEFAULT_FILTERS,
     });
-    if (this.filters.lat != null && this.filters.lng != null) {
-      this.useNearby.set(true);
-      this.userCoords.set({ lat: this.filters.lat, lng: this.filters.lng });
-    }
+    this.applyGeoFromFilters();
+    this.syncFiltersToModel();
     this.runSearch();
 
     this.route.queryParamMap
@@ -81,29 +86,27 @@ export class BusinessSearch implements OnInit {
           return;
         }
         this.filters = readFiltersFromParams(paramMap, FILTER_SCHEMA, { ...DEFAULT_FILTERS });
-        if (this.filters.lat != null && this.filters.lng != null) {
-          this.useNearby.set(true);
-          this.userCoords.set({ lat: this.filters.lat, lng: this.filters.lng });
-        } else {
-          this.useNearby.set(false);
-          this.userCoords.set(null);
-        }
+        this.applyGeoFromFilters();
+        this.syncFiltersToModel();
         this.runSearch();
       });
   }
 
   search(): void {
+    this.syncModelToFilters();
     this.filters.page = 0;
     this.runSearch();
   }
 
   onFilterChange(): void {
+    this.syncModelToFilters();
     this.filters.page = 0;
     this.filterChange$.next();
   }
 
   clearFilters(): void {
     this.filters = { ...DEFAULT_FILTERS };
+    this.filterModel.set({ ...EMPTY_FILTER_FORM });
     this.useNearby.set(false);
     this.userCoords.set(null);
     this.locationError.set(null);
@@ -119,7 +122,9 @@ export class BusinessSearch implements OnInit {
     this.useNearby.update((v) => !v);
     this.locationError.set(null);
     if (this.useNearby()) {
-      this.filters.radiusKm = this.filters.radiusKm ?? 25;
+      const radiusKm = this.filterModel().radiusKm ?? 25;
+      this.filterModel.update((m) => ({ ...m, radiusKm }));
+      this.filters.radiusKm = radiusKm;
       this.locateThenSearch();
     } else {
       this.filters.lat = undefined;
@@ -140,6 +145,16 @@ export class BusinessSearch implements OnInit {
     const primary = biz.photos.find((p) => p.isPrimary);
     if (primary) return primary.url;
     return biz.photos.length > 0 ? biz.photos[0].url : null;
+  }
+
+  private applyGeoFromFilters(): void {
+    if (this.filters.lat != null && this.filters.lng != null) {
+      this.useNearby.set(true);
+      this.userCoords.set({ lat: this.filters.lat, lng: this.filters.lng });
+    } else {
+      this.useNearby.set(false);
+      this.userCoords.set(null);
+    }
   }
 
   private locateThenSearch(): void {
@@ -173,4 +188,25 @@ export class BusinessSearch implements OnInit {
       replaceUrl: true,
     });
   }
+
+  private syncModelToFilters(): void {
+    const f = this.filterModel();
+    this.filters.typeCode = f.typeCode || undefined;
+    this.filters.municipalityCode = f.municipalityCode || undefined;
+    this.filters.radiusKm = this.useNearby() ? (f.radiusKm ?? undefined) : undefined;
+  }
+
+  private syncFiltersToModel(): void {
+    this.filterModel.set({
+      typeCode: this.filters.typeCode ?? '',
+      municipalityCode: this.filters.municipalityCode ?? '',
+      radiusKm: this.filters.radiusKm ?? null,
+    });
+  }
+}
+
+interface BusinessFilterForm {
+  typeCode: string;
+  municipalityCode: string;
+  radiusKm: number | null;
 }

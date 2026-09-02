@@ -1,18 +1,19 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { disabled, form, FormField, FormRoot, min, required, validate } from '@angular/forms/signals';
 import { Router } from '@angular/router';
-import { ListingService } from '../../../core/services/listing';
-import { LookupService } from '../../../core/services/lookup';
-import { PhotoService } from '../../../core/services/photo';
-import { CreateListingRequest, UpdateListingRequest } from '../../../core/models/listing.model';
-import { CreatePetRequest, StagedPetPhoto } from '../../../core/models/pet.model';
-import { Coordinates } from '../../../core/models/coordinates.model';
+import { firstValueFrom } from 'rxjs';
+import { ListingService } from '../../../core/services/listing.service';
+import { LookupService } from '../../../core/services/lookup.service';
+import { PhotoService } from '../../../core/services/photo.service';
+import { CreateListingRequest, UpdateListingRequest } from '../../../core/models/listing';
+import { CreatePetRequest, Gender, Size, StagedPetPhoto } from '../../../core/models/pet';
+import { Coordinates } from '../../../core/models/coordinates';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
 
 @Component({
   selector: 'app-listing-form',
-  imports: [FormsModule, MapPicker],
+  imports: [FormField, FormRoot, MapPicker],
   templateUrl: './listing-form.html',
   styleUrl: './listing-form.css',
 })
@@ -24,30 +25,120 @@ export class ListingForm {
 
   id = input<string>();
 
-  pet: CreatePetRequest = {
-    name: '',
+  formModel = signal<ListingFormModel>({
+    petName: '',
     speciesCode: '',
     gender: 'UNKNOWN',
-    breedCodes: [],
+    size: '',
+    age: null,
+    birthDate: '',
+    weightKg: null,
     goodWithKids: false,
     goodWithOtherPets: false,
-  };
-  listing: Omit<CreateListingRequest, 'pet' | 'municipalityCode'> & { municipalityCode?: string } =
-    { adoptionFee: 0 };
-  expiresAtDate = '';
-  saveAsDraft = false;
-  countryCode?: string;
-  cityCode?: string;
+    petDescription: '',
+    title: '',
+    listingDescription: '',
+    adoptionFee: 0,
+    expiresAtDate: '',
+    countryCode: '',
+    cityCode: '',
+    municipalityCode: '',
+    latitude: null,
+    longitude: null,
+    manualLocation: false,
+    saveAsDraft: false,
+  });
+  breedCodes = signal<string[]>([]);
 
   stagedPhotos = signal<StagedPetPhoto[]>([]);
   uploading = signal(false);
-  submitting = signal(false);
   error = signal<string | null>(null);
 
   locating = signal(false);
   locationError = signal<string | null>(null);
-  manualLocation = false;
   showMapPicker = signal(false);
+
+  listingForm = form(
+    this.formModel,
+    (path) => {
+      required(path.petName, { message: 'Name is required', when: () => !this.isEdit() });
+      required(path.speciesCode, { message: 'Species is required', when: () => !this.isEdit() });
+      required(path.municipalityCode, { message: 'Municipality is required' });
+      min(path.adoptionFee, 0, { message: 'Fee cannot be negative' });
+      disabled(path.cityCode, { when: ({ valueOf }) => !valueOf(path.countryCode) });
+      disabled(path.municipalityCode, { when: ({ valueOf }) => !valueOf(path.cityCode) });
+      validate(path.expiresAtDate, ({ value }) => {
+        const picked = value();
+        if (picked && new Date(picked).getTime() <= Date.now()) {
+          return { kind: 'future', message: 'Expiry date must be in the future' };
+        }
+        return null;
+      });
+    },
+    {
+      submission: {
+        action: async (form) => {
+          this.error.set(null);
+          const value = form().value();
+          try {
+            if (this.isEdit()) {
+              const payload: UpdateListingRequest = {
+                title: value.title || undefined,
+                description: value.listingDescription || undefined,
+                adoptionFee: value.adoptionFee,
+                municipalityCode: value.municipalityCode,
+                latitude: value.latitude ?? undefined,
+                longitude: value.longitude ?? undefined,
+                expiresAt: value.expiresAtDate
+                  ? new Date(value.expiresAtDate).toISOString()
+                  : undefined,
+              };
+              const updated = await firstValueFrom(
+                this.listingService.update(Number(this.id()), payload),
+              );
+              this.router.navigate(['/listings', updated.id]);
+            } else {
+              const pet: CreatePetRequest = {
+                name: value.petName,
+                speciesCode: value.speciesCode,
+                gender: value.gender,
+                breedCodes: this.breedCodes(),
+                size: value.size || undefined,
+                age: value.age ?? undefined,
+                birthDate: value.birthDate || undefined,
+                weightKg: value.weightKg ?? undefined,
+                description: value.petDescription || undefined,
+                goodWithKids: value.goodWithKids,
+                goodWithOtherPets: value.goodWithOtherPets,
+                photos: this.stagedPhotos().map(({ previewName, ...rest }) => rest),
+              };
+              const payload: CreateListingRequest = {
+                pet,
+                municipalityCode: value.municipalityCode,
+                title: value.title || undefined,
+                description: value.listingDescription || undefined,
+                adoptionFee: value.adoptionFee,
+                latitude: value.latitude ?? undefined,
+                longitude: value.longitude ?? undefined,
+                expiresAt: value.expiresAtDate
+                  ? new Date(value.expiresAtDate).toISOString()
+                  : undefined,
+                saveAsDraft: value.saveAsDraft,
+              };
+              const created = await firstValueFrom(this.listingService.create(payload));
+              this.router.navigate(['/listings', created.id]);
+            }
+          } catch (err) {
+            const detail = (err as { error?: { detail?: string } }).error?.detail;
+            this.error.set(
+              detail ?? (this.isEdit() ? 'Could not save changes.' : 'Could not create listing.'),
+            );
+          }
+          return;
+        },
+      },
+    },
+  );
 
   constructor() {
     this.lookup.loadSpecies();
@@ -61,13 +152,16 @@ export class ListingForm {
     effect(() => {
       const existing = this.listingService.selected();
       if (existing && this.isEdit()) {
-        this.listing.title = existing.title ?? undefined;
-        this.listing.description = existing.description ?? undefined;
-        this.listing.adoptionFee = existing.adoptionFee;
-        this.listing.municipalityCode = existing.municipalityCode;
-        this.listing.latitude = existing.latitude ?? undefined;
-        this.listing.longitude = existing.longitude ?? undefined;
-        this.expiresAtDate = existing.expiresAt ? existing.expiresAt.substring(0, 10) : '';
+        this.formModel.update((m) => ({
+          ...m,
+          title: existing.title ?? '',
+          listingDescription: existing.description ?? '',
+          adoptionFee: existing.adoptionFee,
+          municipalityCode: existing.municipalityCode,
+          latitude: existing.latitude ?? null,
+          longitude: existing.longitude ?? null,
+          expiresAtDate: existing.expiresAt ? existing.expiresAt.substring(0, 10) : '',
+        }));
       }
     });
   }
@@ -77,30 +171,29 @@ export class ListingForm {
   }
 
   onSpeciesChange(): void {
-    this.pet.breedCodes = [];
-    if (this.pet.speciesCode) this.lookup.loadBreeds(this.pet.speciesCode);
+    this.breedCodes.set([]);
+    const speciesCode = this.formModel().speciesCode;
+    if (speciesCode) this.lookup.loadBreeds(speciesCode);
   }
 
   isBreedSelected(code: string): boolean {
-    return (this.pet.breedCodes ?? []).includes(code);
+    return this.breedCodes().includes(code);
   }
 
   toggleBreed(code: string): void {
-    const current = this.pet.breedCodes ?? [];
-    this.pet.breedCodes = current.includes(code)
-      ? current.filter((c) => c !== code)
-      : [...current, code];
+    this.breedCodes.update((current) =>
+      current.includes(code) ? current.filter((c) => c !== code) : [...current, code],
+    );
   }
 
   onCountryChange(): void {
-    this.cityCode = undefined;
-    this.listing.municipalityCode = undefined;
-    this.lookup.loadCities(this.countryCode);
+    this.formModel.update((m) => ({ ...m, cityCode: '', municipalityCode: '' }));
+    this.lookup.loadCities(this.formModel().countryCode || undefined);
   }
 
   onCityChange(): void {
-    this.listing.municipalityCode = undefined;
-    this.lookup.loadMunicipalities(this.cityCode);
+    this.formModel.update((m) => ({ ...m, municipalityCode: '' }));
+    this.lookup.loadMunicipalities(this.formModel().cityCode || undefined);
   }
 
   useMyLocation(): void {
@@ -109,8 +202,7 @@ export class ListingForm {
     getCurrentPosition()
       .then((coords) => {
         this.locating.set(false);
-        this.listing.latitude = coords.lat;
-        this.listing.longitude = coords.lng;
+        this.formModel.update((m) => ({ ...m, latitude: coords.lat, longitude: coords.lng }));
       })
       .catch((err: Error) => {
         this.locating.set(false);
@@ -119,13 +211,13 @@ export class ListingForm {
   }
 
   clearLocation(): void {
-    this.listing.latitude = undefined;
-    this.listing.longitude = undefined;
+    this.formModel.update((m) => ({ ...m, latitude: null, longitude: null }));
   }
 
   currentCoordinates(): Coordinates | null {
-    if (this.listing.latitude == null || this.listing.longitude == null) return null;
-    return { lat: this.listing.latitude, lng: this.listing.longitude };
+    const { latitude, longitude } = this.formModel();
+    if (latitude == null || longitude == null) return null;
+    return { lat: latitude, lng: longitude };
   }
 
   openMapPicker(): void {
@@ -133,8 +225,7 @@ export class ListingForm {
   }
 
   onMapConfirmed(coords: Coordinates): void {
-    this.listing.latitude = coords.lat;
-    this.listing.longitude = coords.lng;
+    this.formModel.update((m) => ({ ...m, latitude: coords.lat, longitude: coords.lng }));
     this.showMapPicker.set(false);
   }
 
@@ -174,51 +265,28 @@ export class ListingForm {
   removeStaged(photo: StagedPetPhoto): void {
     this.stagedPhotos.update((list) => list.filter((p) => p.url !== photo.url));
   }
+}
 
-  submit(): void {
-    this.error.set(null);
-    if (!this.listing.municipalityCode) {
-      this.error.set('Please select a municipality.');
-      return;
-    }
-    this.submitting.set(true);
-
-    if (this.isEdit()) {
-      const payload: UpdateListingRequest = {
-        title: this.listing.title,
-        description: this.listing.description,
-        adoptionFee: this.listing.adoptionFee,
-        municipalityCode: this.listing.municipalityCode,
-        latitude: this.listing.latitude,
-        longitude: this.listing.longitude,
-        expiresAt: this.expiresAtDate ? new Date(this.expiresAtDate).toISOString() : undefined,
-      };
-      this.listingService.update(Number(this.id()), payload).subscribe({
-        next: (updated) => this.router.navigate(['/listings', updated.id]),
-        error: (err) => {
-          this.submitting.set(false);
-          this.error.set(err.error?.detail ?? 'Could not save changes.');
-        },
-      });
-    } else {
-      const payload: CreateListingRequest = {
-        pet: { ...this.pet, photos: this.stagedPhotos().map(({ previewName, ...rest }) => rest) },
-        municipalityCode: this.listing.municipalityCode,
-        title: this.listing.title,
-        description: this.listing.description,
-        adoptionFee: this.listing.adoptionFee,
-        latitude: this.listing.latitude,
-        longitude: this.listing.longitude,
-        expiresAt: this.expiresAtDate ? new Date(this.expiresAtDate).toISOString() : undefined,
-        saveAsDraft: this.saveAsDraft,
-      };
-      this.listingService.create(payload).subscribe({
-        next: (created) => this.router.navigate(['/listings', created.id]),
-        error: (err) => {
-          this.submitting.set(false);
-          this.error.set(err.error?.detail ?? 'Could not create listing.');
-        },
-      });
-    }
-  }
+interface ListingFormModel {
+  petName: string;
+  speciesCode: string;
+  gender: Gender;
+  size: Size | '';
+  age: number | null;
+  birthDate: string;
+  weightKg: number | null;
+  goodWithKids: boolean;
+  goodWithOtherPets: boolean;
+  petDescription: string;
+  title: string;
+  listingDescription: string;
+  adoptionFee: number;
+  expiresAtDate: string;
+  countryCode: string;
+  cityCode: string;
+  municipalityCode: string;
+  latitude: number | null;
+  longitude: number | null;
+  manualLocation: boolean;
+  saveAsDraft: boolean;
 }

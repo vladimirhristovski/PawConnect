@@ -10,7 +10,7 @@
 <div class="filters card">
   <label>
     Status
-    <select [(ngModel)]="activeFilter" (ngModelChange)="search()">
+    <select [formField]="filterForm.active" (change)="search()">
       <option value="">All</option>
       <option value="true">Active</option>
       <option value="false">Suspended</option>
@@ -18,7 +18,7 @@
   </label>
   <label>
     Role
-    <input [(ngModel)]="roleFilter" (change)="search()" placeholder="e.g. ADMIN" />
+    <input [formField]="filterForm.role" (change)="search()" placeholder="e.g. ADMIN" />
   </label>
 </div>
 

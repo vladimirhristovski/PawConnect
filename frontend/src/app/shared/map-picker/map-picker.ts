@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { Coordinates } from '../../core/models/coordinates.model';
+import { Coordinates } from '../../core/models/coordinates';
 
 declare const L: any;
 

@@ -8,8 +8,8 @@ import {
   CreateBusinessRequest,
   UpdateBusinessRequest,
   BusinessSearchParams,
-} from '../models/business.model';
-import { Page } from '../models/page.model';
+} from '../models/business';
+import { Page } from '../models/page';
 
 @Service()
 export class BusinessService {

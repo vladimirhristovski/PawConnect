@@ -1,7 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ListingService } from '../../core/services/listing';
-import { AuthService } from '../../core/services/auth';
+import { ListingService } from '../../core/services/listing.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -9,11 +9,11 @@ import { AuthService } from '../../core/services/auth';
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit {
+export class Dashboard {
   protected listingService = inject(ListingService);
   protected auth = inject(AuthService);
 
-  ngOnInit(): void {
+  constructor() {
     this.listingService.search({ page: 0, size: 6 });
   }
 }

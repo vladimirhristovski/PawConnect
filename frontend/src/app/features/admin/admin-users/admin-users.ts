@@ -1,42 +1,33 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
-import { AdminService } from '../../../core/services/admin';
+import { AdminService } from '../../../core/services/admin.service';
 import { Pagination } from '../../../shared/pagination/pagination';
 
 @Component({
   selector: 'app-admin-users',
-  imports: [FormsModule, RouterLink, Pagination],
+  imports: [FormField, RouterLink, Pagination],
   templateUrl: './admin-users.html',
   styleUrl: './admin-users.css',
 })
-export class AdminUsers implements OnInit {
+export class AdminUsers {
   protected adminService = inject(AdminService);
 
-  activeFilter = '';
-  roleFilter = '';
+  filterModel = signal({ active: '', role: '' });
+  filterForm = form(this.filterModel);
+
   error = signal<string | null>(null);
 
-  ngOnInit(): void {
+  constructor() {
     this.search();
   }
 
   search(): void {
-    this.adminService.searchUsers({
-      active: this.activeFilter === '' ? undefined : this.activeFilter === 'true',
-      role: this.roleFilter || undefined,
-      page: 0,
-      size: 20,
-    });
+    this.load(0);
   }
 
   goToPage(page: number): void {
-    this.adminService.searchUsers({
-      active: this.activeFilter === '' ? undefined : this.activeFilter === 'true',
-      role: this.roleFilter || undefined,
-      page,
-      size: 20,
-    });
+    this.load(page);
   }
 
   toggleActive(id: number, currentlyActive: boolean): void {
@@ -53,6 +44,16 @@ export class AdminUsers implements OnInit {
     this.adminService.deleteUser(id).subscribe({
       next: () => this.search(),
       error: (err) => this.error.set(err.error?.detail ?? 'Could not delete user.'),
+    });
+  }
+
+  private load(page: number): void {
+    const { active, role } = this.filterModel();
+    this.adminService.searchUsers({
+      active: active === '' ? undefined : active === 'true',
+      role: role || undefined,
+      page,
+      size: 20,
     });
   }
 }
