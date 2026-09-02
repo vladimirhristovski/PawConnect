@@ -13,15 +13,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/refresh');
       if (err.status === 401 && auth.getRefreshToken() && !isAuthEndpoint) {
         return auth.refresh().pipe(
+          catchError((refreshErr) => {
+            auth.clearSession();
+            return throwError(() => refreshErr);
+          }),
           switchMap(() => {
             const retried = req.clone({
               setHeaders: { Authorization: `Bearer ${auth.accessToken()}` },
             });
             return next(retried);
-          }),
-          catchError((refreshErr) => {
-            auth.clearSession();
-            return throwError(() => refreshErr);
           }),
         );
       }

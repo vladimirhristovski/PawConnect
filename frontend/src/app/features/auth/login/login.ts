@@ -3,6 +3,7 @@ import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
+import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-login',
@@ -31,8 +32,7 @@ export class Login {
             await firstValueFrom(this.auth.login(form().value()));
             this.router.navigate(['/']);
           } catch (err) {
-            const detail = (err as { error?: { detail?: string } }).error?.detail;
-            this.error.set(detail ?? 'Invalid username or password.');
+            this.error.set(apiErrorMessage(err, 'Invalid username or password.'));
           }
           return;
         },

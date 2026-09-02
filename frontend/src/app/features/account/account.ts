@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
+import { apiErrorMessage } from '../../core/api-error';
 
 @Component({
   selector: 'app-account',
@@ -30,7 +31,7 @@ export class Account {
       next: () => this.auth.clearSession(),
       error: (err) => {
         this.deleting.set(false);
-        this.error.set(err.error?.detail ?? 'Could not delete account.');
+        this.error.set(apiErrorMessage(err, 'Could not delete account.'));
       },
     });
   }

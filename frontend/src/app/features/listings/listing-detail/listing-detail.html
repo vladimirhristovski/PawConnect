@@ -48,7 +48,9 @@
       }
       @if (isOwner()) {
         <div class="owner-actions">
-          <a class="button" [routerLink]="['/listings', listing.id, 'edit']">Edit</a>
+          @if (listing.statusCode === 'DRAFT' || listing.statusCode === 'ACTIVE') {
+            <a class="button" [routerLink]="['/listings', listing.id, 'edit']">Edit</a>
+          }
           <a class="button" [routerLink]="['/listings', listing.id, 'applications']"
             >View applications</a
           >
@@ -61,6 +63,8 @@
           }
           <button class="danger" (click)="remove()">Delete</button>
         </div>
+      } @else if (listing.statusCode !== 'ACTIVE') {
+        <p class="empty-state">This listing is no longer accepting applications.</p>
       } @else if (auth.isAuthenticated()) {
         <div class="apply-box">
           <h3>Apply to adopt</h3>

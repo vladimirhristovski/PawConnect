@@ -1,7 +1,7 @@
 import { Service, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap, switchMap, catchError, of, Observable } from 'rxjs';
+import { tap, switchMap, catchError, share, finalize, of, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, User, LoginRequest, RegisterRequest } from '../models/user';
 
@@ -18,6 +18,8 @@ export class AuthService {
   currentUser = signal<User | null>(null);
   isAuthenticated = computed(() => this.accessToken() !== null);
 
+  private refresh$: Observable<AuthResponse> | null = null;
+
   register(request: RegisterRequest) {
     return this.http.post<User>(`${this.baseUrl}/register`, request);
   }
@@ -29,11 +31,16 @@ export class AuthService {
     );
   }
 
-  refresh() {
-    const refreshToken = this.getRefreshToken();
-    return this.http
-      .post<AuthResponse>(`${this.baseUrl}/refresh`, { refreshToken })
-      .pipe(tap((res) => this.storeTokens(res)));
+  refresh(): Observable<AuthResponse> {
+    if (!this.refresh$) {
+      const refreshToken = this.getRefreshToken();
+      this.refresh$ = this.http.post<AuthResponse>(`${this.baseUrl}/refresh`, { refreshToken }).pipe(
+        tap((res) => this.storeTokens(res)),
+        finalize(() => (this.refresh$ = null)),
+        share(),
+      );
+    }
+    return this.refresh$;
   }
 
   logout(): void {

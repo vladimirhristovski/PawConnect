@@ -30,10 +30,47 @@
       <label
         >Description
         <textarea rows="3" [formField]="detailsForm.description"></textarea>
+        @if (detailsForm.description().dirty() && detailsForm.description().invalid()) {
+          <div class="errors">
+            @for (error of detailsForm.description().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
       </label>
-      <label>Phone <input [formField]="detailsForm.phone" /></label>
-      <label>Email <input type="email" [formField]="detailsForm.email" /></label>
-      <label>Address <input [formField]="detailsForm.address" /></label>
+      <label
+        >Phone
+        <input [formField]="detailsForm.phone" />
+        @if (detailsForm.phone().dirty() && detailsForm.phone().invalid()) {
+          <div class="errors">
+            @for (error of detailsForm.phone().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
+      </label>
+      <label
+        >Email
+        <input type="email" [formField]="detailsForm.email" />
+        @if (detailsForm.email().dirty() && detailsForm.email().invalid()) {
+          <div class="errors">
+            @for (error of detailsForm.email().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
+      </label>
+      <label
+        >Address
+        <input [formField]="detailsForm.address" />
+        @if (detailsForm.address().dirty() && detailsForm.address().invalid()) {
+          <div class="errors">
+            @for (error of detailsForm.address().errors(); track error.kind) {
+              <p>{{ error.message }}</p>
+            }
+          </div>
+        }
+      </label>
       <label
         >Municipality
         <select [formField]="detailsForm.municipalityCode">

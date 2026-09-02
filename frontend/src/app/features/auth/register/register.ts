@@ -1,8 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
-import { email, form, FormField, FormRoot, minLength, required } from '@angular/forms/signals';
+import { email, form, FormField, FormRoot, maxLength, minLength, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
+import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-register',
@@ -30,10 +31,16 @@ export class Register {
     (path) => {
       required(path.username, { message: 'Username is required' });
       minLength(path.username, 3, { message: 'Username must be at least 3 characters' });
+      maxLength(path.username, 100, { message: 'Username must be at most 100 characters' });
       required(path.email, { message: 'Email is required' });
       email(path.email, { message: 'Enter a valid email' });
+      maxLength(path.email, 255, { message: 'Email must be at most 255 characters' });
       required(path.password, { message: 'Password is required' });
       minLength(path.password, 6, { message: 'Password must be at least 6 characters' });
+      maxLength(path.password, 100, { message: 'Password must be at most 100 characters' });
+      maxLength(path.firstName, 100, { message: 'First name must be at most 100 characters' });
+      maxLength(path.lastName, 100, { message: 'Last name must be at most 100 characters' });
+      maxLength(path.phone, 30, { message: 'Phone must be at most 30 characters' });
     },
     {
       submission: {
@@ -44,8 +51,7 @@ export class Register {
             this.success.set(true);
             setTimeout(() => this.router.navigate(['/login']), 1200);
           } catch (err) {
-            const detail = (err as { error?: { detail?: string } }).error?.detail;
-            this.error.set(detail ?? 'Registration failed.');
+            this.error.set(apiErrorMessage(err, 'Registration failed.'));
           }
           return;
         },

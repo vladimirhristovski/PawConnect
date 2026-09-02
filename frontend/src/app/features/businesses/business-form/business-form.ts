@@ -1,7 +1,7 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
-import { disabled, form, FormField, FormRoot, required } from '@angular/forms/signals';
+import { disabled, email, form, FormField, FormRoot, maxLength, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { BusinessService } from '../../../core/services/business.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PhotoService } from '../../../core/services/photo.service';
@@ -13,6 +13,7 @@ import {
 import { Coordinates } from '../../../core/models/coordinates';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
+import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-business-form',
@@ -55,9 +56,15 @@ export class BusinessForm {
     this.formModel,
     (path) => {
       required(path.name, { message: 'Name is required' });
+      maxLength(path.name, 150, { message: 'Name must be at most 150 characters' });
       required(path.typeCode, { message: 'Type is required' });
       required(path.phone, { message: 'Phone is required' });
+      maxLength(path.phone, 30, { message: 'Phone must be at most 30 characters' });
+      email(path.email, { message: 'Enter a valid email' });
+      maxLength(path.email, 255, { message: 'Email must be at most 255 characters' });
       required(path.address, { message: 'Address is required' });
+      maxLength(path.address, 255, { message: 'Address must be at most 255 characters' });
+      maxLength(path.description, 5000, { message: 'Description must be at most 5000 characters' });
       required(path.municipalityCode, { message: 'Municipality is required' });
       disabled(path.cityCode, { when: ({ valueOf }) => !valueOf(path.countryCode) });
     },
@@ -93,9 +100,11 @@ export class BusinessForm {
               this.router.navigate(['/businesses', created.id]);
             }
           } catch (err) {
-            const detail = (err as { error?: { detail?: string } }).error?.detail;
             this.error.set(
-              detail ?? (this.isEdit() ? 'Could not save changes.' : 'Could not create business.'),
+              apiErrorMessage(
+                err,
+                this.isEdit() ? 'Could not save changes.' : 'Could not create business.',
+              ),
             );
           }
           return;
@@ -190,22 +199,26 @@ export class BusinessForm {
     this.uploading.set(true);
     let remaining = files.length;
     Array.from(files).forEach((file) => {
-      this.photoService.uploadTemp(file).subscribe({
-        next: (res) => {
-          const isFirst = this.stagedPhotos().length === 0;
-          this.stagedPhotos.update((list) => [
-            ...list,
-            { url: res.url, isPrimary: isFirst, displayOrder: list.length, previewName: file.name },
-          ]);
-        },
-        error: (err) => {
-          this.uploadError.set(err.error?.detail ?? 'Upload failed.');
-        },
-        complete: () => {
-          remaining -= 1;
-          if (remaining <= 0) this.uploading.set(false);
-        },
-      });
+      this.photoService
+        .uploadTemp(file)
+        .pipe(
+          finalize(() => {
+            remaining -= 1;
+            if (remaining <= 0) this.uploading.set(false);
+          }),
+        )
+        .subscribe({
+          next: (res) => {
+            const isFirst = this.stagedPhotos().length === 0;
+            this.stagedPhotos.update((list) => [
+              ...list,
+              { url: res.url, isPrimary: isFirst, displayOrder: list.length, previewName: file.name },
+            ]);
+          },
+          error: (err) => {
+            this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
+          },
+        });
     });
     input.value = '';
   }

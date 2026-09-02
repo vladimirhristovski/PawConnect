@@ -86,6 +86,9 @@
       @if (uploading()) {
         <p>Uploading…</p>
       }
+      @if (uploadError()) {
+        <p class="error">{{ uploadError() }}</p>
+      }
       @if (stagedPhotos().length > 0) {
         <div class="photo-strip">
           @for (photo of stagedPhotos(); track photo.url) {

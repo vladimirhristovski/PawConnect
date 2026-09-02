@@ -6,6 +6,7 @@ import { ListingService } from '../../../core/services/listing.service';
 import { ApplicationService } from '../../../core/services/application.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateApplicationRequest } from '../../../core/models/application';
+import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-listing-detail',
@@ -41,8 +42,7 @@ export class ListingDetail {
           await firstValueFrom(this.applicationService.submit(listing.id, payload));
           this.applicationSent.set(true);
         } catch (err) {
-          const detail = (err as { error?: { detail?: string } }).error?.detail;
-          this.applicationError.set(detail ?? 'Could not submit application.');
+          this.applicationError.set(apiErrorMessage(err, 'Could not submit application.'));
         }
         return;
       },

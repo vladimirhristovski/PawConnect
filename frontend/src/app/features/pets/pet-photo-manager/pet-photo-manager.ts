@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { PetService } from '../../../core/services/pet.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { Gender, Size, UpdatePetRequest } from '../../../core/models/pet';
+import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-pet-photo-manager',
@@ -66,8 +67,7 @@ export class PetPhotoManager {
             this.saveSuccess.set(true);
             this.petService.loadOne(Number(this.id()));
           } catch (err) {
-            const detail = (err as { error?: { detail?: string } }).error?.detail;
-            this.saveError.set(detail ?? 'Could not save pet details.');
+            this.saveError.set(apiErrorMessage(err, 'Could not save pet details.'));
           }
           return;
         },
@@ -137,7 +137,7 @@ export class PetPhotoManager {
       },
       error: (err) => {
         this.uploading.set(false);
-        this.uploadError.set(err.error?.detail ?? 'Upload failed.');
+        this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
       },
     });
     input.value = '';

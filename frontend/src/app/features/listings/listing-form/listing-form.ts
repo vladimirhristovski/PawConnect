@@ -1,7 +1,7 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
 import { disabled, form, FormField, FormRoot, min, required, validate } from '@angular/forms/signals';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { ListingService } from '../../../core/services/listing.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PhotoService } from '../../../core/services/photo.service';
@@ -10,6 +10,7 @@ import { CreatePetRequest, Gender, Size, StagedPetPhoto } from '../../../core/mo
 import { Coordinates } from '../../../core/models/coordinates';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
+import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-listing-form',
@@ -52,6 +53,7 @@ export class ListingForm {
 
   stagedPhotos = signal<StagedPetPhoto[]>([]);
   uploading = signal(false);
+  uploadError = signal<string | null>(null);
   error = signal<string | null>(null);
 
   locating = signal(false);
@@ -129,9 +131,11 @@ export class ListingForm {
               this.router.navigate(['/listings', created.id]);
             }
           } catch (err) {
-            const detail = (err as { error?: { detail?: string } }).error?.detail;
             this.error.set(
-              detail ?? (this.isEdit() ? 'Could not save changes.' : 'Could not create listing.'),
+              apiErrorMessage(
+                err,
+                this.isEdit() ? 'Could not save changes.' : 'Could not create listing.',
+              ),
             );
           }
           return;
@@ -238,22 +242,30 @@ export class ListingForm {
     const files = input.files;
     if (!files || files.length === 0) return;
 
+    this.uploadError.set(null);
     this.uploading.set(true);
     let remaining = files.length;
     Array.from(files).forEach((file) => {
-      this.photoService.uploadTemp(file).subscribe({
-        next: (res) => {
-          const isFirst = this.stagedPhotos().length === 0;
-          this.stagedPhotos.update((list) => [
-            ...list,
-            { url: res.url, isPrimary: isFirst, displayOrder: list.length, previewName: file.name },
-          ]);
-        },
-        complete: () => {
-          remaining -= 1;
-          if (remaining <= 0) this.uploading.set(false);
-        },
-      });
+      this.photoService
+        .uploadTemp(file)
+        .pipe(
+          finalize(() => {
+            remaining -= 1;
+            if (remaining <= 0) this.uploading.set(false);
+          }),
+        )
+        .subscribe({
+          next: (res) => {
+            const isFirst = this.stagedPhotos().length === 0;
+            this.stagedPhotos.update((list) => [
+              ...list,
+              { url: res.url, isPrimary: isFirst, displayOrder: list.length, previewName: file.name },
+            ]);
+          },
+          error: (err) => {
+            this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
+          },
+        });
     });
     input.value = '';
   }

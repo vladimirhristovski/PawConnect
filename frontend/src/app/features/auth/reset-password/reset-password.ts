@@ -3,6 +3,7 @@ import { form, FormField, FormRoot, minLength, required } from '@angular/forms/s
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
+import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-reset-password',
@@ -37,8 +38,7 @@ export class ResetPassword {
             this.success.set(true);
             setTimeout(() => this.router.navigate(['/login']), 1200);
           } catch (err) {
-            const detail = (err as { error?: { detail?: string } }).error?.detail;
-            this.error.set(detail ?? 'Reset failed — the link may have expired.');
+            this.error.set(apiErrorMessage(err, 'Reset failed — the link may have expired.'));
           }
           return;
         },

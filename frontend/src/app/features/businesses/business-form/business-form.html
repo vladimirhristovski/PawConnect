@@ -31,7 +31,15 @@
   </label>
 
   <label
-    >Description <textarea rows="3" [formField]="businessForm.description"></textarea>
+    >Description
+    <textarea rows="3" [formField]="businessForm.description"></textarea>
+    @if (businessForm.description().dirty() && businessForm.description().invalid()) {
+      <div class="errors">
+        @for (error of businessForm.description().errors(); track error.kind) {
+          <p>{{ error.message }}</p>
+        }
+      </div>
+    }
   </label>
   <label
     >Phone
@@ -44,7 +52,17 @@
       </div>
     }
   </label>
-  <label>Email <input type="email" [formField]="businessForm.email" /></label>
+  <label
+    >Email
+    <input type="email" [formField]="businessForm.email" />
+    @if (businessForm.email().dirty() && businessForm.email().invalid()) {
+      <div class="errors">
+        @for (error of businessForm.email().errors(); track error.kind) {
+          <p>{{ error.message }}</p>
+        }
+      </div>
+    }
+  </label>
   <label
     >Address
     <input [formField]="businessForm.address" />
