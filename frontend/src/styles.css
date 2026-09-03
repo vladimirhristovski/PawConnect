@@ -73,6 +73,13 @@ button.danger {
   color: #dc2626;
   font-size: 0.9rem;
 }
+.errors {
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+.errors p {
+  margin: 0.2rem 0 0;
+}
 .success {
   color: #16a34a;
   font-size: 0.9rem;

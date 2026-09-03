@@ -72,7 +72,6 @@ export class ListingForm {
       required(path.municipalityCode, { message: 'Municipality is required' });
       min(path.adoptionFee, 0, { message: 'Fee cannot be negative' });
       disabled(path.cityCode, { when: ({ valueOf }) => !valueOf(path.countryCode) });
-      disabled(path.municipalityCode, { when: ({ valueOf }) => !valueOf(path.cityCode) });
       validate(path.expiresAtDate, ({ value }) => {
         const picked = value();
         if (picked && new Date(picked).getTime() <= Date.now()) {
@@ -172,6 +171,7 @@ export class ListingForm {
           longitude: existing.longitude ?? null,
           expiresAtDate: existing.expiresAt ? existing.expiresAt.substring(0, 10) : '',
         }));
+        this.lookup.loadMunicipalities();
       },
       error: (err) => this.error.set(apiErrorMessage(err, 'Could not load listing.')),
     });

@@ -21,6 +21,7 @@ export class ListingApplications {
 
   loading = signal(true);
   loadError = signal<string | null>(null);
+  actionError = signal<string | null>(null);
   reload$ = new ReplaySubject<void>(1);
 
   page = toSignal(
@@ -59,7 +60,11 @@ export class ListingApplications {
   }
 
   decide(appId: number, decision: 'APPROVE' | 'REJECT'): void {
-    this.applicationService.review(appId, decision).subscribe(() => this.reload$.next());
+    this.actionError.set(null);
+    this.applicationService.review(appId, decision).subscribe({
+      next: () => this.reload$.next(),
+      error: (err) => this.actionError.set(apiErrorMessage(err, 'Could not update the application.')),
+    });
   }
 
   canDecide(statusCode: string): boolean {

@@ -31,6 +31,7 @@ export class ListingDetail {
   applicationModel = signal<ApplicationForm>({ message: '', contactPhone: '', contactEmail: '' });
   applicationSent = signal(false);
   applicationError = signal<string | null>(null);
+  actionError = signal<string | null>(null);
 
   listing = toSignal(
     combineLatest([this.reload$, toObservable(this.id)]).pipe(
@@ -93,20 +94,32 @@ export class ListingDetail {
   publish(): void {
     const listing = this.listing();
     if (!listing) return;
-    this.listingService.publish(listing.id).subscribe(() => this.reload$.next());
+    this.actionError.set(null);
+    this.listingService.publish(listing.id).subscribe({
+      next: () => this.reload$.next(),
+      error: (err) => this.actionError.set(apiErrorMessage(err, 'Could not publish the listing.')),
+    });
   }
 
   cancel(): void {
     const listing = this.listing();
     if (!listing) return;
-    this.listingService.cancel(listing.id).subscribe(() => this.reload$.next());
+    this.actionError.set(null);
+    this.listingService.cancel(listing.id).subscribe({
+      next: () => this.reload$.next(),
+      error: (err) => this.actionError.set(apiErrorMessage(err, 'Could not cancel the listing.')),
+    });
   }
 
   remove(): void {
     const listing = this.listing();
     if (!listing) return;
     if (!confirm('Delete this listing permanently?')) return;
-    this.listingService.delete(listing.id).subscribe(() => this.router.navigate(['/listings/mine']));
+    this.actionError.set(null);
+    this.listingService.delete(listing.id).subscribe({
+      next: () => this.router.navigate(['/listings/mine']),
+      error: (err) => this.actionError.set(apiErrorMessage(err, 'Could not delete the listing.')),
+    });
   }
 }
 

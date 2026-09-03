@@ -19,6 +19,7 @@ export class MyApplications {
 
   loading = signal(true);
   loadError = signal<string | null>(null);
+  actionError = signal<string | null>(null);
   reload$ = new ReplaySubject<void>(1);
 
   page = toSignal(
@@ -55,7 +56,11 @@ export class MyApplications {
 
   withdraw(id: number): void {
     if (!confirm('Withdraw this application?')) return;
-    this.applicationService.withdraw(id).subscribe(() => this.reload$.next());
+    this.actionError.set(null);
+    this.applicationService.withdraw(id).subscribe({
+      next: () => this.reload$.next(),
+      error: (err) => this.actionError.set(apiErrorMessage(err, 'Could not withdraw the application.')),
+    });
   }
 
   canWithdraw(statusCode: string): boolean {

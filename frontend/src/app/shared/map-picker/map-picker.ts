@@ -9,9 +9,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import type * as LeafletNS from 'leaflet';
 import { Coordinates } from '../../core/models/coordinates';
-
-declare const L: any;
 
 const DEFAULT_CENTER: Coordinates = { lat: 41.9981, lng: 21.4254 };
 const DEFAULT_ZOOM = 12;
@@ -31,17 +30,28 @@ export class MapPicker implements AfterViewInit, OnDestroy {
 
   private mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
 
-  private map: any;
-  private marker: any;
+  private leaflet: typeof LeafletNS | undefined;
+  private map: LeafletNS.Map | undefined;
+  private marker: LeafletNS.Marker | undefined;
 
   selected = signal<Coordinates | null>(null);
   mapLoadError = signal(false);
 
-  ngAfterViewInit(): void {
-    if (typeof L === 'undefined') {
+  async ngAfterViewInit(): Promise<void> {
+    let L: typeof LeafletNS;
+    try {
+      L = await import('leaflet');
+    } catch {
       this.mapLoadError.set(true);
       return;
     }
+    this.leaflet = L;
+
+    Object.assign(L.Icon.Default.prototype.options, {
+      iconUrl: 'leaflet/marker-icon.png',
+      iconRetinaUrl: 'leaflet/marker-icon-2x.png',
+      shadowUrl: 'leaflet/marker-shadow.png',
+    });
 
     const preselected = this.initial();
     const start = preselected ?? DEFAULT_CENTER;
@@ -91,10 +101,12 @@ export class MapPicker implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.marker = L.marker([coords.lat, coords.lng], { draggable: true }).addTo(this.map);
-    this.marker.on('dragend', () => {
-      const pos = this.marker.getLatLng();
+    if (!this.leaflet || !this.map) return;
+    const marker = this.leaflet.marker([coords.lat, coords.lng], { draggable: true }).addTo(this.map);
+    marker.on('dragend', () => {
+      const pos = marker.getLatLng();
       this.selected.set({ lat: pos.lat, lng: pos.lng });
     });
+    this.marker = marker;
   }
 }

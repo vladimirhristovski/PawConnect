@@ -40,7 +40,7 @@ export class PetPhotoManager {
   saveError = signal<string | null>(null);
 
   uploading = signal(false);
-  uploadError = signal<string | null>(null);
+  photoError = signal<string | null>(null);
 
   detailsForm = form(
     this.detailsModel,
@@ -105,7 +105,7 @@ export class PetPhotoManager {
     const file = input.files?.[0];
     if (!file) return;
 
-    this.uploadError.set(null);
+    this.photoError.set(null);
     this.uploading.set(true);
     const pet = this.pet();
     const nextOrder = pet ? pet.photos.length : 0;
@@ -118,7 +118,7 @@ export class PetPhotoManager {
       },
       error: (err) => {
         this.uploading.set(false);
-        this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
+        this.photoError.set(apiErrorMessage(err, 'Upload failed.'));
       },
     });
     input.value = '';
@@ -126,9 +126,11 @@ export class PetPhotoManager {
 
   removePhoto(photoId: number): void {
     if (!confirm('Remove this photo?')) return;
-    this.petService
-      .removePhoto(Number(this.id()), photoId)
-      .subscribe(() => this.load(Number(this.id())));
+    this.photoError.set(null);
+    this.petService.removePhoto(Number(this.id()), photoId).subscribe({
+      next: () => this.load(Number(this.id())),
+      error: (err) => this.photoError.set(apiErrorMessage(err, 'Could not remove the photo.')),
+    });
   }
 
   private load(id: number): void {

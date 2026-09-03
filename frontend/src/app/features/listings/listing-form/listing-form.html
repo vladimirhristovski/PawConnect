@@ -140,24 +140,26 @@
         </div>
       }
     </label>
-    <label
-      >Country
-      <select [formField]="listingForm.countryCode" (change)="onCountryChange()">
-        <option value="">Select…</option>
-        @for (c of lookup.countries(); track c.code) {
-          <option [value]="c.code">{{ c.name }}</option>
-        }
-      </select>
-    </label>
-    <label
-      >City
-      <select [formField]="listingForm.cityCode" (change)="onCityChange()">
-        <option value="">Select…</option>
-        @for (c of lookup.cities(); track c.code) {
-          <option [value]="c.code">{{ c.name }}</option>
-        }
-      </select>
-    </label>
+    @if (!isEdit()) {
+      <label
+        >Country
+        <select [formField]="listingForm.countryCode" (change)="onCountryChange()">
+          <option value="">Select…</option>
+          @for (c of lookup.countries(); track c.code) {
+            <option [value]="c.code">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+      <label
+        >City
+        <select [formField]="listingForm.cityCode" (change)="onCityChange()">
+          <option value="">Select…</option>
+          @for (c of lookup.cities(); track c.code) {
+            <option [value]="c.code">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+    }
     <label
       >Municipality
       <select [formField]="listingForm.municipalityCode">

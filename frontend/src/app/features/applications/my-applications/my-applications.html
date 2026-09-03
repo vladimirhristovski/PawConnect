@@ -5,6 +5,9 @@
 } @else if (loadError(); as err) {
   <p class="error">{{ err }}</p>
 } @else if (page(); as page) {
+  @if (actionError()) {
+    <p class="error">{{ actionError() }}</p>
+  }
   @if (page.content.length > 0) {
     <table class="table">
       <thead>

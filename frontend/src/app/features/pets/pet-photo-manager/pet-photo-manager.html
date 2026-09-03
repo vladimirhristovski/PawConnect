@@ -104,8 +104,8 @@
       @if (uploading()) {
         <p>Uploading…</p>
       }
-      @if (uploadError()) {
-        <p class="error">{{ uploadError() }}</p>
+      @if (photoError()) {
+        <p class="error">{{ photoError() }}</p>
       }
 
       <div class="photo-grid">

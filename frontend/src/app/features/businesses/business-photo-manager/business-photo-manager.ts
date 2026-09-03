@@ -36,7 +36,7 @@ export class BusinessPhotoManager {
   saveError = signal<string | null>(null);
 
   uploading = signal(false);
-  uploadError = signal<string | null>(null);
+  photoError = signal<string | null>(null);
 
   detailsForm = form(
     this.detailsModel,
@@ -89,7 +89,7 @@ export class BusinessPhotoManager {
     const file = input.files?.[0];
     if (!file) return;
 
-    this.uploadError.set(null);
+    this.photoError.set(null);
     this.uploading.set(true);
     const biz = this.business();
     const nextOrder = biz ? biz.photos.length : 0;
@@ -100,16 +100,18 @@ export class BusinessPhotoManager {
       .pipe(finalize(() => this.uploading.set(false)))
       .subscribe({
         next: () => this.load(Number(this.id())),
-        error: (err) => this.uploadError.set(apiErrorMessage(err, 'Upload failed.')),
+        error: (err) => this.photoError.set(apiErrorMessage(err, 'Upload failed.')),
       });
     input.value = '';
   }
 
   removePhoto(photoId: number): void {
     if (!confirm('Remove this photo?')) return;
-    this.businessService
-      .removePhoto(Number(this.id()), photoId)
-      .subscribe(() => this.load(Number(this.id())));
+    this.photoError.set(null);
+    this.businessService.removePhoto(Number(this.id()), photoId).subscribe({
+      next: () => this.load(Number(this.id())),
+      error: (err) => this.photoError.set(apiErrorMessage(err, 'Could not remove the photo.')),
+    });
   }
 
   private load(id: number): void {

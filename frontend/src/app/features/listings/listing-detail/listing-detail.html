@@ -66,6 +66,9 @@
             <button (click)="cancel()">Cancel listing</button>
           }
           <button class="danger" (click)="remove()">Delete</button>
+          @if (actionError()) {
+            <p class="error">{{ actionError() }}</p>
+          }
         </div>
       } @else if (listing.statusCode !== 'ACTIVE') {
         <p class="empty-state">This listing is no longer accepting applications.</p>
