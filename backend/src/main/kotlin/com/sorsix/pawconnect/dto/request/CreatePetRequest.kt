@@ -11,7 +11,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 data class CreatePetRequest(
-    @field:NotBlank val name: String,
+    @field:NotBlank @field:SizeConstraint(max = 100) val name: String,
     @field:NotBlank val speciesCode: String,
     val breedCodes: List<String> = emptyList(),
     @field:NotNull val gender: Gender,

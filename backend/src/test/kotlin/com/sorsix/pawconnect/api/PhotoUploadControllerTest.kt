@@ -120,7 +120,7 @@ class PhotoUploadControllerTest {
     }
 
     @Test
-    fun `upload without auth returns 403`() {
+    fun `upload without auth returns 401`() {
         val file = tempFile("photo")
 
         Given {
@@ -128,7 +128,7 @@ class PhotoUploadControllerTest {
         } When {
             post("/api/photos/upload")
         } Then {
-            statusCode(403)
+            statusCode(401)
         }
 
         assert(testBlobStorageService.uploadedUrls.isEmpty())

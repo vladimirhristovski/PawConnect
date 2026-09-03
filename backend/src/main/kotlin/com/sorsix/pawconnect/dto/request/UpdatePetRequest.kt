@@ -8,7 +8,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 data class UpdatePetRequest(
-    val name: String? = null,
+    @field:SizeConstraint(max = 100) val name: String? = null,
     val speciesCode: String? = null,
     val breedCodes: List<String>? = null,
     val gender: Gender? = null,

@@ -21,6 +21,7 @@ import jakarta.mail.internet.MimeMessage
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.security.authentication.AuthenticationManager
@@ -179,7 +180,11 @@ class AuthService(
             If you did not request this, please ignore this email.
         """.trimIndent()
 
-        emailService.sendEmail(user.email, "Password Reset Request", emailBody)
+        try {
+            emailService.sendEmail(user.email, "Password Reset Request", emailBody)
+        } catch (ex: MailException) {
+            log.warn("Failed to send password reset email for user {}: {}", user.id, ex.message)
+        }
 
         return true
     }

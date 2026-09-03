@@ -39,11 +39,12 @@ class SecurityConfig(
             it.authenticationEntryPoint(restAuthenticationEntryPoint)
         }.authorizeHttpRequests {
             it.requestMatchers(
-                "/api/auth/**", "/actuator/health", "/swagger-ui/**", "/v3/api-docs/**"
+                "/api/auth/**", "/actuator/health", "/swagger-ui/**", "/v3/api-docs/**", "/error"
             ).permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/lookups/**").permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/pets/**").permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/businesses/**").permitAll()
+            it.requestMatchers(HttpMethod.GET, "/api/listings/mine").authenticated()
             it.requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id}").permitAll()
             it.requestMatchers("/api/admin/**").hasRole("ADMIN")
             it.anyRequest().authenticated()

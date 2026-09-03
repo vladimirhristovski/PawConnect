@@ -5,8 +5,10 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.core.MethodParameter
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpStatus
+import org.springframework.http.ProblemDetail
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.DisabledException
@@ -46,11 +48,14 @@ class GlobalExceptionHandlerTest {
         }
         val parameter = mockk<MethodParameter>(relaxed = true)
         val ex = MethodArgumentNotValidException(parameter, bindingResult)
-        val response = handler.handleValidation(ex)
+        val response = handler.handleMethodArgumentNotValid(
+            ex, HttpHeaders(), HttpStatus.BAD_REQUEST, mockk(relaxed = true)
+        )!!
+        val body = response.body as ProblemDetail
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
-        assertEquals("Validation failed", response.body?.detail)
-        val errors = response.body?.properties?.get("errors") as List<*>
+        assertEquals("Validation failed", body.detail)
+        val errors = body.properties?.get("errors") as List<*>
         assertTrue(errors.isNotEmpty())
         val first = errors.first() as Map<*, *>
         assertEquals("username", first["field"])
@@ -61,10 +66,13 @@ class GlobalExceptionHandlerTest {
     fun `handleHttpMessageNotReadable returns BAD_REQUEST`() {
         val httpInputMessage = mockk<HttpInputMessage>()
         val ex = HttpMessageNotReadableException("Malformed JSON", httpInputMessage)
-        val response = handler.handleHttpMessageNotReadable(ex)
+        val response = handler.handleHttpMessageNotReadable(
+            ex, HttpHeaders(), HttpStatus.BAD_REQUEST, mockk(relaxed = true)
+        )!!
+        val body = response.body as ProblemDetail
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
-        assertEquals("Malformed JSON request", response.body?.detail)
-        assertEquals(URI.create("about:blank"), response.body?.type)
+        assertEquals("Malformed JSON request", body.detail)
+        assertEquals(URI.create("about:blank"), body.type)
     }
 
     @Test
@@ -98,7 +106,9 @@ class GlobalExceptionHandlerTest {
 
     @Test
     fun `handleMaxUploadSize returns PAYLOAD_TOO_LARGE`() {
-        val response = handler.handleMaxUploadSize(MaxUploadSizeExceededException(5))
+        val response = handler.handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException(5), HttpHeaders(), HttpStatus.PAYLOAD_TOO_LARGE, mockk(relaxed = true)
+        )!!
         assertEquals(HttpStatus.PAYLOAD_TOO_LARGE, response.statusCode)
     }
 

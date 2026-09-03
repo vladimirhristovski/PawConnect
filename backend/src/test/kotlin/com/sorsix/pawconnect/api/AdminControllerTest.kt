@@ -256,7 +256,7 @@ class AdminControllerTest {
         } When {
             get("/api/admin/users")
         } Then {
-            statusCode(403)
+            statusCode(401)
         }
     }
 

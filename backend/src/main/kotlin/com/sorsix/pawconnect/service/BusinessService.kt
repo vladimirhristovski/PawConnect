@@ -59,8 +59,8 @@ class BusinessService(
             address = request.address,
             municipality = municipality,
             owner = currentUser,
-            latitude = request.latitude ?: municipality.latitude,
-            longitude = request.longitude ?: municipality.longitude,
+            latitude = if (explicitCoordinates) request.latitude else municipality.latitude,
+            longitude = if (explicitCoordinates) request.longitude else municipality.longitude,
             addressGeocoded = explicitCoordinates
         )
 

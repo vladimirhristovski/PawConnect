@@ -2,7 +2,9 @@ package com.sorsix.pawconnect.exception
 
 import com.sorsix.pawconnect.common.problemResponse
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -12,11 +14,13 @@ import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 
 @RestControllerAdvice
-class GlobalExceptionHandler {
+class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(IllegalArgumentException::class)
@@ -41,22 +45,39 @@ class GlobalExceptionHandler {
     fun handleDisabled(ex: DisabledException): ResponseEntity<ProblemDetail> =
         problemResponse(HttpStatus.UNAUTHORIZED, "Account is deactivated")
 
-    @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ProblemDetail> {
+    public override fun handleMethodArgumentNotValid(
+        ex: MethodArgumentNotValidException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest
+    ): ResponseEntity<Any>? {
         val errors = ex.bindingResult.allErrors.map {
             if (it is FieldError) mapOf("field" to it.field, "message" to it.defaultMessage)
             else mapOf("message" to it.defaultMessage)
         }
-        return problemResponse(HttpStatus.BAD_REQUEST, "Validation failed", mapOf("errors" to errors))
+        return problemEntity(HttpStatus.BAD_REQUEST, "Validation failed", mapOf("errors" to errors))
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleHttpMessageNotReadable(ex: HttpMessageNotReadableException): ResponseEntity<ProblemDetail> =
-        problemResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request")
+    public override fun handleHttpMessageNotReadable(
+        ex: HttpMessageNotReadableException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest
+    ): ResponseEntity<Any>? = problemEntity(HttpStatus.BAD_REQUEST, "Malformed JSON request")
 
-    @ExceptionHandler(MaxUploadSizeExceededException::class)
-    fun handleMaxUploadSize(ex: MaxUploadSizeExceededException): ResponseEntity<ProblemDetail> =
-        problemResponse(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size")
+    public override fun handleMaxUploadSizeExceededException(
+        ex: MaxUploadSizeExceededException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest
+    ): ResponseEntity<Any>? = problemEntity(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size")
+
+    private fun problemEntity(
+        status: HttpStatus,
+        detail: String,
+        properties: Map<String, Any?> = emptyMap()
+    ): ResponseEntity<Any> =
+        ResponseEntity.status(status).body<Any>(problemResponse(status, detail, properties).body)
 
     @ExceptionHandler(BlobStorageException::class)
     fun handleBlobStorage(ex: BlobStorageException): ResponseEntity<ProblemDetail> {

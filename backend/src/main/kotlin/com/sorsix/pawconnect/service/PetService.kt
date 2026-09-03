@@ -124,7 +124,7 @@ class PetService(
         val saved = petRepository.save(pet)
         log.info("Pet {} updated by user {}", saved.id, currentUser.id)
         val reloaded = petRepository.findByIdWithAllAssociations(saved.requireId())
-            ?: return UpdatePetResult.NotFound("Pet not found after update")
+            ?: throw IllegalStateException("Pet not found after update")
         return UpdatePetResult.Success(reloaded)
     }
 

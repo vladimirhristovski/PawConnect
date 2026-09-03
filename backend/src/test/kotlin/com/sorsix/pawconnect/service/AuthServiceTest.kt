@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.mail.MailSendException
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -254,6 +255,22 @@ class AuthServiceTest {
         verify { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), any()) }
         verify { passwordResetTokenRepository.save(any<PasswordResetToken>()) }
         verify(exactly = 1) { emailService.sendEmail("john@mail.com", "Password Reset Request", any()) }
+    }
+
+    @Test
+    fun `forgotPassword should return true and keep the reset token when the email send fails`() {
+        val request = ForgotPasswordRequest("john@mail.com")
+        val user = User("john", "john@mail.com", "pass", null, null, null).apply { id = 1L }
+
+        every { userRepository.findByEmailActive(request.email) } returns Optional.of(user)
+        every { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), any()) } returns 1
+        every { passwordResetTokenRepository.save(any<PasswordResetToken>()) } answers { it.invocation.args[0] as PasswordResetToken }
+        every { emailService.sendEmail(any(), any(), any()) } throws MailSendException("smtp down")
+
+        val result = authService.forgotPassword(request)
+
+        assertTrue(result)
+        verify(exactly = 1) { passwordResetTokenRepository.save(any<PasswordResetToken>()) }
     }
 
     @Test

@@ -385,7 +385,7 @@ class PetControllerTest {
     }
 
     @Test
-    fun `uploading photo without auth returns 403`() {
+    fun `uploading photo without auth returns 401`() {
         val file = tempFile("photo")
 
         Given {
@@ -393,7 +393,7 @@ class PetControllerTest {
         } When {
             post("/api/pets/$petId/photos/upload")
         } Then {
-            statusCode(403)
+            statusCode(401)
         }
     }
 

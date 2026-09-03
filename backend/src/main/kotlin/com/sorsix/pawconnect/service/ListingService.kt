@@ -80,6 +80,8 @@ class ListingService(
         val status = listingStatusRepository.findByCode(initialStatusCode)
             ?: throw IllegalStateException("Status '$initialStatusCode' not found")
 
+        val hasExplicitCoordinates = request.latitude != null && request.longitude != null
+
         val listing = Listing(
             pet = pet,
             postedBy = currentUser,
@@ -89,8 +91,8 @@ class ListingService(
             title = request.title,
             description = request.description,
             adoptionFee = request.adoptionFee,
-            latitude = request.latitude ?: municipality.latitude,
-            longitude = request.longitude ?: municipality.longitude,
+            latitude = if (hasExplicitCoordinates) request.latitude else municipality.latitude,
+            longitude = if (hasExplicitCoordinates) request.longitude else municipality.longitude,
             expiresAt = request.expiresAt
         )
 
@@ -104,7 +106,7 @@ class ListingService(
         }
         log.info("Listing {} created by user {} (status {})", saved.id, currentUser.id, status.code)
         val reloaded = findListingWithAssociations(saved.requireId())
-            ?: return CreateListingResult.NotFound("Listing not found: ${saved.id}")
+            ?: throw IllegalStateException("Listing not found after create")
         return CreateListingResult.Success(reloaded)
     }
 
@@ -176,7 +178,7 @@ class ListingService(
         val saved = listingRepository.save(listing)
         log.info("Listing {} published by user {}", saved.id, currentUser.id)
         val reloaded = findListingWithAssociations(saved.requireId())
-            ?: return PublishListingResult.NotFound("Listing not found: ${saved.id}")
+            ?: throw IllegalStateException("Listing not found after publish")
         return PublishListingResult.Success(reloaded)
     }
 
@@ -210,7 +212,7 @@ class ListingService(
         val saved = listingRepository.save(listing)
         log.info("Listing {} updated by user {}", saved.id, currentUser.id)
         val reloaded = findListingWithAssociations(saved.requireId())
-            ?: return UpdateListingResult.NotFound("Listing not found: ${saved.id}")
+            ?: throw IllegalStateException("Listing not found after update")
         return UpdateListingResult.Success(reloaded)
     }
 
@@ -230,7 +232,7 @@ class ListingService(
         val saved = listingRepository.save(listing)
         log.info("Listing {} cancelled by user {}; {} pending application(s) rejected", listing.id, currentUser.id, rejectedCount)
         val reloaded = findListingWithAssociations(saved.requireId())
-            ?: return CancelListingResult.NotFound("Listing not found: ${saved.id}")
+            ?: throw IllegalStateException("Listing not found after cancel")
         return CancelListingResult.Success(reloaded)
     }
 
