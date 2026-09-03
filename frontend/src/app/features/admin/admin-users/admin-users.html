@@ -10,7 +10,7 @@
 <div class="filters card">
   <label>
     Status
-    <select [formField]="filterForm.active" (change)="search()">
+    <select [formField]="filterForm.active" (change)="onFilterChange()">
       <option value="">All</option>
       <option value="true">Active</option>
       <option value="false">Suspended</option>
@@ -18,7 +18,7 @@
   </label>
   <label>
     Role
-    <input [formField]="filterForm.role" (change)="search()" placeholder="e.g. ADMIN" />
+    <input [formField]="filterForm.role" (change)="onFilterChange()" placeholder="e.g. ADMIN" />
   </label>
 </div>
 
@@ -26,7 +26,11 @@
   <p class="error">{{ error() }}</p>
 }
 
-@if (adminService.users(); as page) {
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (loadError(); as loadErr) {
+  <p class="error">{{ loadErr }}</p>
+} @else if (page(); as page) {
   @if (page.content.length > 0) {
     <table class="table">
       <thead>
@@ -65,6 +69,4 @@
   } @else {
     <p class="empty-state">No users found.</p>
   }
-} @else {
-  <p>Loading…</p>
 }

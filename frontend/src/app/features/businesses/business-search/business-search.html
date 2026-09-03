@@ -47,7 +47,11 @@
   </aside>
 
   <section class="results">
-    @if (businessService.results(); as page) {
+    @if (loading()) {
+      <p>Loading…</p>
+    } @else if (loadError(); as err) {
+      <p class="error">{{ err }}</p>
+    } @else if (results(); as page) {
       @if (page.content.length > 0) {
         <div class="business-grid">
           @for (biz of page.content; track biz.id) {
@@ -77,8 +81,6 @@
       } @else {
         <p class="empty-state">No businesses match your filters.</p>
       }
-    } @else {
-      <p>Loading…</p>
     }
   </section>
 </div>

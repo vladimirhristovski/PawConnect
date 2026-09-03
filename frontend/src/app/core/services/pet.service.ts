@@ -1,4 +1,4 @@
-import { Service, inject, signal } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Pet, UpdatePetRequest, PetPhoto, PetPhotoRequest } from '../models/pet';
@@ -8,10 +8,8 @@ export class PetService {
   private http = inject(HttpClient);
   private baseUrl = `${environment.apiUrl}/pets`;
 
-  selected = signal<Pet | null>(null);
-
-  loadOne(id: number): void {
-    this.http.get<Pet>(`${this.baseUrl}/${id}`).subscribe((pet) => this.selected.set(pet));
+  getById(id: number) {
+    return this.http.get<Pet>(`${this.baseUrl}/${id}`);
   }
   update(id: number, request: UpdatePetRequest) {
     return this.http.put<Pet>(`${this.baseUrl}/${id}`, request);

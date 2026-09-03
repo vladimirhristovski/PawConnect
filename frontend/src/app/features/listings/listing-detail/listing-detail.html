@@ -1,4 +1,8 @@
-@if (listingService.selected(); as listing) {
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (loadError(); as err) {
+  <p class="error">{{ err }}</p>
+} @else if (listing(); as listing) {
   <div class="listing-detail card">
     <div class="gallery">
       @if (listing.pet.photos.length > 0) {
@@ -100,5 +104,5 @@
     </div>
   </div>
 } @else {
-  <p>Loading…</p>
+  <p>Listing not found.</p>
 }

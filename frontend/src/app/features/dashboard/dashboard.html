@@ -17,7 +17,11 @@
     <a routerLink="/listings">See all →</a>
   </div>
 
-  @if (listingService.results(); as page) {
+  @if (loading()) {
+    <p>Loading…</p>
+  } @else if (loadError(); as err) {
+    <p class="error">{{ err }}</p>
+  } @else if (results(); as page) {
     @if (page.content.length > 0) {
       <div class="listing-grid">
         @for (listing of page.content; track listing.id) {
@@ -37,7 +41,5 @@
     } @else {
       <p class="empty-state">No active listings yet — be the first to post one!</p>
     }
-  } @else {
-    <p>Loading…</p>
   }
 </section>

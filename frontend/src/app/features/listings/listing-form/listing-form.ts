@@ -1,7 +1,7 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
 import { disabled, form, FormField, FormRoot, min, required, validate } from '@angular/forms/signals';
 import { Router } from '@angular/router';
-import { finalize, firstValueFrom } from 'rxjs';
+import { EMPTY, from, catchError, finalize, firstValueFrom, map, mergeMap } from 'rxjs';
 import { ListingService } from '../../../core/services/listing.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PhotoService } from '../../../core/services/photo.service';
@@ -12,6 +12,32 @@ import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
 import { apiErrorMessage } from '../../../core/api-error';
 
+const UPLOAD_CONCURRENCY = 3;
+
+const EMPTY_LISTING_FORM: ListingFormModel = {
+  petName: '',
+  speciesCode: '',
+  gender: 'UNKNOWN',
+  size: '',
+  age: null,
+  birthDate: '',
+  weightKg: null,
+  goodWithKids: false,
+  goodWithOtherPets: false,
+  petDescription: '',
+  title: '',
+  listingDescription: '',
+  adoptionFee: 0,
+  expiresAtDate: '',
+  countryCode: '',
+  cityCode: '',
+  municipalityCode: '',
+  latitude: null,
+  longitude: null,
+  manualLocation: false,
+  saveAsDraft: false,
+};
+
 @Component({
   selector: 'app-listing-form',
   imports: [FormField, FormRoot, MapPicker],
@@ -19,36 +45,14 @@ import { apiErrorMessage } from '../../../core/api-error';
   styleUrl: './listing-form.css',
 })
 export class ListingForm {
-  protected listingService = inject(ListingService);
+  private listingService = inject(ListingService);
   protected lookup = inject(LookupService);
   private photoService = inject(PhotoService);
   private router = inject(Router);
 
   id = input<string>();
 
-  formModel = signal<ListingFormModel>({
-    petName: '',
-    speciesCode: '',
-    gender: 'UNKNOWN',
-    size: '',
-    age: null,
-    birthDate: '',
-    weightKg: null,
-    goodWithKids: false,
-    goodWithOtherPets: false,
-    petDescription: '',
-    title: '',
-    listingDescription: '',
-    adoptionFee: 0,
-    expiresAtDate: '',
-    countryCode: '',
-    cityCode: '',
-    municipalityCode: '',
-    latitude: null,
-    longitude: null,
-    manualLocation: false,
-    saveAsDraft: false,
-  });
+  formModel = signal<ListingFormModel>({ ...EMPTY_LISTING_FORM });
   breedCodes = signal<string[]>([]);
 
   stagedPhotos = signal<StagedPetPhoto[]>([]);
@@ -150,12 +154,14 @@ export class ListingForm {
 
     effect(() => {
       const idParam = this.id();
-      if (idParam) this.listingService.loadOne(Number(idParam));
+      if (idParam) this.loadExisting(Number(idParam));
     });
+  }
 
-    effect(() => {
-      const existing = this.listingService.selected();
-      if (existing && this.isEdit()) {
+  private loadExisting(id: number): void {
+    this.formModel.set({ ...EMPTY_LISTING_FORM });
+    this.listingService.getById(id).subscribe({
+      next: (existing) => {
         this.formModel.update((m) => ({
           ...m,
           title: existing.title ?? '',
@@ -166,7 +172,8 @@ export class ListingForm {
           longitude: existing.longitude ?? null,
           expiresAtDate: existing.expiresAt ? existing.expiresAt.substring(0, 10) : '',
         }));
-      }
+      },
+      error: (err) => this.error.set(apiErrorMessage(err, 'Could not load listing.')),
     });
   }
 
@@ -244,29 +251,30 @@ export class ListingForm {
 
     this.uploadError.set(null);
     this.uploading.set(true);
-    let remaining = files.length;
-    Array.from(files).forEach((file) => {
-      this.photoService
-        .uploadTemp(file)
-        .pipe(
-          finalize(() => {
-            remaining -= 1;
-            if (remaining <= 0) this.uploading.set(false);
-          }),
-        )
-        .subscribe({
-          next: (res) => {
-            const isFirst = this.stagedPhotos().length === 0;
-            this.stagedPhotos.update((list) => [
-              ...list,
-              { url: res.url, isPrimary: isFirst, displayOrder: list.length, previewName: file.name },
-            ]);
-          },
-          error: (err) => {
-            this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
-          },
-        });
-    });
+
+    from(Array.from(files))
+      .pipe(
+        mergeMap(
+          (file) =>
+            this.photoService.uploadTemp(file).pipe(
+              map((res) => ({ url: res.url, name: file.name })),
+              catchError((err) => {
+                this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
+                return EMPTY;
+              }),
+            ),
+          UPLOAD_CONCURRENCY,
+        ),
+        finalize(() => this.uploading.set(false)),
+      )
+      .subscribe(({ url, name }) => {
+        const isFirst = this.stagedPhotos().length === 0;
+        this.stagedPhotos.update((list) => [
+          ...list,
+          { url, isPrimary: isFirst, displayOrder: list.length, previewName: name },
+        ]);
+      });
+
     input.value = '';
   }
 

@@ -1,4 +1,4 @@
-import { Service, inject, signal } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import {
@@ -15,32 +15,21 @@ export class ListingService {
   private http = inject(HttpClient);
   private baseUrl = `${environment.apiUrl}/listings`;
 
-  results = signal<Page<ListingSummary> | null>(null);
-  myListings = signal<Page<Listing> | null>(null);
-  selected = signal<Listing | null>(null);
-
-  search(params: ListingSearchParams): void {
+  search(params: ListingSearchParams) {
     let httpParams = new HttpParams();
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== '') {
         httpParams = httpParams.set(key, String(value));
       }
     }
-    this.http
-      .get<Page<ListingSummary>>(this.baseUrl, { params: httpParams })
-      .subscribe((page) => this.results.set(page));
+    return this.http.get<Page<ListingSummary>>(this.baseUrl, { params: httpParams });
   }
-  loadMine(page = 0, size = 20): void {
+  getMine(page = 0, size = 20) {
     const params = new HttpParams().set('page', page).set('size', size);
-    this.http
-      .get<Page<Listing>>(`${this.baseUrl}/mine`, { params })
-      .subscribe((p) => this.myListings.set(p));
+    return this.http.get<Page<Listing>>(`${this.baseUrl}/mine`, { params });
   }
-  loadOne(id: number): void {
-    this.selected.set(null);
-    this.http
-      .get<Listing>(`${this.baseUrl}/${id}`)
-      .subscribe((listing) => this.selected.set(listing));
+  getById(id: number) {
+    return this.http.get<Listing>(`${this.baseUrl}/${id}`);
   }
   create(request: CreateListingRequest) {
     return this.http.post<Listing>(this.baseUrl, request);

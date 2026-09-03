@@ -1,11 +1,13 @@
-import { Component, inject, input, effect, signal } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { ReplaySubject, EMPTY, combineLatest, map, tap, switchMap, catchError, firstValueFrom } from 'rxjs';
 import { ListingService } from '../../../core/services/listing.service';
 import { ApplicationService } from '../../../core/services/application.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateApplicationRequest } from '../../../core/models/application';
+import { Listing } from '../../../core/models/listing';
 import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
@@ -15,21 +17,46 @@ import { apiErrorMessage } from '../../../core/api-error';
   styleUrl: './listing-detail.css',
 })
 export class ListingDetail {
-  protected listingService = inject(ListingService);
-  protected applicationService = inject(ApplicationService);
+  private listingService = inject(ListingService);
+  private applicationService = inject(ApplicationService);
   protected auth = inject(AuthService);
   private router = inject(Router);
 
   id = input.required<string>();
 
+  loading = signal(true);
+  loadError = signal<string | null>(null);
+  reload$ = new ReplaySubject<void>(1);
+
   applicationModel = signal<ApplicationForm>({ message: '', contactPhone: '', contactEmail: '' });
   applicationSent = signal(false);
   applicationError = signal<string | null>(null);
 
+  listing = toSignal(
+    combineLatest([this.reload$, toObservable(this.id)]).pipe(
+      map(([, id]) => Number(id)),
+      tap(() => {
+        this.loading.set(true);
+        this.loadError.set(null);
+        this.applicationSent.set(false);
+      }),
+      switchMap((id) =>
+        this.listingService.getById(id).pipe(
+          tap(() => this.loading.set(false)),
+          catchError((err) => {
+            this.loadError.set(apiErrorMessage(err, 'Could not load listing.'));
+            this.loading.set(false);
+            return EMPTY;
+          }),
+        ),
+      ),
+    ),
+  );
+
   applicationForm = form(this.applicationModel, () => {}, {
     submission: {
       action: async (form) => {
-        const listing = this.listingService.selected();
+        const listing = this.listing();
         if (!listing) return;
         this.applicationError.set(null);
         const value = form().value();
@@ -50,36 +77,33 @@ export class ListingDetail {
   });
 
   constructor() {
-    effect(() => {
-      this.listingService.loadOne(Number(this.id()));
-      this.applicationSent.set(false);
-    });
+    this.reload$.next();
   }
 
   isOwner(): boolean {
-    const listing = this.listingService.selected();
+    const listing = this.listing();
     const user = this.auth.currentUser();
     return !!listing && !!user && listing.postedBy === user.username;
   }
 
-  breedNames(listing: NonNullable<ReturnType<ListingService['selected']>>): string {
+  breedNames(listing: Listing): string {
     return listing.pet.breeds.map((b) => b.name).join(', ');
   }
 
   publish(): void {
-    const listing = this.listingService.selected();
+    const listing = this.listing();
     if (!listing) return;
-    this.listingService.publish(listing.id).subscribe(() => this.listingService.loadOne(listing.id));
+    this.listingService.publish(listing.id).subscribe(() => this.reload$.next());
   }
 
   cancel(): void {
-    const listing = this.listingService.selected();
+    const listing = this.listing();
     if (!listing) return;
-    this.listingService.cancel(listing.id).subscribe(() => this.listingService.loadOne(listing.id));
+    this.listingService.cancel(listing.id).subscribe(() => this.reload$.next());
   }
 
   remove(): void {
-    const listing = this.listingService.selected();
+    const listing = this.listing();
     if (!listing) return;
     if (!confirm('Delete this listing permanently?')) return;
     this.listingService.delete(listing.id).subscribe(() => this.router.navigate(['/listings/mine']));

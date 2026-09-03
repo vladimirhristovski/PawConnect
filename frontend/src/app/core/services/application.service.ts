@@ -1,4 +1,4 @@
-import { Service, inject, signal } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import {
@@ -13,26 +13,22 @@ export class ApplicationService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl;
 
-  forListing = signal<Page<Application> | null>(null);
-  mine = signal<Page<Application> | null>(null);
-
   submit(listingId: number, request: CreateApplicationRequest) {
     return this.http.post<Application>(
       `${this.baseUrl}/listings/${listingId}/applications`,
       request,
     );
   }
-  loadForListing(listingId: number, page = 0, size = 20): void {
+  getForListing(listingId: number, page = 0, size = 20) {
     const params = new HttpParams().set('page', page).set('size', size);
-    this.http
-      .get<Page<Application>>(`${this.baseUrl}/listings/${listingId}/applications`, { params })
-      .subscribe((p) => this.forListing.set(p));
+    return this.http.get<Page<Application>>(
+      `${this.baseUrl}/listings/${listingId}/applications`,
+      { params },
+    );
   }
-  loadMine(page = 0, size = 20): void {
+  getMine(page = 0, size = 20) {
     const params = new HttpParams().set('page', page).set('size', size);
-    this.http
-      .get<Page<Application>>(`${this.baseUrl}/applications/mine`, { params })
-      .subscribe((p) => this.mine.set(p));
+    return this.http.get<Page<Application>>(`${this.baseUrl}/applications/mine`, { params });
   }
   review(id: number, decision: ApplicationDecision) {
     const params = new HttpParams().set('decision', decision);

@@ -1,10 +1,10 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
 import { email, form, FormField, FormRoot, maxLength, required } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { BusinessService } from '../../../core/services/business.service';
 import { LookupService } from '../../../core/services/lookup.service';
-import { UpdateBusinessRequest } from '../../../core/models/business';
+import { Business, UpdateBusinessRequest } from '../../../core/models/business';
 import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
@@ -14,10 +14,14 @@ import { apiErrorMessage } from '../../../core/api-error';
   styleUrl: './business-photo-manager.css',
 })
 export class BusinessPhotoManager {
-  protected businessService = inject(BusinessService);
+  private businessService = inject(BusinessService);
   protected lookup = inject(LookupService);
 
   id = input.required<string>();
+
+  business = signal<Business | null>(null);
+  loading = signal(true);
+  loadError = signal<string | null>(null);
 
   detailsModel = signal<BusinessDetailsForm>({
     typeCode: '',
@@ -61,9 +65,11 @@ export class BusinessPhotoManager {
             municipalityCode: value.municipalityCode,
           };
           try {
-            await firstValueFrom(this.businessService.update(Number(this.id()), payload));
+            const updated = await firstValueFrom(
+              this.businessService.update(Number(this.id()), payload),
+            );
+            this.applyBusiness(updated);
             this.saveSuccess.set(true);
-            this.businessService.loadOne(Number(this.id()));
           } catch (err) {
             this.saveError.set(apiErrorMessage(err, 'Could not save business details.'));
           }
@@ -75,26 +81,7 @@ export class BusinessPhotoManager {
 
   constructor() {
     this.lookup.loadBusinessTypes();
-
-    effect(() => {
-      this.businessService.loadOne(Number(this.id()));
-    });
-
-    effect(() => {
-      const biz = this.businessService.selected();
-      if (biz) {
-        this.detailsModel.set({
-          typeCode: biz.typeCode,
-          name: biz.name,
-          description: biz.description ?? '',
-          phone: biz.phone,
-          email: biz.email ?? '',
-          address: biz.address,
-          municipalityCode: biz.municipalityCode,
-        });
-        this.lookup.loadMunicipalities();
-      }
-    });
+    effect(() => this.load(Number(this.id())));
   }
 
   onFileSelected(event: Event): void {
@@ -104,20 +91,17 @@ export class BusinessPhotoManager {
 
     this.uploadError.set(null);
     this.uploading.set(true);
-    const biz = this.businessService.selected();
+    const biz = this.business();
     const nextOrder = biz ? biz.photos.length : 0;
     const isPrimary = biz ? biz.photos.length === 0 : true;
 
-    this.businessService.uploadPhoto(Number(this.id()), file, isPrimary, nextOrder).subscribe({
-      next: () => {
-        this.uploading.set(false);
-        this.businessService.loadOne(Number(this.id()));
-      },
-      error: (err) => {
-        this.uploading.set(false);
-        this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
-      },
-    });
+    this.businessService
+      .uploadPhoto(Number(this.id()), file, isPrimary, nextOrder)
+      .pipe(finalize(() => this.uploading.set(false)))
+      .subscribe({
+        next: () => this.load(Number(this.id())),
+        error: (err) => this.uploadError.set(apiErrorMessage(err, 'Upload failed.')),
+      });
     input.value = '';
   }
 
@@ -125,7 +109,36 @@ export class BusinessPhotoManager {
     if (!confirm('Remove this photo?')) return;
     this.businessService
       .removePhoto(Number(this.id()), photoId)
-      .subscribe(() => this.businessService.loadOne(Number(this.id())));
+      .subscribe(() => this.load(Number(this.id())));
+  }
+
+  private load(id: number): void {
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.businessService.getById(id).subscribe({
+      next: (biz) => {
+        this.applyBusiness(biz);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loadError.set(apiErrorMessage(err, 'Could not load business.'));
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private applyBusiness(biz: Business): void {
+    this.business.set(biz);
+    this.detailsModel.set({
+      typeCode: biz.typeCode,
+      name: biz.name,
+      description: biz.description ?? '',
+      phone: biz.phone,
+      email: biz.email ?? '',
+      address: biz.address,
+      municipalityCode: biz.municipalityCode,
+    });
+    this.lookup.loadMunicipalities();
   }
 }
 

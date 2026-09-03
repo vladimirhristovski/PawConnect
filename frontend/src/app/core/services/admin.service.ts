@@ -1,4 +1,4 @@
-import { Service, inject, signal } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user';
@@ -12,20 +12,14 @@ export class AdminService {
   private http = inject(HttpClient);
   private baseUrl = `${environment.apiUrl}/admin`;
 
-  users = signal<Page<User> | null>(null);
-  listings = signal<Page<Listing> | null>(null);
-  applications = signal<Page<Application> | null>(null);
-
-  searchUsers(params: UserSearchParams): void {
+  searchUsers(params: UserSearchParams) {
     let httpParams = new HttpParams();
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== ('' as unknown)) {
         httpParams = httpParams.set(key, String(value));
       }
     }
-    this.http
-      .get<Page<User>>(`${this.baseUrl}/users`, { params: httpParams })
-      .subscribe((page) => this.users.set(page));
+    return this.http.get<Page<User>>(`${this.baseUrl}/users`, { params: httpParams });
   }
 
   updateUserStatus(id: number, request: UpdateUserStatusRequest) {
@@ -36,19 +30,15 @@ export class AdminService {
     return this.http.delete<void>(`${this.baseUrl}/users/${id}`);
   }
 
-  searchListings(status: string | undefined, page = 0, size = 20): void {
+  searchListings(status: string | undefined, page = 0, size = 20) {
     let params = new HttpParams().set('page', page).set('size', size);
     if (status) params = params.set('status', status);
-    this.http
-      .get<Page<Listing>>(`${this.baseUrl}/listings`, { params })
-      .subscribe((p) => this.listings.set(p));
+    return this.http.get<Page<Listing>>(`${this.baseUrl}/listings`, { params });
   }
 
-  searchApplications(status: string | undefined, page = 0, size = 20): void {
+  searchApplications(status: string | undefined, page = 0, size = 20) {
     let params = new HttpParams().set('page', page).set('size', size);
     if (status) params = params.set('status', status);
-    this.http
-      .get<Page<Application>>(`${this.baseUrl}/applications`, { params })
-      .subscribe((p) => this.applications.set(p));
+    return this.http.get<Page<Application>>(`${this.baseUrl}/applications`, { params });
   }
 }

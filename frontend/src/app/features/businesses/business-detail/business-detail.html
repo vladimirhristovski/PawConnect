@@ -1,4 +1,8 @@
-@if (businessService.selected(); as biz) {
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (loadError(); as err) {
+  <p class="error">{{ err }}</p>
+} @else if (business(); as biz) {
   <div class="business-detail card">
     <div class="gallery">
       @if (biz.photos.length > 0) {
@@ -34,5 +38,5 @@
     </div>
   </div>
 } @else {
-  <p>Loading…</p>
+  <p>Business not found.</p>
 }

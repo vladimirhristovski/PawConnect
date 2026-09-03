@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PetService } from '../../../core/services/pet.service';
 import { LookupService } from '../../../core/services/lookup.service';
-import { Gender, Size, UpdatePetRequest } from '../../../core/models/pet';
+import { Gender, Pet, Size, UpdatePetRequest } from '../../../core/models/pet';
 import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
@@ -14,10 +14,14 @@ import { apiErrorMessage } from '../../../core/api-error';
   styleUrl: './pet-photo-manager.css',
 })
 export class PetPhotoManager {
-  protected petService = inject(PetService);
+  private petService = inject(PetService);
   protected lookup = inject(LookupService);
 
   id = input.required<string>();
+
+  pet = signal<Pet | null>(null);
+  loading = signal(true);
+  loadError = signal<string | null>(null);
 
   detailsModel = signal<PetDetailsForm>({
     name: '',
@@ -63,9 +67,9 @@ export class PetPhotoManager {
             goodWithOtherPets: value.goodWithOtherPets,
           };
           try {
-            await firstValueFrom(this.petService.update(Number(this.id()), payload));
+            const updated = await firstValueFrom(this.petService.update(Number(this.id()), payload));
+            this.applyPet(updated);
             this.saveSuccess.set(true);
-            this.petService.loadOne(Number(this.id()));
           } catch (err) {
             this.saveError.set(apiErrorMessage(err, 'Could not save pet details.'));
           }
@@ -77,30 +81,7 @@ export class PetPhotoManager {
 
   constructor() {
     this.lookup.loadSpecies();
-
-    effect(() => {
-      this.petService.loadOne(Number(this.id()));
-    });
-
-    effect(() => {
-      const pet = this.petService.selected();
-      if (pet) {
-        this.detailsModel.set({
-          name: pet.name,
-          speciesCode: pet.speciesCode,
-          gender: pet.gender,
-          size: pet.size ?? '',
-          age: pet.age,
-          birthDate: pet.birthDate ?? '',
-          weightKg: pet.weightKg,
-          description: pet.description ?? '',
-          goodWithKids: pet.goodWithKids,
-          goodWithOtherPets: pet.goodWithOtherPets,
-        });
-        this.breedCodes.set(pet.breeds.map((b) => b.code));
-        this.lookup.loadBreeds(pet.speciesCode);
-      }
-    });
+    effect(() => this.load(Number(this.id())));
   }
 
   onSpeciesChange(): void {
@@ -126,14 +107,14 @@ export class PetPhotoManager {
 
     this.uploadError.set(null);
     this.uploading.set(true);
-    const pet = this.petService.selected();
+    const pet = this.pet();
     const nextOrder = pet ? pet.photos.length : 0;
     const isPrimary = pet ? pet.photos.length === 0 : true;
 
     this.petService.uploadPhoto(Number(this.id()), file, isPrimary, nextOrder).subscribe({
       next: () => {
         this.uploading.set(false);
-        this.petService.loadOne(Number(this.id()));
+        this.load(Number(this.id()));
       },
       error: (err) => {
         this.uploading.set(false);
@@ -147,7 +128,40 @@ export class PetPhotoManager {
     if (!confirm('Remove this photo?')) return;
     this.petService
       .removePhoto(Number(this.id()), photoId)
-      .subscribe(() => this.petService.loadOne(Number(this.id())));
+      .subscribe(() => this.load(Number(this.id())));
+  }
+
+  private load(id: number): void {
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.petService.getById(id).subscribe({
+      next: (pet) => {
+        this.applyPet(pet);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loadError.set(apiErrorMessage(err, 'Could not load pet.'));
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private applyPet(pet: Pet): void {
+    this.pet.set(pet);
+    this.detailsModel.set({
+      name: pet.name,
+      speciesCode: pet.speciesCode,
+      gender: pet.gender,
+      size: pet.size ?? '',
+      age: pet.age,
+      birthDate: pet.birthDate ?? '',
+      weightKg: pet.weightKg,
+      description: pet.description ?? '',
+      goodWithKids: pet.goodWithKids,
+      goodWithOtherPets: pet.goodWithOtherPets,
+    });
+    this.breedCodes.set(pet.breeds.map((b) => b.code));
+    this.lookup.loadBreeds(pet.speciesCode);
   }
 }
 

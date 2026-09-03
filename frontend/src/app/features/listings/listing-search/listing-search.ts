@@ -7,7 +7,9 @@ import { debounceTime, skip } from 'rxjs/operators';
 import { ListingService } from '../../../core/services/listing.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { Pagination } from '../../../shared/pagination/pagination';
-import { ListingSearchParams } from '../../../core/models/listing';
+import { ListingSearchParams, ListingSummary } from '../../../core/models/listing';
+import { Page } from '../../../core/models/page';
+import { apiErrorMessage } from '../../../core/api-error';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import {
   ParamSchema,
@@ -54,7 +56,7 @@ const EMPTY_FILTER_FORM: ListingFilterForm = {
   styleUrl: './listing-search.css',
 })
 export class ListingSearch {
-  protected listingService = inject(ListingService);
+  private listingService = inject(ListingService);
   protected lookup = inject(LookupService);
   private destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
@@ -63,6 +65,10 @@ export class ListingSearch {
   filters: ListingSearchParams = { ...DEFAULT_FILTERS };
   filterModel = signal<ListingFilterForm>({ ...EMPTY_FILTER_FORM });
   filterForm = form(this.filterModel);
+
+  results = signal<Page<ListingSummary> | null>(null);
+  loading = signal(true);
+  loadError = signal<string | null>(null);
 
   useNearby = signal(false);
   locating = signal(false);
@@ -157,7 +163,18 @@ export class ListingSearch {
   }
 
   private runSearch(): void {
-    this.listingService.search(this.filters);
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.listingService.search(this.filters).subscribe({
+      next: (page) => {
+        this.results.set(page);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loadError.set(apiErrorMessage(err, 'Could not load listings.'));
+        this.loading.set(false);
+      },
+    });
     this.updateUrl();
   }
 

@@ -9,7 +9,9 @@ import { LookupService } from '../../../core/services/lookup.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Pagination } from '../../../shared/pagination/pagination';
 import { BusinessSearchParams, Business } from '../../../core/models/business';
+import { Page } from '../../../core/models/page';
 import { Coordinates } from '../../../core/models/coordinates';
+import { apiErrorMessage } from '../../../core/api-error';
 import { getCurrentPosition, haversineDistanceKm } from '../../../shared/geo/geo-utils';
 import {
   ParamSchema,
@@ -44,7 +46,7 @@ const EMPTY_FILTER_FORM: BusinessFilterForm = {
   styleUrl: './business-search.css',
 })
 export class BusinessSearch {
-  protected businessService = inject(BusinessService);
+  private businessService = inject(BusinessService);
   protected lookup = inject(LookupService);
   protected auth = inject(AuthService);
   private destroyRef = inject(DestroyRef);
@@ -54,6 +56,10 @@ export class BusinessSearch {
   filters: BusinessSearchParams = { ...DEFAULT_FILTERS };
   filterModel = signal<BusinessFilterForm>({ ...EMPTY_FILTER_FORM });
   filterForm = form(this.filterModel);
+
+  results = signal<Page<Business> | null>(null);
+  loading = signal(true);
+  loadError = signal<string | null>(null);
 
   useNearby = signal(false);
   locating = signal(false);
@@ -175,7 +181,18 @@ export class BusinessSearch {
   }
 
   private runSearch(): void {
-    this.businessService.search(this.filters);
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.businessService.search(this.filters).subscribe({
+      next: (page) => {
+        this.results.set(page);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loadError.set(apiErrorMessage(err, 'Could not load businesses.'));
+        this.loading.set(false);
+      },
+    });
     this.updateUrl();
   }
 

@@ -1,7 +1,7 @@
 import { Service, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap, switchMap, catchError, share, finalize, of, Observable } from 'rxjs';
+import { tap, switchMap, catchError, share, finalize, of, throwError, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, User, LoginRequest, RegisterRequest } from '../models/user';
 
@@ -28,6 +28,10 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, request).pipe(
       tap((res) => this.storeTokens(res)),
       switchMap(() => this.fetchCurrentUser()),
+      catchError((err) => {
+        this.clearTokens();
+        return throwError(() => err);
+      }),
     );
   }
 

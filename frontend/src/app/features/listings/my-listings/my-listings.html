@@ -3,7 +3,11 @@
   <a class="button" routerLink="/listings/new">+ New listing</a>
 </div>
 
-@if (listingService.myListings(); as page) {
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (loadError(); as err) {
+  <p class="error">{{ err }}</p>
+} @else if (page(); as page) {
   @if (page.content.length > 0) {
     <table class="table">
       <thead>

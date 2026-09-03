@@ -1,4 +1,8 @@
-@if (petService.selected(); as pet) {
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (loadError(); as err) {
+  <p class="error">{{ err }}</p>
+} @else if (pet(); as pet) {
   <h2>Manage {{ pet.name }}</h2>
   <p><a [routerLink]="['/listings']">← Back to listings</a></p>
 
@@ -118,5 +122,5 @@
     </div>
   </div>
 } @else {
-  <p>Loading…</p>
+  <p>Pet not found.</p>
 }

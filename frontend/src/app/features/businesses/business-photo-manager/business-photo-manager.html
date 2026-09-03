@@ -1,4 +1,8 @@
-@if (businessService.selected(); as biz) {
+@if (loading()) {
+  <p>Loading…</p>
+} @else if (loadError(); as err) {
+  <p class="error">{{ err }}</p>
+} @else if (business(); as biz) {
   <h2>Manage {{ biz.name }}</h2>
   <p><a [routerLink]="['/businesses', biz.id]">← Back to business</a></p>
 
@@ -122,5 +126,5 @@
     </div>
   </div>
 } @else {
-  <p>Loading…</p>
+  <p>Business not found.</p>
 }

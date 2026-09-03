@@ -1,7 +1,7 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
 import { disabled, email, form, FormField, FormRoot, maxLength, required } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
-import { finalize, firstValueFrom } from 'rxjs';
+import { EMPTY, from, catchError, finalize, firstValueFrom, map, mergeMap } from 'rxjs';
 import { BusinessService } from '../../../core/services/business.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { PhotoService } from '../../../core/services/photo.service';
@@ -15,6 +15,22 @@ import { getCurrentPosition } from '../../../shared/geo/geo-utils';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
 import { apiErrorMessage } from '../../../core/api-error';
 
+const UPLOAD_CONCURRENCY = 3;
+
+const EMPTY_BUSINESS_FORM: BusinessFormModel = {
+  typeCode: '',
+  name: '',
+  description: '',
+  phone: '',
+  email: '',
+  address: '',
+  municipalityCode: '',
+  latitude: null,
+  longitude: null,
+  countryCode: '',
+  cityCode: '',
+};
+
 @Component({
   selector: 'app-business-form',
   imports: [FormField, FormRoot, RouterLink, MapPicker],
@@ -22,26 +38,14 @@ import { apiErrorMessage } from '../../../core/api-error';
   styleUrl: './business-form.css',
 })
 export class BusinessForm {
-  protected businessService = inject(BusinessService);
+  private businessService = inject(BusinessService);
   protected lookup = inject(LookupService);
   private photoService = inject(PhotoService);
   private router = inject(Router);
 
   id = input<string>();
 
-  formModel = signal<BusinessFormModel>({
-    typeCode: '',
-    name: '',
-    description: '',
-    phone: '',
-    email: '',
-    address: '',
-    municipalityCode: '',
-    latitude: null,
-    longitude: null,
-    countryCode: '',
-    cityCode: '',
-  });
+  formModel = signal<BusinessFormModel>({ ...EMPTY_BUSINESS_FORM });
 
   stagedPhotos = signal<StagedBusinessPhoto[]>([]);
   uploading = signal(false);
@@ -119,12 +123,14 @@ export class BusinessForm {
 
     effect(() => {
       const idParam = this.id();
-      if (idParam) this.businessService.loadOne(Number(idParam));
+      if (idParam) this.loadExisting(Number(idParam));
     });
+  }
 
-    effect(() => {
-      const existing = this.businessService.selected();
-      if (existing && this.isEdit()) {
+  private loadExisting(id: number): void {
+    this.formModel.set({ ...EMPTY_BUSINESS_FORM });
+    this.businessService.getById(id).subscribe({
+      next: (existing) => {
         this.formModel.set({
           typeCode: existing.typeCode,
           name: existing.name,
@@ -139,7 +145,8 @@ export class BusinessForm {
           cityCode: '',
         });
         this.lookup.loadMunicipalities();
-      }
+      },
+      error: (err) => this.error.set(apiErrorMessage(err, 'Could not load business.')),
     });
   }
 
@@ -197,29 +204,30 @@ export class BusinessForm {
 
     this.uploadError.set(null);
     this.uploading.set(true);
-    let remaining = files.length;
-    Array.from(files).forEach((file) => {
-      this.photoService
-        .uploadTemp(file)
-        .pipe(
-          finalize(() => {
-            remaining -= 1;
-            if (remaining <= 0) this.uploading.set(false);
-          }),
-        )
-        .subscribe({
-          next: (res) => {
-            const isFirst = this.stagedPhotos().length === 0;
-            this.stagedPhotos.update((list) => [
-              ...list,
-              { url: res.url, isPrimary: isFirst, displayOrder: list.length, previewName: file.name },
-            ]);
-          },
-          error: (err) => {
-            this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
-          },
-        });
-    });
+
+    from(Array.from(files))
+      .pipe(
+        mergeMap(
+          (file) =>
+            this.photoService.uploadTemp(file).pipe(
+              map((res) => ({ url: res.url, name: file.name })),
+              catchError((err) => {
+                this.uploadError.set(apiErrorMessage(err, 'Upload failed.'));
+                return EMPTY;
+              }),
+            ),
+          UPLOAD_CONCURRENCY,
+        ),
+        finalize(() => this.uploading.set(false)),
+      )
+      .subscribe(({ url, name }) => {
+        const isFirst = this.stagedPhotos().length === 0;
+        this.stagedPhotos.update((list) => [
+          ...list,
+          { url, isPrimary: isFirst, displayOrder: list.length, previewName: name },
+        ]);
+      });
+
     input.value = '';
   }
 
