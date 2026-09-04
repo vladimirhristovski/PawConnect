@@ -21,8 +21,6 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
             LEFT JOIN FETCH p.breeds
             LEFT JOIN FETCH p.photos
             JOIN FETCH l.municipality m
-            JOIN FETCH m.city c
-            JOIN FETCH c.country
             JOIN FETCH l.status
             JOIN FETCH l.postedBy
             LEFT JOIN FETCH l.business b
@@ -37,6 +35,10 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
 
     fun findByPostedBy_IdAndDeletedAtIsNull(userId: Long, pageable: Pageable): Page<Listing>
 
+    fun findByPostedBy_IdAndStatus_CodeInAndDeletedAtIsNull(
+        userId: Long, codes: Collection<String>
+    ): List<Listing>
+
     fun findByStatus_CodeAndExpiresAtBefore(statusCode: String, cutoff: Instant): List<Listing>
 
     @Query("SELECT DISTINCT l FROM Listing l $FULL_ASSOCIATIONS_FETCH WHERE l.id = :id")
@@ -47,15 +49,10 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
     SELECT DISTINCT l FROM Listing l
     JOIN FETCH l.pet p
     JOIN FETCH p.species
-    LEFT JOIN FETCH p.breeds
     LEFT JOIN FETCH p.photos
     JOIN FETCH l.municipality m
-    JOIN FETCH m.city c
-    JOIN FETCH c.country
     JOIN FETCH l.status
     JOIN FETCH l.postedBy
-    LEFT JOIN FETCH l.business b
-    LEFT JOIN FETCH b.type
     WHERE l.status.code = 'ACTIVE'
     AND (:speciesCode IS NULL OR p.species.code = :speciesCode)
     AND (:municipalityCode IS NULL OR m.code = :municipalityCode)

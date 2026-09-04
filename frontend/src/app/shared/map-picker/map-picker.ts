@@ -48,9 +48,9 @@ export class MapPicker implements AfterViewInit, OnDestroy {
     this.leaflet = L;
 
     Object.assign(L.Icon.Default.prototype.options, {
-      iconUrl: 'leaflet/marker-icon.png',
-      iconRetinaUrl: 'leaflet/marker-icon-2x.png',
-      shadowUrl: 'leaflet/marker-shadow.png',
+      iconUrl: '/leaflet/marker-icon.png',
+      iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+      shadowUrl: '/leaflet/marker-shadow.png',
     });
 
     const preselected = this.initial();

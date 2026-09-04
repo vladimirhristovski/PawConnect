@@ -1,5 +1,7 @@
-<h2>Applications for this listing</h2>
-<p><a [routerLink]="['/listings', id()]">← Back to listing</a></p>
+<p class="back-link"><a [routerLink]="['/listings', id()]">Back to listing</a></p>
+<div class="page-header">
+  <h2>Applications for this listing</h2>
+</div>
 
 @if (loading()) {
   <p>Loading…</p>

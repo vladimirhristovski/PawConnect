@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { form, FormField } from '@angular/forms/signals';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ReplaySubject, EMPTY, combineLatest, map, tap, switchMap, catchError } from 'rxjs';
 import { AdminService } from '../../../core/services/admin.service';
 import { Pagination } from '../../../shared/pagination/pagination';
@@ -9,7 +9,7 @@ import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-admin-users',
-  imports: [FormField, RouterLink, Pagination],
+  imports: [FormField, RouterLink, RouterLinkActive, Pagination],
   templateUrl: './admin-users.html',
   styleUrl: './admin-users.css',
 })

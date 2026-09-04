@@ -1,0 +1,79 @@
+:host {
+  display: block;
+}
+
+.card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-photo);
+  overflow: hidden;
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+  text-decoration: none;
+}
+
+.photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+}
+.photo img,
+.photo .ph {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.photo .ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sand);
+  color: var(--ink-soft);
+}
+.photo .ph svg {
+  width: 46px;
+  height: 46px;
+  opacity: 0.45;
+}
+.status {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+}
+
+.body {
+  padding: 0.85rem 1.1rem 1.15rem;
+}
+.body h3 {
+  margin: 0 0 0.15rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.body .meta,
+.body .loc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.body .fee {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--green-ink);
+  background: var(--green-wash);
+  padding: 0.15rem 0.65rem;
+  border-radius: var(--r-pill);
+}

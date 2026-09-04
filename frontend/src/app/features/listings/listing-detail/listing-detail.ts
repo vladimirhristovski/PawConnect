@@ -2,6 +2,7 @@ import { Component, inject, input, signal } from '@angular/core';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { form, FormField, FormRoot } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
+import { TitleCasePipe } from '@angular/common';
 import { ReplaySubject, EMPTY, combineLatest, map, tap, switchMap, catchError, firstValueFrom } from 'rxjs';
 import { ListingService } from '../../../core/services/listing.service';
 import { ApplicationService } from '../../../core/services/application.service';
@@ -9,10 +10,11 @@ import { AuthService } from '../../../core/services/auth.service';
 import { CreateApplicationRequest } from '../../../core/models/application';
 import { Listing } from '../../../core/models/listing';
 import { apiErrorMessage } from '../../../core/api-error';
+import { StatusChip } from '../../../shared/ui/status-chip/status-chip';
 
 @Component({
   selector: 'app-listing-detail',
-  imports: [FormField, FormRoot, RouterLink],
+  imports: [FormField, FormRoot, RouterLink, TitleCasePipe, StatusChip],
   templateUrl: './listing-detail.html',
   styleUrl: './listing-detail.css',
 })

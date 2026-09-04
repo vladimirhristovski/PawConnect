@@ -5,12 +5,14 @@ import { DatePipe } from '@angular/common';
 import { ReplaySubject, EMPTY, combineLatest, map, tap, switchMap, catchError } from 'rxjs';
 import { ListingService } from '../../../core/services/listing.service';
 import { Pagination } from '../../../shared/pagination/pagination';
+import { StatusChip } from '../../../shared/ui/status-chip/status-chip';
 import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-my-listings',
-  imports: [RouterLink, Pagination, DatePipe],
+  imports: [RouterLink, Pagination, DatePipe, StatusChip],
   templateUrl: './my-listings.html',
+  styleUrl: './my-listings.css',
 })
 export class MyListings {
   private listingService = inject(ListingService);

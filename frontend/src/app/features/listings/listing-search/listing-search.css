@@ -1,43 +1,68 @@
 .search-layout {
   display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 280px 1fr;
+  gap: 2.5rem;
+  align-items: start;
 }
+
 .filters {
+  position: sticky;
+  top: 5.5rem;
   display: flex;
   flex-direction: column;
+  gap: 0.15rem;
 }
 .filters h3 {
-  margin-top: 0;
+  margin: 0 0 0.9rem;
+  font-size: 1.05rem;
 }
-.listing-grid {
+.filters label {
+  margin-bottom: 0.9rem;
+}
+.filters .fee-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
 }
-.listing-card {
-  overflow: hidden;
-  display: block;
+.filters .fee-row label {
+  min-width: 0;
 }
-.listing-card img {
+.filters .fee-row input {
   width: 100%;
-  height: 160px;
-  object-fit: cover;
 }
-.listing-card .pad {
-  padding: 0.75rem;
+
+.nearby {
+  margin: 0.4rem 0 0.85rem;
+  padding: 1rem;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
 }
-.listing-card .fee {
-  font-weight: 600;
+.nearby label:last-of-type {
+  margin-bottom: 0.5rem;
 }
-.listing-card .photo-placeholder {
-  height: 160px;
+.nearby .hint {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
 }
-.link-btn {
-  background: transparent;
-  color: #2563eb;
-  padding: 0.25rem 0;
+.nearby .error {
+  margin: 0.25rem 0 0.5rem;
 }
-.link-btn:hover {
-  text-decoration: underline;
+.pick-btn {
+  width: 100%;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.filters > button {
+  width: 100%;
+  margin-top: 0.65rem;
+}
+.filters .link-btn {
+  margin: 0.85rem auto 0;
+}
+
+.results {
+  min-width: 0;
 }

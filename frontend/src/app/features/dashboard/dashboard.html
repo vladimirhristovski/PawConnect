@@ -1,20 +1,30 @@
 <section class="hero">
-  <h1>Find your new best friend</h1>
-  <p>Browse pets looking for a home, or list one that needs to find its person.</p>
-  <div class="hero-actions">
-    <a class="button" routerLink="/listings">Browse listings</a>
-    @if (auth.isAuthenticated()) {
-      <a class="button secondary" routerLink="/listings/new">List a pet</a>
-    } @else {
-      <a class="button secondary" routerLink="/register">Get started</a>
-    }
+  <svg class="hero-paw" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+    <path
+      d="M226 128c0 35-20 64-45 64s-45-29-45-64 20-64 45-64 45 29 45 64zm150 0c0 35-20 64-45 64s-45-29-45-64 20-64 45-64 45 29 45 64zM100 253c0 30-18 55-40 55s-40-25-40-55 18-55 40-55 40 25 40 55zm392 0c0 30-18 55-40 55s-40-25-40-55 18-55 40-55 40 25 40 55zM256 288c53 0 96 40 108 92 8 34-18 60-52 60-20 0-38-10-56-10s-36 10-56 10c-34 0-60-26-52-60 12-52 55-92 108-92z"
+    />
+  </svg>
+  <div class="hero-inner">
+    <h1>Every pet deserves a person</h1>
+    <p>
+      Browse animals looking for a home across North Macedonia, or list one that still needs to
+      find theirs.
+    </p>
+    <div class="hero-actions">
+      <a class="button" routerLink="/listings">Browse pets</a>
+      @if (auth.isAuthenticated()) {
+        <a class="button secondary" routerLink="/listings/new">List a pet</a>
+      } @else {
+        <a class="button secondary" routerLink="/register">Join PawConnect</a>
+      }
+    </div>
   </div>
 </section>
 
 <section>
   <div class="page-header">
     <h2>Recently listed</h2>
-    <a routerLink="/listings">See all →</a>
+    <a routerLink="/listings">See all</a>
   </div>
 
   @if (loading()) {
@@ -25,21 +35,11 @@
     @if (page.content.length > 0) {
       <div class="listing-grid">
         @for (listing of page.content; track listing.id) {
-          <a class="listing-card card" [routerLink]="['/listings', listing.id]">
-            @if (listing.pet.primaryPhotoUrl) {
-              <img [src]="listing.pet.primaryPhotoUrl" [alt]="listing.pet.name" />
-            } @else {
-              <div class="photo-placeholder">No photo</div>
-            }
-            <div class="pad">
-              <h4>{{ listing.pet.name }}</h4>
-              <p>{{ listing.pet.speciesName }} · {{ listing.municipalityName }}</p>
-            </div>
-          </a>
+          <app-listing-card [listing]="listing" />
         }
       </div>
     } @else {
-      <p class="empty-state">No active listings yet — be the first to post one!</p>
+      <p class="empty-state">No pets have been listed yet — be the first to post one.</p>
     }
   }
 </section>

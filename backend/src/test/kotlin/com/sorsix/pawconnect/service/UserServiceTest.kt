@@ -20,11 +20,13 @@ class UserServiceTest {
 
     private val userRepository = mockk<UserRepository>()
     private val refreshTokenRepository = mockk<RefreshTokenRepository>(relaxed = true)
+    private val listingService = mockk<ListingService>(relaxed = true)
+    private val adoptionApplicationService = mockk<AdoptionApplicationService>(relaxed = true)
     private lateinit var service: UserService
 
     @BeforeEach
     fun setup() {
-        service = UserService(userRepository, refreshTokenRepository)
+        service = UserService(userRepository, refreshTokenRepository, listingService, adoptionApplicationService)
     }
 
     private fun mockUser(id: Long = 1L, deleted: Boolean = false): User {
@@ -89,6 +91,18 @@ class UserServiceTest {
         verify { user.deletedAt = any() }
         verify { userRepository.save(user) }
         verify { refreshTokenRepository.revokeAllUserTokens(5L, any()) }
+    }
+
+    @Test
+    fun `deleteUser cancels the user's open listings and withdraws their pending applications`() {
+        val user = mockUser(id = 5L)
+        every { userRepository.findById(5L) } returns Optional.of(user)
+        every { userRepository.save(user) } returns user
+
+        service.deleteUser(5L)
+
+        verify { listingService.cancelOpenListingsForUser(user) }
+        verify { adoptionApplicationService.withdrawPendingForApplicant(user) }
     }
 
     @Test

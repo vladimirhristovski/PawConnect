@@ -1,0 +1,31 @@
+<a class="card" [routerLink]="['/listings', listing().id]">
+  <div class="photo">
+    @if (listing().pet.primaryPhotoUrl) {
+      <img [src]="listing().pet.primaryPhotoUrl" [alt]="listing().pet.name" />
+    } @else {
+      <div class="ph">
+        <svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+          <path
+            d="M226 128c0 35-20 64-45 64s-45-29-45-64 20-64 45-64 45 29 45 64zm150 0c0 35-20 64-45 64s-45-29-45-64 20-64 45-64 45 29 45 64zM100 253c0 30-18 55-40 55s-40-25-40-55 18-55 40-55 40 25 40 55zm392 0c0 30-18 55-40 55s-40-25-40-55 18-55 40-55 40 25 40 55zM256 288c53 0 96 40 108 92 8 34-18 60-52 60-20 0-38-10-56-10s-36 10-56 10c-34 0-60-26-52-60 12-52 55-92 108-92z"
+          />
+        </svg>
+      </div>
+    }
+    @if (showStatus() && listing().statusCode !== 'ACTIVE') {
+      <div class="status">
+        <app-status-chip [code]="listing().statusCode" [label]="listing().statusName" />
+      </div>
+    }
+  </div>
+  <div class="body">
+    <h3>{{ listing().pet.name }}</h3>
+    <p class="meta">
+      {{ listing().pet.speciesName }}, {{ listing().pet.gender | titlecase
+      }}@if (listing().pet.size) {, {{ listing().pet.size | titlecase }}}
+    </p>
+    <p class="loc">{{ listing().municipalityName }}</p>
+    <span class="fee">{{
+      listing().adoptionFee > 0 ? listing().adoptionFee + ' MKD' : 'Free'
+    }}</span>
+  </div>
+</a>

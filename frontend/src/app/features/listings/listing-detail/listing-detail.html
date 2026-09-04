@@ -7,44 +7,62 @@
     <div class="gallery">
       @if (listing.pet.photos.length > 0) {
         @for (photo of listing.pet.photos; track photo.id) {
-          <img [src]="photo.url" [alt]="listing.pet.name" [class.primary]="photo.isPrimary" />
+          <a [href]="photo.url" target="_blank" rel="noopener" [class.primary]="photo.isPrimary">
+            <img [src]="photo.url" [alt]="listing.pet.name" />
+          </a>
         }
       } @else {
         <div class="photo-placeholder large">No photos yet</div>
       }
     </div>
     <div class="info">
-      <h2>{{ listing.pet.name }}</h2>
-      <span class="badge">{{ listing.statusName }}</span>
-      <p>
+      <div class="title-row">
+        <h2>{{ listing.pet.name }}</h2>
+        <app-status-chip [code]="listing.statusCode" [label]="listing.statusName" />
+      </div>
+      <p class="species">
         {{ listing.pet.speciesName }}
         @if (listing.pet.breeds.length) {
-          ({{ breedNames(listing) }})
+          · {{ breedNames(listing) }}
         }
       </p>
-      <p>
-        {{ listing.pet.gender }}
+
+      <dl class="vitals">
+        <div><dt>Gender</dt><dd>{{ listing.pet.gender | titlecase }}</dd></div>
         @if (listing.pet.size) {
-          · {{ listing.pet.size }}
+          <div><dt>Size</dt><dd>{{ listing.pet.size | titlecase }}</dd></div>
         }
         @if (listing.pet.age) {
-          · {{ listing.pet.age }} yrs
+          <div><dt>Age</dt><dd>{{ listing.pet.age }} yrs</dd></div>
         }
-      </p>
-      <p>
-        {{ listing.pet.goodWithKids ? '✓' : '✗' }} good with kids ·
-        {{ listing.pet.goodWithOtherPets ? '✓' : '✗' }} good with other pets
-      </p>
+        <div>
+          <dt>Good with kids</dt>
+          <dd>{{ listing.pet.goodWithKids ? 'Yes' : 'No' }}</dd>
+        </div>
+        <div>
+          <dt>Good with pets</dt>
+          <dd>{{ listing.pet.goodWithOtherPets ? 'Yes' : 'No' }}</dd>
+        </div>
+      </dl>
+
       @if (listing.pet.description) {
+        <h3>About {{ listing.pet.name }}</h3>
         <p>{{ listing.pet.description }}</p>
       }
-      <h3>{{ listing.title || 'Listing details' }}</h3>
-      @if (listing.description) {
-        <p>{{ listing.description }}</p>
+      @if (listing.title || listing.description) {
+        <h3>{{ listing.title || 'Listing details' }}</h3>
+        @if (listing.description) {
+          <p>{{ listing.description }}</p>
+        }
       }
-      <p>{{ listing.municipalityName }}</p>
-      <p class="fee">{{ listing.adoptionFee > 0 ? listing.adoptionFee + ' MKD' : 'Free' }}</p>
-      <p>Posted by {{ listing.postedBy }}</p>
+
+      <div class="meta-line">
+        <span class="fee">{{
+          listing.adoptionFee > 0 ? listing.adoptionFee + ' MKD' : 'Free'
+        }}</span>
+        <span>{{ listing.municipalityName }}</span>
+        <span>Posted by {{ listing.postedBy }}</span>
+      </div>
       @if (listing.business; as biz) {
         <div class="business-blurb">
           <strong>{{ biz.name }}</strong> ({{ biz.typeName }}) — {{ biz.phone }}

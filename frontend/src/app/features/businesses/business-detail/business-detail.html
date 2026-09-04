@@ -7,7 +7,9 @@
     <div class="gallery">
       @if (biz.photos.length > 0) {
         @for (photo of biz.photos; track photo.id) {
-          <img [src]="photo.url" [alt]="biz.name" [class.primary]="photo.isPrimary" />
+          <a [href]="photo.url" target="_blank" rel="noopener" [class.primary]="photo.isPrimary">
+            <img [src]="photo.url" [alt]="biz.name" />
+          </a>
         }
       } @else {
         <div class="photo-placeholder large">No photos yet</div>

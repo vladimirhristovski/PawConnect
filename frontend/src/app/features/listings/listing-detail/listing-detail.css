@@ -1,36 +1,134 @@
 .listing-detail {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 2.75rem;
+  align-items: start;
 }
+
 .gallery {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
+.gallery a {
+  display: block;
+  line-height: 0;
+}
 .gallery img {
-  width: 100%;
-  border-radius: 8px;
+  border-radius: var(--r-photo);
   object-fit: cover;
-  max-height: 260px;
+  display: block;
+  cursor: zoom-in;
+  transition: opacity 0.15s;
 }
-.gallery img.primary {
-  outline: 3px solid #2563eb;
+.gallery a:hover img {
+  opacity: 0.9;
 }
-.owner-actions {
+.gallery a:first-child,
+.gallery a:first-child img {
+  width: 100%;
+}
+.gallery a:first-child img {
+  aspect-ratio: 4 / 3;
+}
+.gallery a:not(:first-child) img {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--r-control);
+}
+.gallery a.primary img {
+  outline: 2.5px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.title-row {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
-  margin-top: 1rem;
   flex-wrap: wrap;
 }
-.apply-box {
+.info h2 {
+  font-size: 2rem;
+  margin: 0;
+}
+.info .species {
+  margin: 0.35rem 0 1.25rem;
+  color: var(--ink-soft);
+}
+.info h3 {
+  margin-top: 1.75rem;
+  font-size: 1.1rem;
+}
+
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 0.5rem;
+  padding: 1rem 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.vitals div {
+  min-width: 0;
+}
+.vitals dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.vitals dd {
+  margin: 0.1rem 0 0;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
   margin-top: 1.5rem;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
+.meta-line .fee {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--green-ink);
+  background: var(--green-wash);
+  padding: 0.15rem 0.7rem;
+  border-radius: var(--r-pill);
+}
+
 .business-blurb {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 6px;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--green-wash);
+  border-radius: var(--r-control);
+  font-size: 0.9rem;
 }
+
+.owner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.apply-box {
+  margin-top: 1.75rem;
+  padding: 1.5rem;
+  background: var(--sand);
+  border-radius: var(--r-card);
+}
+.apply-box h3 {
+  margin-top: 0;
+}
+

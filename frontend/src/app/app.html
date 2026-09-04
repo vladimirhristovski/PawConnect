@@ -1,22 +1,49 @@
 <header class="topbar">
-  <a routerLink="/" class="brand">PawConnect</a>
-  <nav>
-    <a routerLink="/listings">Adopt</a>
-    <a routerLink="/businesses">Businesses</a>
-    @if (auth.currentUser(); as user) {
-      <a routerLink="/listings/mine">My Listings</a>
-      <a routerLink="/applications/mine">My Applications</a>
-      @if (user.roles.includes('ADMIN')) {
-        <a routerLink="/admin/users">Admin</a>
+  <div class="topbar-inner">
+    <a routerLink="/" class="brand">
+      <svg class="brand-paw" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+        <path
+          d="M226 128c0 35-20 64-45 64s-45-29-45-64 20-64 45-64 45 29 45 64zm150 0c0 35-20 64-45 64s-45-29-45-64 20-64 45-64 45 29 45 64zM100 253c0 30-18 55-40 55s-40-25-40-55 18-55 40-55 40 25 40 55zm392 0c0 30-18 55-40 55s-40-25-40-55 18-55 40-55 40 25 40 55zM256 288c53 0 96 40 108 92 8 34-18 60-52 60-20 0-38-10-56-10s-36 10-56 10c-34 0-60-26-52-60 12-52 55-92 108-92z"
+        />
+      </svg>
+      PawConnect
+    </a>
+
+    <nav>
+      <a
+        routerLink="/listings"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{
+          paths: 'exact',
+          queryParams: 'ignored',
+          fragment: 'ignored',
+          matrixParams: 'ignored',
+        }"
+        >Adopt</a
+      >
+      <a routerLink="/businesses" routerLinkActive="active">Businesses</a>
+      @if (auth.currentUser(); as user) {
+        <a routerLink="/listings/mine" routerLinkActive="active">My listings</a>
+        <a routerLink="/applications/mine" routerLinkActive="active">My applications</a>
+        @if (user.roles.includes('ADMIN')) {
+          <a routerLink="/admin" routerLinkActive="active">Admin</a>
+        }
       }
-      <a routerLink="/account">Account</a>
-      <button class="link-btn" (click)="auth.logout()">Logout</button>
-    } @else {
-      <a routerLink="/login">Login</a>
-      <a routerLink="/register">Register</a>
-    }
-  </nav>
+    </nav>
+
+    <div class="topbar-actions">
+      @if (auth.currentUser()) {
+        <a routerLink="/listings/new" class="button">List a pet</a>
+        <a routerLink="/account" routerLinkActive="active" class="acct">Account</a>
+        <button class="link-btn" (click)="auth.logout()">Log out</button>
+      } @else {
+        <a routerLink="/login" class="link-btn">Log in</a>
+        <a routerLink="/register" class="button">Join PawConnect</a>
+      }
+    </div>
+  </div>
 </header>
+
 <main class="container">
   <router-outlet />
 </main>

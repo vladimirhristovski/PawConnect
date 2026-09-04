@@ -24,14 +24,18 @@
           <tr>
             <td>{{ listing.pet.name }}</td>
             <td>
-              <span class="badge">{{ listing.statusName }}</span>
+              <app-status-chip [code]="listing.statusCode" [label]="listing.statusName" />
             </td>
             <td>{{ listing.adoptionFee > 0 ? listing.adoptionFee + ' MKD' : 'Free' }}</td>
             <td>{{ listing.createdAt | date: 'mediumDate' }}</td>
             <td>
-              <a [routerLink]="['/listings', listing.id]">View</a> ·
-              <a [routerLink]="['/listings', listing.id, 'edit']">Edit</a> ·
-              <a [routerLink]="['/listings', listing.id, 'applications']">Applications</a>
+              <div class="row-actions">
+                <a [routerLink]="['/listings', listing.id]">View</a>
+                @if (listing.statusCode === 'DRAFT' || listing.statusCode === 'ACTIVE') {
+                  <a [routerLink]="['/listings', listing.id, 'edit']">Edit</a>
+                }
+                <a [routerLink]="['/listings', listing.id, 'applications']">Applications</a>
+              </div>
             </td>
           </tr>
         }

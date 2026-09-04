@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { form, FormField } from '@angular/forms/signals';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ReplaySubject, EMPTY, combineLatest, map, tap, switchMap, catchError } from 'rxjs';
 import { AdminService } from '../../../core/services/admin.service';
@@ -11,7 +11,7 @@ import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
   selector: 'app-admin-listings',
-  imports: [FormField, RouterLink, Pagination, DatePipe],
+  imports: [FormField, RouterLink, RouterLinkActive, Pagination, DatePipe],
   templateUrl: './admin-listings.html',
   styleUrl: './admin-listings.css',
 })

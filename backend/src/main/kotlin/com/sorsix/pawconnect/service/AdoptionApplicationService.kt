@@ -167,4 +167,17 @@ class AdoptionApplicationService(
         log.info("Application {} withdrawn by applicant {}", saved.id, currentUser.id)
         return WithdrawApplicationResult.Success(saved)
     }
+
+    @Transactional
+    fun withdrawPendingForApplicant(user: User): Int {
+        val pending = applicationRepository.findByApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
+            user.requireId(), ApplicationStatusCodes.PENDING_STATUSES
+        )
+        if (pending.isEmpty()) return 0
+        val withdrawnStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.WITHDRAWN)
+            ?: throw IllegalStateException("WITHDRAWN status not found")
+        pending.forEach { it.status = withdrawnStatus }
+        applicationRepository.saveAll(pending)
+        return pending.size
+    }
 }

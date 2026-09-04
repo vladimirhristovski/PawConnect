@@ -72,4 +72,9 @@ interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Lon
         listingId: Long,
         statusCodes: Collection<String>
     ): List<AdoptionApplication>
+
+    fun findByApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
+        applicantId: Long,
+        statusCodes: Collection<String>
+    ): List<AdoptionApplication>
 }

@@ -1,13 +1,17 @@
 import { Component, inject, signal, DestroyRef } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { form, FormField } from '@angular/forms/signals';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, skip } from 'rxjs/operators';
 import { ListingService } from '../../../core/services/listing.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { Pagination } from '../../../shared/pagination/pagination';
+import { ListingCard } from '../../../shared/ui/listing-card/listing-card';
+import { MapPicker } from '../../../shared/map-picker/map-picker';
 import { ListingSearchParams, ListingSummary } from '../../../core/models/listing';
+import { Coordinates } from '../../../core/models/coordinates';
 import { Page } from '../../../core/models/page';
 import { apiErrorMessage } from '../../../core/api-error';
 import { getCurrentPosition } from '../../../shared/geo/geo-utils';
@@ -15,6 +19,7 @@ import {
   ParamSchema,
   filtersToQueryParams,
   readFiltersFromParams,
+  sameQueryParams,
 } from '../../../shared/query-params/query-param-sync';
 
 const FILTER_DEBOUNCE_MS = 400;
@@ -51,7 +56,7 @@ const EMPTY_FILTER_FORM: ListingFilterForm = {
 
 @Component({
   selector: 'app-listing-search',
-  imports: [FormField, RouterLink, Pagination],
+  imports: [FormField, DecimalPipe, Pagination, ListingCard, MapPicker],
   templateUrl: './listing-search.html',
   styleUrl: './listing-search.css',
 })
@@ -73,6 +78,7 @@ export class ListingSearch {
   useNearby = signal(false);
   locating = signal(false);
   locationError = signal<string | null>(null);
+  showLocationPicker = signal(false);
 
   private filterChange$ = new Subject<void>();
   private suppressNextParamSync = false;
@@ -123,6 +129,7 @@ export class ListingSearch {
     this.filterModel.set({ ...EMPTY_FILTER_FORM });
     this.useNearby.set(false);
     this.locationError.set(null);
+    this.showLocationPicker.set(false);
     this.search();
   }
 
@@ -151,15 +158,37 @@ export class ListingSearch {
     getCurrentPosition()
       .then((coords) => {
         this.locating.set(false);
-        this.filters.lat = coords.lat;
-        this.filters.lng = coords.lng;
-        this.search();
+        this.applyNearbyCoords(coords);
       })
       .catch((err: Error) => {
         this.locating.set(false);
-        this.locationError.set(err.message);
-        this.useNearby.set(false);
+        this.locationError.set(`${err.message} You can pick a spot on the map instead.`);
       });
+  }
+
+  nearbyCoords(): Coordinates | null {
+    const { lat, lng } = this.filters;
+    return lat != null && lng != null ? { lat, lng } : null;
+  }
+
+  openLocationPicker(): void {
+    this.showLocationPicker.set(true);
+  }
+
+  onLocationPicked(coords: Coordinates): void {
+    this.showLocationPicker.set(false);
+    this.locationError.set(null);
+    this.applyNearbyCoords(coords);
+  }
+
+  onLocationPickerCancelled(): void {
+    this.showLocationPicker.set(false);
+  }
+
+  private applyNearbyCoords(coords: Coordinates): void {
+    this.filters.lat = coords.lat;
+    this.filters.lng = coords.lng;
+    this.search();
   }
 
   private runSearch(): void {
@@ -180,6 +209,7 @@ export class ListingSearch {
 
   private updateUrl(): void {
     const queryParams = filtersToQueryParams(this.filters, FILTER_SCHEMA, DEFAULT_FILTERS);
+    if (sameQueryParams(queryParams, this.route.snapshot.queryParams)) return;
     this.suppressNextParamSync = true;
     this.router.navigate([], {
       relativeTo: this.route,

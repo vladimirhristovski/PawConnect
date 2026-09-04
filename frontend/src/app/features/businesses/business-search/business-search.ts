@@ -17,6 +17,7 @@ import {
   ParamSchema,
   filtersToQueryParams,
   readFiltersFromParams,
+  sameQueryParams,
 } from '../../../shared/query-params/query-param-sync';
 
 const FILTER_DEBOUNCE_MS = 400;
@@ -198,6 +199,7 @@ export class BusinessSearch {
 
   private updateUrl(): void {
     const queryParams = filtersToQueryParams(this.filters, FILTER_SCHEMA, DEFAULT_FILTERS);
+    if (sameQueryParams(queryParams, this.route.snapshot.queryParams)) return;
     this.suppressNextParamSync = true;
     this.router.navigate([], {
       relativeTo: this.route,

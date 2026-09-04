@@ -257,6 +257,20 @@ class ListingService(
     }
 
     @Transactional
+    fun cancelOpenListingsForUser(user: User): Int {
+        val open = listingRepository.findByPostedBy_IdAndStatus_CodeInAndDeletedAtIsNull(
+            user.requireId(), ListingStatusCodes.OPEN_STATUSES
+        )
+        if (open.isEmpty()) return 0
+        val cancelledStatus = listingStatusRepository.findByCode(ListingStatusCodes.CANCELLED)
+            ?: throw IllegalStateException("CANCELLED status not found")
+        rejectPendingApplications(open, reviewedBy = null)
+        open.forEach { it.status = cancelledStatus }
+        listingRepository.saveAll(open)
+        return open.size
+    }
+
+    @Transactional
     fun rejectPendingApplications(listings: List<Listing>, reviewedBy: User?): Int {
         val pendingApps = listings.flatMap { listing ->
             adoptionApplicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(

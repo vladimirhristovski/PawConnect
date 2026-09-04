@@ -1,26 +1,90 @@
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.85rem 2.5rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid #e5e5e5;
+  gap: 2rem;
 }
-.topbar .brand {
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: #111;
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
+.brand:hover {
+  text-decoration: none;
+}
+.brand-paw {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--coral);
+}
+
 .topbar nav {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: center;
+  font-size: 0.925rem;
+  font-weight: 500;
 }
+.topbar nav a {
+  color: var(--ink-soft);
+  padding: 0.3rem 0;
+  border-bottom: 2px solid transparent;
+}
+.topbar nav a:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+.topbar nav a.active {
+  color: var(--ink);
+  border-bottom-color: var(--coral);
+}
+
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.topbar-actions .button {
+  padding: 0.45rem 1.15rem;
+  font-size: 0.9rem;
+}
+.topbar-actions .acct {
+  color: var(--ink-soft);
+  font-size: 0.925rem;
+  font-weight: 500;
+}
+.topbar-actions .acct:hover,
+.topbar-actions .acct.active {
+  color: var(--ink);
+  text-decoration: none;
+}
+
 .link-btn {
   background: none;
   border: none;
-  color: #2563eb;
+  color: var(--ink-soft);
   cursor: pointer;
   font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
   padding: 0;
+}
+.link-btn:hover {
+  color: var(--coral-ink);
 }

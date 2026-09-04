@@ -1,17 +1,32 @@
 .admin-tabs {
-  margin-bottom: 1rem;
-  color: #555;
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+}
+.admin-tabs a {
+  color: var(--ink-soft);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 0.35rem;
+}
+.admin-tabs a:hover {
+  color: var(--ink);
+  text-decoration: none;
 }
 .admin-tabs a.active {
-  font-weight: 600;
-  color: #222;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom-color: var(--coral);
   text-decoration: none;
 }
 .filters {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   align-items: flex-end;
+  flex-wrap: wrap;
 }
 .filters label {
   margin-bottom: 0;

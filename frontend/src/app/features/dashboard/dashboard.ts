@@ -5,10 +5,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { ListingSummary } from '../../core/models/listing';
 import { Page } from '../../core/models/page';
 import { apiErrorMessage } from '../../core/api-error';
+import { ListingCard } from '../../shared/ui/listing-card/listing-card';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink],
+  imports: [RouterLink, ListingCard],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })

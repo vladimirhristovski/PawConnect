@@ -15,7 +15,9 @@ import java.time.Instant
 @Service
 class UserService(
     private val userRepository: UserRepository,
-    private val refreshTokenRepository: RefreshTokenRepository
+    private val refreshTokenRepository: RefreshTokenRepository,
+    private val listingService: ListingService,
+    private val adoptionApplicationService: AdoptionApplicationService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -43,10 +45,15 @@ class UserService(
     fun deleteUser(id: Long): Boolean {
         val user = userRepository.findById(id).orElse(null) ?: return false
         if (user.deletedAt != null) return true
+        val cancelledListings = listingService.cancelOpenListingsForUser(user)
+        val withdrawnApplications = adoptionApplicationService.withdrawPendingForApplicant(user)
         user.deletedAt = Instant.now()
         userRepository.save(user)
         refreshTokenRepository.revokeAllUserTokens(user.requireId(), Instant.now())
-        log.info("User {} soft-deleted", user.id)
+        log.info(
+            "User {} soft-deleted; {} open listing(s) cancelled, {} pending application(s) withdrawn",
+            user.id, cancelledListings, withdrawnApplications
+        )
         return true
     }
 }

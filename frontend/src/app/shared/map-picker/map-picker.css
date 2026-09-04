@@ -1,21 +1,22 @@
 .map-picker-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(42, 39, 36, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 1.5rem;
   z-index: 1000;
 }
 
 .map-picker-panel {
   width: 100%;
-  max-width: 640px;
+  max-width: 680px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
+  box-shadow: var(--shadow-lift);
 }
 
 .map-picker-header {
@@ -23,32 +24,33 @@
   align-items: center;
   justify-content: space-between;
 }
-
 .map-picker-header h3 {
   margin: 0;
 }
-
 .icon-btn {
   background: transparent;
-  color: #444;
+  color: var(--ink-soft);
+  border: none;
   padding: 0.25rem 0.5rem;
+  font-size: 1rem;
+  border-radius: var(--r-control);
 }
-
 .icon-btn:hover {
-  background: #f0f0f0;
+  background: var(--cream);
+  color: var(--ink);
 }
 
 .map-picker-hint {
   margin: 0;
   font-size: 0.85rem;
-  color: #666;
+  color: var(--ink-soft);
 }
 
 .map-picker-map {
   width: 100%;
-  height: 360px;
-  border-radius: 8px;
-  border: 1px solid #e5e5e5;
+  height: 380px;
+  border-radius: var(--r-photo);
+  border: 1px solid var(--line);
   z-index: 0;
 }
 
@@ -59,23 +61,15 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
-
 .map-picker-coords {
   font-variant-numeric: tabular-nums;
   font-size: 0.9rem;
-  color: #222;
+  color: var(--ink);
 }
-
 .map-picker-coords.muted {
-  color: #888;
+  color: var(--ink-soft);
 }
-
 .map-picker-actions {
   display: flex;
-  gap: 0.5rem;
-}
-
-.map-picker-actions .secondary {
-  background: #e5e5e5;
-  color: #222;
+  gap: 0.6rem;
 }
