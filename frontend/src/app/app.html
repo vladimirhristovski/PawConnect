@@ -25,6 +25,7 @@
       @if (auth.currentUser(); as user) {
         <a routerLink="/listings/mine" routerLinkActive="active">My listings</a>
         <a routerLink="/applications/mine" routerLinkActive="active">My applications</a>
+        <a routerLink="/pet-matcher" routerLinkActive="active">Pet Matcher</a>
         @if (user.roles.includes('ADMIN')) {
           <a routerLink="/admin" routerLinkActive="active">Admin</a>
         }
