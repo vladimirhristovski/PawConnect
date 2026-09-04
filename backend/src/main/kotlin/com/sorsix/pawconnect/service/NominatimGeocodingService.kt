@@ -1,5 +1,6 @@
 package com.sorsix.pawconnect.service
 
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
@@ -8,7 +9,7 @@ import java.math.BigDecimal
 @Service
 @Profile("!test")
 class NominatimGeocodingService(
-    private val restClient: RestClient
+    @Qualifier("nominatimRestClient") private val restClient: RestClient
 ) : GeocodingService {
 
     override fun geocode(query: String): GeoCoordinates? {

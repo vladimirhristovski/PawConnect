@@ -46,6 +46,7 @@ class SecurityConfig(
             it.requestMatchers(HttpMethod.GET, "/api/businesses/**").permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/listings/mine").authenticated()
             it.requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id}").permitAll()
+            it.requestMatchers(HttpMethod.POST, "/api/pet-matcher/**").authenticated()
             it.requestMatchers("/api/admin/**").hasRole("ADMIN")
             it.anyRequest().authenticated()
         }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
