@@ -113,6 +113,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/account/account').then((m) => m.Account),
   },
   {
+    path: 'pet-matcher',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/pet-matcher/pet-matcher').then((m) => m.PetMatcher),
+  },
+  {
     path: 'admin',
     pathMatch: 'full',
     redirectTo: 'admin/users',

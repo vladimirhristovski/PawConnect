@@ -87,3 +87,7 @@ azure:
   storage:
     connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
     container-name: ${AZURE_STORAGE_CONTAINER_NAME:pet-photos}
+
+pet-matcher:
+  base-url: ${PET_MATCHER_URL:http://localhost:8000}
+  timeout-ms: ${PET_MATCHER_TIMEOUT_MS:20000}

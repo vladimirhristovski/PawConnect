@@ -1,0 +1,93 @@
+<div class="page-header">
+  <h2>Find your match</h2>
+</div>
+
+<div class="matcher-layout">
+  <div class="matcher-form card">
+    <p class="hint">
+      Describe your home, schedule and experience with pets, and we'll suggest which pet fits your
+      lifestyle best.
+    </p>
+
+    <textarea
+      rows="5"
+      placeholder="e.g. I live in a small apartment, work from home, have two young kids and no yard. I've never owned a pet before."
+      [value]="prompt()"
+      (input)="prompt.set($any($event.target).value)"
+    ></textarea>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <button (click)="submit()" [disabled]="loading()">
+      @if (loading()) {
+        Thinking…
+      } @else {
+        Find my match
+      }
+    </button>
+  </div>
+
+  @if (result(); as res) {
+    <div class="matcher-results">
+      <div class="top-match card">
+        <span class="badge"
+          >Best match · {{ res.topMatch.matchPercentage | number: '1.0-0' }}%</span
+        >
+        <h3>{{ res.topMatch.name }}</h3>
+        @if (res.topMatch.notes) {
+          <p>{{ res.topMatch.notes }}</p>
+        }
+
+        @if (res.topMatch.reasons.length) {
+          <div class="reasons">
+            <h4>Why this fits</h4>
+            <ul>
+              @for (reason of res.topMatch.reasons; track reason) {
+                <li>{{ reason }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (res.topMatch.concerns.length) {
+          <div class="concerns">
+            <h4>Worth knowing</h4>
+            <ul>
+              @for (concern of res.topMatch.concerns; track concern) {
+                <li>{{ concern }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <p class="confidence">
+          Confidence: {{ res.confidence * 100 | number: '1.0-0' }}%
+          <span class="extraction-method">
+            ({{ res.extractionMethod === 'llm' ? 'AI-assisted' : 'keyword-based' }})
+          </span>
+        </p>
+      </div>
+
+      @if (res.alternatives.length) {
+        <div class="alternatives">
+          <h4>Other good fits</h4>
+          <div class="alt-grid">
+            @for (alt of res.alternatives; track alt.id) {
+              <div class="alt-card card">
+                <span class="badge">{{ alt.matchPercentage | number: '1.0-0' }}%</span>
+                <h5>{{ alt.name }}</h5>
+                @if (alt.notes) {
+                  <p>{{ alt.notes }}</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <button class="link-btn" (click)="reset()">Try another description</button>
+    </div>
+  }
+</div>
