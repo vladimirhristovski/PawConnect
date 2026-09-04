@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.dto.request
 
 import jakarta.validation.Valid
+import jakarta.validation.constraints.AssertTrue
 import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.PositiveOrZero
@@ -20,4 +21,8 @@ data class CreateListingRequest(
     val longitude: BigDecimal? = null,
     @field:Future val expiresAt: Instant? = null,
     val saveAsDraft: Boolean = false
-)
+) {
+    @get:AssertTrue(message = "Provide either petId or pet, not both or neither")
+    val isPetSourceValid: Boolean
+        get() = (petId != null) != (pet != null)
+}

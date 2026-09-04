@@ -6,14 +6,13 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import java.util.*
 
 interface UserRepository : JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.username = :username AND u.deletedAt IS NULL")
-    fun findByUsernameActive(@Param("username") username: String): Optional<User>
+    fun findByUsernameActive(@Param("username") username: String): User?
 
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.deletedAt IS NULL")
-    fun findByEmailActive(@Param("email") email: String): Optional<User>
+    fun findByEmailActive(@Param("email") email: String): User?
 
     fun existsByUsernameAndDeletedAtIsNull(username: String): Boolean
     fun existsByEmailAndDeletedAtIsNull(email: String): Boolean

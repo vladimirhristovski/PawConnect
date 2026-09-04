@@ -13,7 +13,6 @@ import com.sorsix.pawconnect.service.AuthService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -39,7 +38,7 @@ class AdoptionApplicationController(
 
     @GetMapping("/api/listings/{listingId}/applications")
     fun listApplicationsForListing(
-        @PathVariable listingId: Long, @PageableDefault(size = 20) pageable: Pageable
+        @PathVariable listingId: Long, pageable: Pageable
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = applicationService.listApplicationsForListing(listingId, currentUser, pageable)) {
@@ -51,7 +50,7 @@ class AdoptionApplicationController(
     }
 
     @GetMapping("/api/applications/mine")
-    fun listMyApplications(@PageableDefault(size = 20) pageable: Pageable): Page<ApplicationResponse> {
+    fun listMyApplications(pageable: Pageable): Page<ApplicationResponse> {
         val currentUser = authService.requireCurrentUser()
         val page = applicationService.listMyApplications(currentUser, pageable)
         return page.map { ApplicationResponse.from(it) }

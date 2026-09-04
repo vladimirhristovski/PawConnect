@@ -16,7 +16,7 @@ fun problemResponse(
     pd.type = URI.create("about:blank")
     val requestUri = (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request?.requestURI
     if (requestUri != null) {
-        pd.instance = URI.create("uri=$requestUri")
+        pd.instance = URI.create(requestUri)
     }
     properties.forEach { (key, value) -> pd.setProperty(key, value) }
     return ResponseEntity.status(status).body(pd)

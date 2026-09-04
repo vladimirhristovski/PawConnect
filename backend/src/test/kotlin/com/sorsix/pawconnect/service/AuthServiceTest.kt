@@ -16,6 +16,7 @@ import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
 import com.sorsix.pawconnect.common.requireId
+import com.sorsix.pawconnect.common.sha256Hex
 import io.mockk.*
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.jupiter.api.Assertions.*
@@ -30,7 +31,6 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.Instant
-import java.util.*
 import kotlin.test.assertIs
 
 class AuthServiceTest {
@@ -99,7 +99,7 @@ class AuthServiceTest {
 
         every { userRepository.existsByUsernameAndDeletedAtIsNull(request.username) } returns false
         every { userRepository.existsByEmailAndDeletedAtIsNull(request.email) } returns false
-        every { roleRepository.findByName("USER") } returns Optional.of(userRole)
+        every { roleRepository.findByName("USER") } returns userRole
         every { passwordEncoder.encode(request.password) } returns "encoded"
         every { userRepository.save(any()) } returns savedUser
 
@@ -145,7 +145,7 @@ class AuthServiceTest {
         val request = RegisterRequest("john", "john@mail.com", "pass", null, null, null)
         every { userRepository.existsByUsernameAndDeletedAtIsNull(request.username) } returns false
         every { userRepository.existsByEmailAndDeletedAtIsNull(request.email) } returns false
-        every { roleRepository.findByName("USER") } returns Optional.of(Role("USER").apply { id = 1L })
+        every { roleRepository.findByName("USER") } returns Role("USER").apply { id = 1L }
         every { passwordEncoder.encode(request.password) } returns "encoded"
         val constraintViolation = ConstraintViolationException(
             "duplicate key", java.sql.SQLException("duplicate key"), "uq_users_username_active"
@@ -245,7 +245,7 @@ class AuthServiceTest {
         val request = ForgotPasswordRequest("john@mail.com")
         val user = User("john", "john@mail.com", "pass", null, null, null).apply { id = 1L }
 
-        every { userRepository.findByEmailActive(request.email) } returns Optional.of(user)
+        every { userRepository.findByEmailActive(request.email) } returns user
         every { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), any()) } returns 1
         every { passwordResetTokenRepository.save(any<PasswordResetToken>()) } answers { it.invocation.args[0] as PasswordResetToken }
 
@@ -262,7 +262,7 @@ class AuthServiceTest {
         val request = ForgotPasswordRequest("john@mail.com")
         val user = User("john", "john@mail.com", "pass", null, null, null).apply { id = 1L }
 
-        every { userRepository.findByEmailActive(request.email) } returns Optional.of(user)
+        every { userRepository.findByEmailActive(request.email) } returns user
         every { passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), any()) } returns 1
         every { passwordResetTokenRepository.save(any<PasswordResetToken>()) } answers { it.invocation.args[0] as PasswordResetToken }
         every { emailService.sendEmail(any(), any(), any()) } throws MailSendException("smtp down")
@@ -276,7 +276,7 @@ class AuthServiceTest {
     @Test
     fun `forgotPassword should return true without sending email for non-existing user`() {
         val request = ForgotPasswordRequest("unknown@mail.com")
-        every { userRepository.findByEmailActive(request.email) } returns Optional.empty()
+        every { userRepository.findByEmailActive(request.email) } returns null
 
         val result = authService.forgotPassword(request)
 
@@ -289,7 +289,7 @@ class AuthServiceTest {
     fun `resetPassword should update password and mark token used when valid`() {
         val user = User("john", "john@mail.com", "oldEncoded", null, null, null).apply { id = 1L }
         val rawToken = "rawToken"
-        val tokenHash = authService.hashToken(rawToken)
+        val tokenHash = sha256Hex(rawToken)
         val resetToken = PasswordResetToken(
             user = user,
             tokenHash = tokenHash,
@@ -297,7 +297,7 @@ class AuthServiceTest {
             usedAt = null
         )
 
-        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns Optional.of(resetToken)
+        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns resetToken
         every { passwordEncoder.encode("newPass123") } returns "newEncoded"
         every { userRepository.save(user) } returns user
         every { passwordResetTokenRepository.save(resetToken) } returns resetToken
@@ -315,8 +315,8 @@ class AuthServiceTest {
     @Test
     fun `resetPassword should be invalid when token not found`() {
         val rawToken = "invalid"
-        val tokenHash = authService.hashToken(rawToken)
-        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns Optional.empty()
+        val tokenHash = sha256Hex(rawToken)
+        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns null
 
         val request = ResetPasswordRequest(rawToken, "newPass")
         val result = authService.resetPassword(request)
@@ -330,14 +330,14 @@ class AuthServiceTest {
     fun `resetPassword should be invalid when token already used`() {
         val user = User("john", "john@mail.com", "old", null, null, null).apply { id = 1L }
         val rawToken = "usedToken"
-        val tokenHash = authService.hashToken(rawToken)
+        val tokenHash = sha256Hex(rawToken)
         val resetToken = PasswordResetToken(
             user = user,
             tokenHash = tokenHash,
             expiresAt = Instant.now().plusSeconds(3600),
             usedAt = Instant.now()
         )
-        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns Optional.of(resetToken)
+        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns resetToken
 
         val request = ResetPasswordRequest(rawToken, "newPass")
         val result = authService.resetPassword(request)
@@ -351,14 +351,14 @@ class AuthServiceTest {
     fun `resetPassword should be invalid when token expired`() {
         val user = User("john", "john@mail.com", "old", null, null, null).apply { id = 1L }
         val rawToken = "expiredToken"
-        val tokenHash = authService.hashToken(rawToken)
+        val tokenHash = sha256Hex(rawToken)
         val resetToken = PasswordResetToken(
             user = user,
             tokenHash = tokenHash,
             expiresAt = Instant.now().minusSeconds(1),
             usedAt = null
         )
-        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns Optional.of(resetToken)
+        every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns resetToken
 
         val request = ResetPasswordRequest(rawToken, "newPass")
         val result = authService.resetPassword(request)
@@ -425,11 +425,5 @@ class AuthServiceTest {
     fun `getCurrentUserResponse should return null when not authenticated`() {
         SecurityContextHolder.clearContext()
         assertNull(authService.getCurrentUserResponse())
-    }
-
-    private fun AuthService.hashToken(token: String): String {
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val encodedHash = digest.digest(token.toByteArray(java.nio.charset.StandardCharsets.UTF_8))
-        return java.util.HexFormat.of().formatHex(encodedHash)
     }
 }

@@ -117,17 +117,9 @@ class ListingServiceTest {
     )
 
     @Test
-    fun `createListing rejects providing both petId and pet`() {
+    fun `createListing throws on the defensive fallback when neither petId nor pet is set`() {
         every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
-        assertFailsWith<IllegalArgumentException> {
-            service.createListing(createRequest(petId = 1L, pet = mockk()), mockUser())
-        }
-    }
-
-    @Test
-    fun `createListing rejects providing neither petId nor pet`() {
-        every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<IllegalStateException> {
             service.createListing(createRequest(petId = null, pet = null), mockUser())
         }
     }

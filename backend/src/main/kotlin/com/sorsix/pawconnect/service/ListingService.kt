@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -44,16 +45,14 @@ class ListingService(
 
         var business: Business? = null
         request.businessId?.let { id ->
-            business = businessRepository.findById(id).orElse(null)
+            business = businessRepository.findByIdOrNull(id)
                 ?: return CreateListingResult.NotFound("Business not found: $id")
             denialReason(currentUser.isAdmin() || business.owner?.id == currentUser.id, "You do not own this business")
                 ?.let { return CreateListingResult.Forbidden(it) }
         }
 
         val pet = when {
-            request.petId != null && request.pet != null -> throw IllegalArgumentException("Provide either petId or pet, not both")
-
-            request.petId != null -> petRepository.findById(request.petId).orElse(null)
+            request.petId != null -> petRepository.findByIdOrNull(request.petId)
                 ?: return CreateListingResult.NotFound("Pet not found: ${request.petId}")
 
             request.pet != null -> when (val result = petService.createPet(request.pet, currentUser)) {
@@ -61,7 +60,7 @@ class ListingService(
                 is CreatePetResult.NotFound -> return CreateListingResult.NotFound(result.message)
             }
 
-            else -> throw IllegalArgumentException("Either petId or pet must be provided")
+            else -> throw IllegalStateException("CreateListingRequest.isPetSourceValid should have rejected this")
         }
 
         if (request.petId != null) {
@@ -77,8 +76,7 @@ class ListingService(
         }
 
         val initialStatusCode = if (request.saveAsDraft) ListingStatusCodes.DRAFT else ListingStatusCodes.ACTIVE
-        val status = listingStatusRepository.findByCode(initialStatusCode)
-            ?: throw IllegalStateException("Status '$initialStatusCode' not found")
+        val status = listingStatusRepository.requireByCode(initialStatusCode)
 
         val hasExplicitCoordinates = request.latitude != null && request.longitude != null
 
@@ -171,10 +169,7 @@ class ListingService(
         if (listing.status.code != ListingStatusCodes.DRAFT) {
             return PublishListingResult.Conflict("Listing is not in DRAFT state")
         }
-        val activeStatus = listingStatusRepository.findByCode(ListingStatusCodes.ACTIVE) ?: throw IllegalStateException(
-            "ACTIVE status not found"
-        )
-        listing.status = activeStatus
+        listing.status = listingStatusRepository.requireByCode(ListingStatusCodes.ACTIVE)
         val saved = listingRepository.save(listing)
         log.info("Listing {} published by user {}", saved.id, currentUser.id)
         val reloaded = findListingWithAssociations(saved.requireId())
@@ -186,7 +181,7 @@ class ListingService(
     fun updateListing(id: Long, request: UpdateListingRequest, currentUser: User): UpdateListingResult {
         val listing = findListingWithAssociations(id) ?: return UpdateListingResult.NotFound("Listing not found: $id")
         ownershipDenialReason(listing, currentUser)?.let { return UpdateListingResult.Forbidden(it) }
-        if (listing.status.code !in setOf(ListingStatusCodes.DRAFT, ListingStatusCodes.ACTIVE)) {
+        if (listing.status.code !in ListingStatusCodes.OPEN_STATUSES) {
             return UpdateListingResult.Conflict("Listing cannot be updated in its current status")
         }
 
@@ -223,9 +218,7 @@ class ListingService(
         if (listing.status.code == ListingStatusCodes.ADOPTED || listing.status.code == ListingStatusCodes.CANCELLED) {
             return CancelListingResult.Conflict("Listing is already adopted or cancelled")
         }
-        val cancelledStatus = listingStatusRepository.findByCode(ListingStatusCodes.CANCELLED)
-            ?: throw IllegalStateException("CANCELLED status not found")
-        listing.status = cancelledStatus
+        listing.status = listingStatusRepository.requireByCode(ListingStatusCodes.CANCELLED)
 
         val rejectedCount = rejectPendingApplications(listOf(listing), reviewedBy = currentUser)
 
@@ -249,9 +242,7 @@ class ListingService(
 
     @Transactional
     fun markAdopted(listing: Listing) {
-        val adoptedStatus = listingStatusRepository.findByCode(ListingStatusCodes.ADOPTED)
-            ?: throw IllegalStateException("ADOPTED status not found")
-        listing.status = adoptedStatus
+        listing.status = listingStatusRepository.requireByCode(ListingStatusCodes.ADOPTED)
         listingRepository.save(listing)
         log.info("Listing {} marked adopted", listing.id)
     }
@@ -262,8 +253,7 @@ class ListingService(
             user.requireId(), ListingStatusCodes.OPEN_STATUSES
         )
         if (open.isEmpty()) return 0
-        val cancelledStatus = listingStatusRepository.findByCode(ListingStatusCodes.CANCELLED)
-            ?: throw IllegalStateException("CANCELLED status not found")
+        val cancelledStatus = listingStatusRepository.requireByCode(ListingStatusCodes.CANCELLED)
         rejectPendingApplications(open, reviewedBy = null)
         open.forEach { it.status = cancelledStatus }
         listingRepository.saveAll(open)
@@ -279,8 +269,7 @@ class ListingService(
         }
         if (pendingApps.isEmpty()) return 0
 
-        val rejectedStatus = applicationStatusRepository.findByCode(ApplicationStatusCodes.REJECTED)
-            ?: throw IllegalStateException("REJECTED status not found")
+        val rejectedStatus = applicationStatusRepository.requireByCode(ApplicationStatusCodes.REJECTED)
         val now = Instant.now()
         pendingApps.forEach { app ->
             app.status = rejectedStatus

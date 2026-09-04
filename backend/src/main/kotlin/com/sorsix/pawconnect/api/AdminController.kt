@@ -1,17 +1,14 @@
 package com.sorsix.pawconnect.api
 
 import com.sorsix.pawconnect.common.problemResponse
-import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.dto.request.UpdateUserStatusRequest
 import com.sorsix.pawconnect.dto.response.ApplicationResponse
 import com.sorsix.pawconnect.dto.response.ListingResponse
 import com.sorsix.pawconnect.service.AdoptionApplicationService
-import com.sorsix.pawconnect.service.AuthService
 import com.sorsix.pawconnect.service.ListingService
 import com.sorsix.pawconnect.service.UserService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
-import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -21,17 +18,15 @@ import org.springframework.web.bind.annotation.*
 class AdminController(
     private val userService: UserService,
     private val listingService: ListingService,
-    private val applicationService: AdoptionApplicationService,
-    private val authService: AuthService
+    private val applicationService: AdoptionApplicationService
 ) {
 
     @GetMapping("/users")
     fun searchUsers(
         @RequestParam(required = false) active: Boolean?,
         @RequestParam(required = false) role: String?,
-        @PageableDefault(size = 20) pageable: Pageable
+        pageable: Pageable
     ): ResponseEntity<*> {
-        currentAdmin() ?: return adminRequiredResponse()
         return ResponseEntity.ok(userService.searchUsers(active, role, pageable))
     }
 
@@ -39,14 +34,12 @@ class AdminController(
     fun updateUserStatus(
         @PathVariable id: Long, @Valid @RequestBody request: UpdateUserStatusRequest
     ): ResponseEntity<*> {
-        currentAdmin() ?: return adminRequiredResponse()
         return userService.setActive(id, request.active)?.let { ResponseEntity.ok(it) }
             ?: problemResponse(HttpStatus.NOT_FOUND, "User not found: $id")
     }
 
     @DeleteMapping("/users/{id}")
     fun deleteUser(@PathVariable id: Long): ResponseEntity<*> {
-        currentAdmin() ?: return adminRequiredResponse()
         return if (userService.deleteUser(id)) ResponseEntity.noContent().build<Unit>()
         else problemResponse(HttpStatus.NOT_FOUND, "User not found: $id")
     }
@@ -54,9 +47,8 @@ class AdminController(
     @GetMapping("/listings")
     fun searchListings(
         @RequestParam(required = false) status: String?,
-        @PageableDefault(size = 20) pageable: Pageable
+        pageable: Pageable
     ): ResponseEntity<*> {
-        currentAdmin() ?: return adminRequiredResponse()
         val page = listingService.adminSearchListings(status, pageable)
         return ResponseEntity.ok(page.map { ListingResponse.from(it) })
     }
@@ -64,18 +56,9 @@ class AdminController(
     @GetMapping("/applications")
     fun searchApplications(
         @RequestParam(required = false) status: String?,
-        @PageableDefault(size = 20) pageable: Pageable
+        pageable: Pageable
     ): ResponseEntity<*> {
-        currentAdmin() ?: return adminRequiredResponse()
         val page = applicationService.adminListApplications(status, pageable)
         return ResponseEntity.ok(page.map { ApplicationResponse.from(it) })
     }
-
-    private fun currentAdmin(): User? {
-        val currentUser = authService.requireCurrentUser()
-        return if (currentUser.isAdmin()) currentUser else null
-    }
-
-    private fun adminRequiredResponse(): ResponseEntity<*> =
-        problemResponse(HttpStatus.FORBIDDEN, "Admin access required")
 }

@@ -13,6 +13,7 @@ import com.sorsix.pawconnect.domain.result.UpdatePetResult
 import com.sorsix.pawconnect.repository.*
 import com.sorsix.pawconnect.common.ListingStatusCodes
 import com.sorsix.pawconnect.common.denialReason
+import com.sorsix.pawconnect.common.normalizePrimaryPhoto
 import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -64,7 +65,7 @@ class PetService(
                 pet = savedPet,
                 url = photoReq.url,
                 isPrimary = photoReq.isPrimary,
-                displayOrder = photoReq.displayOrder.takeIf { it > 0 } ?: idx)
+                displayOrder = photoReq.displayOrder ?: idx)
             savedPet.photos.add(photo)
         }
         normalizePrimaryPhoto(savedPet.photos)
@@ -138,7 +139,8 @@ class PetService(
         }
 
         val photo = PetPhoto(
-            pet = pet, url = request.url, isPrimary = request.isPrimary, displayOrder = request.displayOrder
+            pet = pet, url = request.url, isPrimary = request.isPrimary,
+            displayOrder = request.displayOrder ?: pet.photos.size
         )
         pet.photos.add(photo)
         normalizePrimaryPhoto(pet.photos)
@@ -181,13 +183,4 @@ class PetService(
         currentUser.isAdmin() || pet.createdBy.id == currentUser.id,
         "You do not own this pet"
     )
-
-    private fun normalizePrimaryPhoto(photos: MutableList<PetPhoto>) {
-        val primaries = photos.filter { it.isPrimary }
-        if (primaries.size > 1) {
-            primaries.drop(1).forEach { it.isPrimary = false }
-        } else if (primaries.isEmpty() && photos.isNotEmpty()) {
-            photos.minByOrNull { it.displayOrder }?.isPrimary = true
-        }
-    }
 }

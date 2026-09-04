@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -22,7 +21,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val restAuthenticationEntryPoint: RestAuthenticationEntryPoint,
@@ -39,7 +37,7 @@ class SecurityConfig(
             it.authenticationEntryPoint(restAuthenticationEntryPoint)
         }.authorizeHttpRequests {
             it.requestMatchers(
-                "/api/auth/**", "/actuator/health", "/swagger-ui/**", "/v3/api-docs/**", "/error"
+                "/api/auth/**", "/actuator/health", "/error"
             ).permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/lookups/**").permitAll()
             it.requestMatchers(HttpMethod.GET, "/api/pets/**").permitAll()

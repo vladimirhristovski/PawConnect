@@ -23,7 +23,7 @@ class RestAuthenticationEntryPoint(
     ) {
         val pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authentication required")
         pd.type = URI.create("about:blank")
-        pd.instance = URI.create("uri=${request.requestURI}")
+        pd.instance = URI.create(request.requestURI)
 
         response.status = HttpStatus.UNAUTHORIZED.value()
         response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE

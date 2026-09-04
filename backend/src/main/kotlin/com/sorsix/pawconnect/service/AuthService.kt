@@ -17,13 +17,11 @@ import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
 import com.sorsix.pawconnect.common.constraintName
 import com.sorsix.pawconnect.common.requireId
-import jakarta.mail.internet.MimeMessage
+import com.sorsix.pawconnect.common.sha256Hex
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.mail.MailException
-import org.springframework.mail.javamail.JavaMailSender
-import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -31,8 +29,6 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 import java.time.Instant
 import java.util.*
 
@@ -53,12 +49,6 @@ class AuthService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private fun hashToken(token: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val encodedHash = digest.digest(token.toByteArray(StandardCharsets.UTF_8))
-        return HexFormat.of().formatHex(encodedHash)
-    }
-
     @Transactional
     fun register(request: RegisterRequest): RegisterResult {
         if (userRepository.existsByUsernameAndDeletedAtIsNull(request.username)) {
@@ -78,7 +68,7 @@ class AuthService(
             phone = request.phone
         )
         val userRole = roleRepository.findByName("USER")
-            .orElseThrow { IllegalStateException("USER role not found") }
+            ?: throw IllegalStateException("USER role not found")
         user.roles.add(userRole)
 
         val saved = try {
@@ -151,7 +141,7 @@ class AuthService(
 
     @Transactional
     fun forgotPassword(request: ForgotPasswordRequest): Boolean {
-        val user = userRepository.findByEmailActive(request.email).orElse(null)
+        val user = userRepository.findByEmailActive(request.email)
         if (user == null) {
             return true
         }
@@ -159,7 +149,7 @@ class AuthService(
         passwordResetTokenRepository.revokeAllUnusedTokensForUser(user.requireId(), Instant.now())
 
         val rawToken = UUID.randomUUID().toString() + System.currentTimeMillis()
-        val tokenHash = hashToken(rawToken)
+        val tokenHash = sha256Hex(rawToken)
         val expiry = Instant.now().plusMillis(resetTokenTtl)
 
         val resetToken = PasswordResetToken(
@@ -190,8 +180,8 @@ class AuthService(
     }
     @Transactional
     fun resetPassword(request: ResetPasswordRequest): ResetPasswordResult {
-        val tokenHash = hashToken(request.token)
-        val resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash).orElse(null)
+        val tokenHash = sha256Hex(request.token)
+        val resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
             ?: return ResetPasswordResult.Invalid("Invalid token")
 
         if (resetToken.usedAt != null) {

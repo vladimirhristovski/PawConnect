@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.security.core.userdetails.UserDetails
 import java.time.Instant
-import java.util.*
 
 class JwtServiceTest {
 
@@ -81,7 +80,7 @@ class JwtServiceTest {
             expiresAt = Instant.now().plusSeconds(3600),
             revokedAt = null
         )
-        every { refreshTokenRepository.findByTokenHash(hash) } returns Optional.of(refreshToken)
+        every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
 
         val result = jwtService.verifyRefreshToken(raw)
         assertNotNull(result)
@@ -99,7 +98,7 @@ class JwtServiceTest {
             expiresAt = Instant.now().minusSeconds(1),
             revokedAt = null
         )
-        every { refreshTokenRepository.findByTokenHash(hash) } returns Optional.of(refreshToken)
+        every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
 
         val result = jwtService.verifyRefreshToken(raw)
         assertNull(result)
@@ -116,7 +115,7 @@ class JwtServiceTest {
             expiresAt = Instant.now().plusSeconds(3600),
             revokedAt = Instant.now()
         )
-        every { refreshTokenRepository.findByTokenHash(hash) } returns Optional.of(refreshToken)
+        every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
 
         val result = jwtService.verifyRefreshToken(raw)
         assertNull(result)
@@ -133,7 +132,7 @@ class JwtServiceTest {
             expiresAt = Instant.now().plusSeconds(3600),
             revokedAt = null
         )
-        every { refreshTokenRepository.findByTokenHash(hash) } returns Optional.of(refreshToken)
+        every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
         every { refreshTokenRepository.save(refreshToken) } returns refreshToken
 
         val result = jwtService.revokeRefreshToken(raw)
@@ -144,7 +143,7 @@ class JwtServiceTest {
 
     @Test
     fun `revokeRefreshToken should return false if token not found`() {
-        every { refreshTokenRepository.findByTokenHash(any()) } returns Optional.empty()
+        every { refreshTokenRepository.findByTokenHash(any()) } returns null
         val result = jwtService.revokeRefreshToken("unknown")
         assertFalse(result)
     }

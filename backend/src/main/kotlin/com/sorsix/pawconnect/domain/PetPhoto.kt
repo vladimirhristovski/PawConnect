@@ -14,9 +14,9 @@ class PetPhoto(
     var url: String,
 
     @Column(name = "is_primary", nullable = false)
-    var isPrimary: Boolean = false,
+    override var isPrimary: Boolean = false,
 
     @Column(name = "display_order", nullable = false)
-    var displayOrder: Int = 0,
+    override var displayOrder: Int = 0,
 
-    ) : BaseEntity()
+    ) : BaseEntity(), Photo

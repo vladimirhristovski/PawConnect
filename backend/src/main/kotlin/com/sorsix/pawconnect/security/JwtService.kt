@@ -1,5 +1,6 @@
 package com.sorsix.pawconnect.security
 
+import com.sorsix.pawconnect.common.sha256Hex
 import com.sorsix.pawconnect.domain.PasswordResetToken
 import com.sorsix.pawconnect.domain.RefreshToken
 import com.sorsix.pawconnect.domain.User
@@ -49,20 +50,17 @@ class JwtService(
         }
     }
 
-    fun hashToken(token: String): String {
-        return java.security.MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
-            .joinToString("") { "%02x".format(it) }
-    }
+    fun hashToken(token: String): String = sha256Hex(token)
 
     fun verifyRefreshToken(token: String): RefreshToken? {
         val hashed = hashToken(token)
-        val refreshToken = refreshTokenRepository.findByTokenHash(hashed).orElse(null)
+        val refreshToken = refreshTokenRepository.findByTokenHash(hashed)
         return if (refreshToken != null && refreshToken.revokedAt == null && refreshToken.expiresAt.isAfter(Instant.now())) refreshToken else null
     }
 
     fun revokeRefreshToken(token: String): Boolean {
         val hashed = hashToken(token)
-        val rt = refreshTokenRepository.findByTokenHash(hashed).orElse(null)
+        val rt = refreshTokenRepository.findByTokenHash(hashed)
         if (rt != null && rt.revokedAt == null) {
             rt.revokedAt = Instant.now()
             refreshTokenRepository.save(rt)

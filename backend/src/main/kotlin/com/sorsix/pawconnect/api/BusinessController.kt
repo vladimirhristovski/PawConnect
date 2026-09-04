@@ -15,7 +15,6 @@ import com.sorsix.pawconnect.service.BusinessService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -45,7 +44,7 @@ class BusinessController(
         @RequestParam(required = false) lat: BigDecimal?,
         @RequestParam(required = false) lng: BigDecimal?,
         @RequestParam(required = false) radiusKm: Double?,
-        @PageableDefault(size = 20) pageable: Pageable
+        pageable: Pageable
     ): Page<BusinessResponse> {
         resolveNearbySearch(lat, lng, radiusKm)?.let {
             return businessService.searchNearby(it.lat, it.lng, it.radiusKm, typeCode, pageable)

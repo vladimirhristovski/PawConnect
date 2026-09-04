@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -31,7 +32,7 @@ class UserService(
 
     @Transactional
     fun setActive(id: Long, active: Boolean): UserResponse? {
-        val user = userRepository.findById(id).orElse(null) ?: return null
+        val user = userRepository.findByIdOrNull(id) ?: return null
         user.isActive = active
         val updated = userRepository.save(user)
         if (!active) {
@@ -43,7 +44,7 @@ class UserService(
 
     @Transactional
     fun deleteUser(id: Long): Boolean {
-        val user = userRepository.findById(id).orElse(null) ?: return false
+        val user = userRepository.findByIdOrNull(id) ?: return false
         if (user.deletedAt != null) return true
         val cancelledListings = listingService.cancelOpenListingsForUser(user)
         val withdrawnApplications = adoptionApplicationService.withdrawPendingForApplicant(user)

@@ -385,7 +385,7 @@ class ListingControllerTest {
             post("/api/listings")
         } Then {
             statusCode(400)
-            body("detail", containsString("Provide either petId or pet, not both"))
+            body("errors.message", hasItem(containsString("Provide either petId or pet, not both or neither")))
         }
     }
 
@@ -405,7 +405,7 @@ class ListingControllerTest {
             post("/api/listings")
         } Then {
             statusCode(400)
-            body("detail", containsString("Either petId or pet must be provided"))
+            body("errors.message", hasItem(containsString("Provide either petId or pet, not both or neither")))
         }
     }
 

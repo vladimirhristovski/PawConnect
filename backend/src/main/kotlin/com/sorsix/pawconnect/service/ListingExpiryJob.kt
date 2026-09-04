@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.service
 
 import com.sorsix.pawconnect.common.ListingStatusCodes
+import com.sorsix.pawconnect.common.requireByCode
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.repository.ListingStatusRepository
 import org.slf4j.LoggerFactory
@@ -23,8 +24,7 @@ class ListingExpiryJob(
         val overdue = listingRepository.findByStatus_CodeAndExpiresAtBefore(ListingStatusCodes.ACTIVE, Instant.now())
         if (overdue.isEmpty()) return
 
-        val expiredStatus = listingStatusRepository.findByCode(ListingStatusCodes.EXPIRED)
-            ?: throw IllegalStateException("EXPIRED status not found")
+        val expiredStatus = listingStatusRepository.requireByCode(ListingStatusCodes.EXPIRED)
         overdue.forEach { it.status = expiredStatus }
         listingRepository.saveAll(overdue)
 

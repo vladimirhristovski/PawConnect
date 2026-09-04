@@ -20,6 +20,7 @@ import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository
 import com.sorsix.pawconnect.common.denialReason
+import com.sorsix.pawconnect.common.normalizePrimaryPhoto
 import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
@@ -69,7 +70,7 @@ class BusinessService(
                 business = business,
                 url = photoReq.url,
                 isPrimary = photoReq.isPrimary,
-                displayOrder = photoReq.displayOrder.takeIf { it > 0 } ?: idx)
+                displayOrder = photoReq.displayOrder ?: idx)
             business.photos.add(photo)
         }
         normalizePrimaryPhoto(business.photos)
@@ -89,7 +90,7 @@ class BusinessService(
     fun searchBusinesses(
         typeCode: String?, municipalityCode: String?, pageable: Pageable
     ): Page<BusinessResponse> {
-        var spec = Specification<Business> { _, _, _ -> null }
+        var spec = Specification.unrestricted<Business>()
         typeCode?.let { code ->
             spec = spec.and { root, _, cb ->
                 cb.equal(root.get<BusinessType>("type").get<String>("code"), code)
@@ -171,7 +172,8 @@ class BusinessService(
         }
 
         val photo = BusinessPhoto(
-            business = business, url = request.url, isPrimary = request.isPrimary, displayOrder = request.displayOrder
+            business = business, url = request.url, isPrimary = request.isPrimary,
+            displayOrder = request.displayOrder ?: business.photos.size
         )
         business.photos.add(photo)
         normalizePrimaryPhoto(business.photos)
@@ -217,13 +219,4 @@ class BusinessService(
 
     private fun canManageReason(business: Business, currentUser: User): String? =
         denialReason(currentUser.isAdmin() || business.owner?.id == currentUser.id, "You do not own this business")
-
-    private fun normalizePrimaryPhoto(photos: MutableSet<BusinessPhoto>) {
-        val primaries = photos.filter { it.isPrimary }
-        if (primaries.size > 1) {
-            primaries.drop(1).forEach { it.isPrimary = false }
-        } else if (primaries.isEmpty() && photos.isNotEmpty()) {
-            photos.minByOrNull { it.displayOrder }?.isPrimary = true
-        }
-    }
 }

@@ -1,10 +1,10 @@
 package com.sorsix.pawconnect.repository
 
+import com.sorsix.pawconnect.common.ListingStatusCodes
 import com.sorsix.pawconnect.domain.Listing
 import com.sorsix.pawconnect.domain.Gender
 import com.sorsix.pawconnect.domain.Size
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param
 import java.math.BigDecimal
 import java.time.Instant
 
-interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExecutor<Listing> {
+interface ListingRepository : JpaRepository<Listing, Long> {
 
     companion object {
         private const val FULL_ASSOCIATIONS_FETCH = """
@@ -33,8 +33,6 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
 
     fun existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(petId: Long, codes: Collection<String>): Boolean
 
-    fun findByPostedBy_IdAndDeletedAtIsNull(userId: Long, pageable: Pageable): Page<Listing>
-
     fun findByPostedBy_IdAndStatus_CodeInAndDeletedAtIsNull(
         userId: Long, codes: Collection<String>
     ): List<Listing>
@@ -53,7 +51,7 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
     JOIN FETCH l.municipality m
     JOIN FETCH l.status
     JOIN FETCH l.postedBy
-    WHERE l.status.code = 'ACTIVE'
+    WHERE l.status.code = '${ListingStatusCodes.ACTIVE}'
     AND (:speciesCode IS NULL OR p.species.code = :speciesCode)
     AND (:municipalityCode IS NULL OR m.code = :municipalityCode)
     AND (:petSize IS NULL OR p.size = :petSize)
@@ -105,7 +103,7 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
             JOIN pets p ON p.id = l.pet_id
             JOIN pet_species ps ON ps.id = p.species_id
             WHERE l.deleted_at IS NULL
-              AND ls.code = 'ACTIVE'
+              AND ls.code = '${ListingStatusCodes.ACTIVE}'
               AND l.latitude IS NOT NULL
               AND l.longitude IS NOT NULL
               AND (:speciesCode IS NULL OR ps.code = :speciesCode)
@@ -131,7 +129,7 @@ interface ListingRepository : JpaRepository<Listing, Long>, JpaSpecificationExec
             JOIN pets p ON p.id = l.pet_id
             JOIN pet_species ps ON ps.id = p.species_id
             WHERE l.deleted_at IS NULL
-              AND ls.code = 'ACTIVE'
+              AND ls.code = '${ListingStatusCodes.ACTIVE}'
               AND l.latitude IS NOT NULL
               AND l.longitude IS NOT NULL
               AND (:speciesCode IS NULL OR ps.code = :speciesCode)

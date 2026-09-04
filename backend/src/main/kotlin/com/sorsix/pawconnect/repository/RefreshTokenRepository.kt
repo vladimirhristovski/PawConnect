@@ -5,19 +5,18 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import jakarta.transaction.Transactional
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
-import java.util.Optional
 
 interface RefreshTokenRepository : JpaRepository<RefreshToken, Long> {
-    fun findByTokenHash(tokenHash: String): Optional<RefreshToken>
+    fun findByTokenHash(tokenHash: String): RefreshToken?
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("UPDATE RefreshToken rt SET rt.revokedAt = :now WHERE rt.user.id = :userId AND rt.revokedAt IS NULL")
     fun revokeAllUserTokens(@Param("userId") userId: Long, @Param("now") now: Instant): Int
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("DELETE FROM RefreshToken rt WHERE rt.expiresAt < :now OR rt.revokedAt IS NOT NULL")
     fun deleteExpiredOrRevoked(@Param("now") now: Instant): Int

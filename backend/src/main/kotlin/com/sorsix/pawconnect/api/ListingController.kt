@@ -17,7 +17,6 @@ import com.sorsix.pawconnect.service.ListingService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -54,7 +53,7 @@ class ListingController(
         @RequestParam(required = false) lat: BigDecimal?,
         @RequestParam(required = false) lng: BigDecimal?,
         @RequestParam(required = false) radiusKm: Double?,
-        @PageableDefault(size = 20) pageable: Pageable
+        pageable: Pageable
     ): Page<ListingSummaryResponse> {
         resolveNearbySearch(lat, lng, radiusKm)?.let {
             return listingService.searchNearby(it.lat, it.lng, it.radiusKm, speciesCode, pageable)
@@ -67,7 +66,7 @@ class ListingController(
     }
 
     @GetMapping("/mine")
-    fun listMyListings(@PageableDefault(size = 20) pageable: Pageable): Page<ListingResponse> {
+    fun listMyListings(pageable: Pageable): Page<ListingResponse> {
         val currentUser = authService.requireCurrentUser()
         val page = listingService.listMyListings(currentUser, pageable)
         return page.map { ListingResponse.from(it) }

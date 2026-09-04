@@ -8,7 +8,6 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.security.core.userdetails.UsernameNotFoundException
-import java.util.*
 import java.time.Instant
 
 class CustomUserDetailsServiceTest {
@@ -30,7 +29,7 @@ class CustomUserDetailsServiceTest {
             isActive = true
             roles.add(Role("USER").apply { id = 1L })
         }
-        every { userRepository.findByUsernameActive("john") } returns Optional.of(user)
+        every { userRepository.findByUsernameActive("john") } returns user
 
         val details = userDetailsService.loadUserByUsername("john")
         assertTrue(details is CustomUserDetails)
@@ -46,7 +45,7 @@ class CustomUserDetailsServiceTest {
 
     @Test
     fun `loadUserByUsername should throw when user not found`() {
-        every { userRepository.findByUsernameActive("unknown") } returns Optional.empty()
+        every { userRepository.findByUsernameActive("unknown") } returns null
         assertThrows(UsernameNotFoundException::class.java) {
             userDetailsService.loadUserByUsername("unknown")
         }
@@ -58,7 +57,7 @@ class CustomUserDetailsServiceTest {
             id = 1L
             isActive = false
         }
-        every { userRepository.findByUsernameActive("john") } returns Optional.of(user)
+        every { userRepository.findByUsernameActive("john") } returns user
 
         val details = userDetailsService.loadUserByUsername("john")
         assertFalse(details.isEnabled)
@@ -71,7 +70,7 @@ class CustomUserDetailsServiceTest {
             isActive = true
             deletedAt = Instant.now()
         }
-        every { userRepository.findByUsernameActive("john") } returns Optional.of(user)
+        every { userRepository.findByUsernameActive("john") } returns user
 
         val details = userDetailsService.loadUserByUsername("john")
         assertFalse(details.isEnabled)
