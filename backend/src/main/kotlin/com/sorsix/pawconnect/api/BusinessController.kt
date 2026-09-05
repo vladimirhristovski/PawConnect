@@ -47,7 +47,7 @@ class BusinessController(
         pageable: Pageable
     ): Page<BusinessResponse> {
         resolveNearbySearch(lat, lng, radiusKm)?.let {
-            return businessService.searchNearby(it.lat, it.lng, it.radiusKm, typeCode, pageable)
+            return businessService.searchNearby(it.lat, it.lng, it.radiusKm, typeCode, municipalityCode, pageable)
         }
         return businessService.searchBusinesses(typeCode, municipalityCode, pageable)
     }

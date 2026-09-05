@@ -146,9 +146,19 @@ class ListingService(
         lng: BigDecimal,
         radiusKm: Double,
         speciesCode: String?,
+        municipalityCode: String?,
+        petSize: Size?,
+        gender: Gender?,
+        goodWithKids: Boolean?,
+        goodWithOtherPets: Boolean?,
+        minFee: BigDecimal?,
+        maxFee: BigDecimal?,
         pageable: Pageable
     ): Page<ListingSummaryResponse> {
-        val page = listingRepository.findNearby(lat.toDouble(), lng.toDouble(), radiusKm, speciesCode, pageable)
+        val page = listingRepository.findNearby(
+            lat.toDouble(), lng.toDouble(), radiusKm, speciesCode, municipalityCode,
+            petSize?.name, gender?.name, goodWithKids, goodWithOtherPets, minFee, maxFee, pageable
+        )
         return page.map { ListingSummaryResponse.from(it) }
     }
 

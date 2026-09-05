@@ -1,3 +1,5 @@
+export type Role = 'USER' | 'ADMIN' | 'BUSINESS_OWNER';
+
 export interface User {
   id: number;
   username: string;
@@ -5,7 +7,7 @@ export interface User {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
-  roles: string[];
+  roles: Role[];
   isActive: boolean;
 }
 

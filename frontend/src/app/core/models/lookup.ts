@@ -25,3 +25,11 @@ export interface Municipality {
   name: string;
   cityCode: string | null;
 }
+export interface ListingStatus {
+  code: string;
+  name: string;
+}
+export interface ApplicationStatus {
+  code: string;
+  name: string;
+}

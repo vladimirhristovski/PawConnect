@@ -1,5 +1,5 @@
 import { Component, inject, input, effect, signal } from '@angular/core';
-import { form, FormField, FormRoot, required } from '@angular/forms/signals';
+import { form, FormField, FormRoot, maxLength, min, required } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PetService } from '../../../core/services/pet.service';
@@ -46,6 +46,10 @@ export class PetPhotoManager {
     this.detailsModel,
     (path) => {
       required(path.name, { message: 'Name is required' });
+      maxLength(path.name, 100, { message: 'Name must be at most 100 characters' });
+      maxLength(path.description, 5000, { message: 'Description must be at most 5000 characters' });
+      min(path.age, 0, { message: 'Age cannot be negative' });
+      min(path.weightKg, 0, { message: 'Weight cannot be negative' });
     },
     {
       submission: {
@@ -67,7 +71,9 @@ export class PetPhotoManager {
             goodWithOtherPets: value.goodWithOtherPets,
           };
           try {
-            const updated = await firstValueFrom(this.petService.update(Number(this.id()), payload));
+            const updated = await firstValueFrom(
+              this.petService.update(Number(this.id()), payload),
+            );
             this.applyPet(updated);
             this.saveSuccess.set(true);
           } catch (err) {

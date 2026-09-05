@@ -18,7 +18,12 @@
   </label>
   <label>
     Role
-    <input [formField]="filterForm.role" (change)="onFilterChange()" placeholder="e.g. ADMIN" />
+    <select [formField]="filterForm.role" (change)="onFilterChange()">
+      <option value="">All</option>
+      @for (r of lookup.roles(); track r) {
+        <option [value]="r">{{ r }}</option>
+      }
+    </select>
   </label>
 </div>
 
@@ -52,10 +57,16 @@
               <span class="badge">{{ user.isActive ? 'Active' : 'Suspended' }}</span>
             </td>
             <td>
-              <button (click)="toggleActive(user.id, user.isActive)">
+              <button [disabled]="actionBusy()" (click)="toggleActive(user.id, user.isActive)">
                 {{ user.isActive ? 'Suspend' : 'Reactivate' }}
               </button>
-              <button class="danger" (click)="remove(user.id, user.username)">Delete</button>
+              <button
+                class="danger"
+                [disabled]="actionBusy()"
+                (click)="remove(user.id, user.username)"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         }

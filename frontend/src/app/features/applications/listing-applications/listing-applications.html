@@ -35,8 +35,12 @@
             <td>{{ app.createdAt | date: 'mediumDate' }}</td>
             <td>
               @if (canDecide(app.statusCode)) {
-                <button (click)="decide(app.id, 'APPROVE')">Approve</button>
-                <button class="danger" (click)="decide(app.id, 'REJECT')">Reject</button>
+                <button [disabled]="actionBusy()" (click)="decide(app.id, 'APPROVE')">
+                  Approve
+                </button>
+                <button class="danger" [disabled]="actionBusy()" (click)="decide(app.id, 'REJECT')">
+                  Reject
+                </button>
               }
             </td>
           </tr>

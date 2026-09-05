@@ -936,6 +936,42 @@ class ListingControllerTest {
     }
 
     @Test
+    fun `search listings near location still applies the municipality filter`() {
+        val otherMunicipalityCode = Given {
+            accept(ContentType.JSON)
+        } When {
+            get("/api/lookups/municipalities")
+        } Then {
+            statusCode(200)
+        } Extract {
+            jsonPath().getList<String>("code").first { it != municipalityCode }
+        }
+
+        val inMunicipalityId = createListing(
+            ownerToken, petName = "InMunicipality", draft = false, municipality = municipalityCode,
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+        val otherMunicipalityId = createListing(
+            ownerToken, petName = "OtherMunicipality", draft = false, municipality = otherMunicipalityCode,
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+
+        Given {
+            queryParam("lat", "42.0")
+            queryParam("lng", "21.4")
+            queryParam("radiusKm", "10")
+            queryParam("municipalityCode", municipalityCode)
+            queryParam("size", 20)
+        } When {
+            get("/api/listings")
+        } Then {
+            statusCode(200)
+            body("content*.id", hasItem(inMunicipalityId.toInt()))
+            body("content*.id", not(hasItem(otherMunicipalityId.toInt())))
+        }
+    }
+
+    @Test
     fun `search listings with only some nearby params returns 400`() {
         Given {
             queryParam("lng", "21.4")

@@ -1,6 +1,9 @@
 package com.sorsix.pawconnect.service
 
+import com.sorsix.pawconnect.domain.ApplicationStatus
+import com.sorsix.pawconnect.domain.ListingStatus
 import com.sorsix.pawconnect.domain.PetSpecies
+import com.sorsix.pawconnect.domain.Role
 import com.sorsix.pawconnect.repository.*
 import io.mockk.every
 import io.mockk.mockk
@@ -16,10 +19,14 @@ class LookupServiceTest {
     private val countryRepository = mockk<CountryRepository>(relaxed = true)
     private val cityRepository = mockk<CityRepository>(relaxed = true)
     private val municipalityRepository = mockk<MunicipalityRepository>(relaxed = true)
+    private val listingStatusRepository = mockk<ListingStatusRepository>(relaxed = true)
+    private val applicationStatusRepository = mockk<ApplicationStatusRepository>(relaxed = true)
+    private val roleRepository = mockk<RoleRepository>(relaxed = true)
 
     private val service = LookupService(
         speciesRepository, breedRepository, businessTypeRepository,
-        countryRepository, cityRepository, municipalityRepository
+        countryRepository, cityRepository, municipalityRepository,
+        listingStatusRepository, applicationStatusRepository, roleRepository
     )
 
     @Test
@@ -57,5 +64,35 @@ class LookupServiceTest {
         service.getMunicipalities("SK")
 
         verify { municipalityRepository.findWithCityByCityCode("SK") }
+    }
+
+    @Test
+    fun `getAllListingStatuses delegates to the repository`() {
+        val statuses = listOf(mockk<ListingStatus>(relaxed = true))
+        every { listingStatusRepository.findAll() } returns statuses
+
+        val result = service.getAllListingStatuses()
+
+        assertEquals(statuses, result)
+    }
+
+    @Test
+    fun `getAllApplicationStatuses delegates to the repository`() {
+        val statuses = listOf(mockk<ApplicationStatus>(relaxed = true))
+        every { applicationStatusRepository.findAll() } returns statuses
+
+        val result = service.getAllApplicationStatuses()
+
+        assertEquals(statuses, result)
+    }
+
+    @Test
+    fun `getAllRoles delegates to the repository`() {
+        val roles = listOf(mockk<Role>(relaxed = true))
+        every { roleRepository.findAll() } returns roles
+
+        val result = service.getAllRoles()
+
+        assertEquals(roles, result)
     }
 }

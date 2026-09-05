@@ -1,3 +1,5 @@
+import { Breed } from './lookup';
+
 export type Gender = 'MALE' | 'FEMALE' | 'UNKNOWN';
 export type Size = 'SMALL' | 'MEDIUM' | 'LARGE';
 
@@ -12,12 +14,6 @@ export interface PetPhotoRequest {
   url: string;
   isPrimary?: boolean;
   displayOrder?: number;
-}
-
-export interface Breed {
-  code: string;
-  name: string;
-  speciesCode: string;
 }
 
 export interface Pet {

@@ -33,7 +33,7 @@ class PetMatch(BaseModel):
 
 
 class RecommendRequest(BaseModel):
-    prompt: str = Field(min_length=5, description="User's description of lifestyle")
+    prompt: str = Field(min_length=5, max_length=2000, description="User's description of lifestyle")
 
 
 class RecommendResponse(BaseModel):

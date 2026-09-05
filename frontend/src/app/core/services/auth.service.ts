@@ -41,7 +41,7 @@ export class AuthService {
       this.refresh$ = this.http.post<AuthResponse>(`${this.baseUrl}/refresh`, { refreshToken }).pipe(
         tap((res) => this.storeTokens(res)),
         finalize(() => (this.refresh$ = null)),
-        share(),
+        share({ resetOnRefCountZero: false, resetOnComplete: true, resetOnError: true }),
       );
     }
     return this.refresh$;

@@ -151,6 +151,7 @@ class BusinessControllerTest {
     private fun createBusiness(
         token: String,
         typeCode: String = businessTypeCode,
+        municipality: String = municipalityCode,
         latitude: BigDecimal? = null,
         longitude: BigDecimal? = null
     ): Long {
@@ -162,7 +163,7 @@ class BusinessControllerTest {
         {
             "name": "$name",
             "typeCode": "$typeCode",
-            "municipalityCode": "$municipalityCode",
+            "municipalityCode": "$municipality",
             "address": "1 Test St",
             "phone": "123456789",
             "email": "$name@test.com",
@@ -229,6 +230,42 @@ class BusinessControllerTest {
             statusCode(200)
             body("content*.id", hasItem(vetId.toInt()))
             body("content*.id", not(hasItem(groomerId.toInt())))
+        }
+    }
+
+    @Test
+    fun `search businesses near location still applies the municipality filter`() {
+        val otherMunicipalityCode = Given {
+            accept(ContentType.JSON)
+        } When {
+            get("/api/lookups/municipalities")
+        } Then {
+            statusCode(200)
+        } Extract {
+            jsonPath().getList<String>("code").first { it != municipalityCode }
+        }
+
+        val inMunicipalityId = createBusiness(
+            ownerToken, municipality = municipalityCode,
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+        val otherMunicipalityId = createBusiness(
+            ownerToken, municipality = otherMunicipalityCode,
+            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
+        )
+
+        Given {
+            queryParam("lat", "42.0")
+            queryParam("lng", "21.4")
+            queryParam("radiusKm", "10")
+            queryParam("municipalityCode", municipalityCode)
+            queryParam("size", 20)
+        } When {
+            get("/api/businesses")
+        } Then {
+            statusCode(200)
+            body("content*.id", hasItem(inMunicipalityId.toInt()))
+            body("content*.id", not(hasItem(otherMunicipalityId.toInt())))
         }
     }
 

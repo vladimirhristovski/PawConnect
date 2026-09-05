@@ -129,4 +129,37 @@ class LookupControllerTest {
             body("size()", greaterThanOrEqualTo(0))
         }
     }
+
+    @Test
+    fun `get listing statuses returns list`() {
+        When {
+            get("/api/lookups/listing-statuses")
+        } Then {
+            statusCode(200)
+            body("size()", greaterThan(0))
+            body("code", hasItem("ACTIVE"))
+        }
+    }
+
+    @Test
+    fun `get application statuses returns list`() {
+        When {
+            get("/api/lookups/application-statuses")
+        } Then {
+            statusCode(200)
+            body("size()", greaterThan(0))
+            body("code", hasItem("SUBMITTED"))
+        }
+    }
+
+    @Test
+    fun `get roles returns list`() {
+        When {
+            get("/api/lookups/roles")
+        } Then {
+            statusCode(200)
+            body("size()", greaterThan(0))
+            body("[0]", notNullValue())
+        }
+    }
 }

@@ -1,5 +1,14 @@
-import { Component, inject, input, effect, signal } from '@angular/core';
-import { disabled, form, FormField, FormRoot, min, required, validate } from '@angular/forms/signals';
+import { Component, inject, input, effect, signal, computed } from '@angular/core';
+import {
+  disabled,
+  form,
+  FormField,
+  FormRoot,
+  maxLength,
+  min,
+  required,
+  validate,
+} from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { EMPTY, from, catchError, finalize, firstValueFrom, map, mergeMap } from 'rxjs';
 import { ListingService } from '../../../core/services/listing.service';
@@ -51,6 +60,7 @@ export class ListingForm {
   private router = inject(Router);
 
   id = input<string>();
+  isEdit = computed(() => !!this.id());
 
   formModel = signal<ListingFormModel>({ ...EMPTY_LISTING_FORM });
   breedCodes = signal<string[]>([]);
@@ -68,8 +78,18 @@ export class ListingForm {
     this.formModel,
     (path) => {
       required(path.petName, { message: 'Name is required', when: () => !this.isEdit() });
+      maxLength(path.petName, 100, { message: 'Name must be at most 100 characters' });
       required(path.speciesCode, { message: 'Species is required', when: () => !this.isEdit() });
       required(path.municipalityCode, { message: 'Municipality is required' });
+      maxLength(path.title, 150, { message: 'Title must be at most 150 characters' });
+      maxLength(path.listingDescription, 5000, {
+        message: 'Description must be at most 5000 characters',
+      });
+      maxLength(path.petDescription, 5000, {
+        message: 'Description must be at most 5000 characters',
+      });
+      min(path.age, 0, { message: 'Age cannot be negative' });
+      min(path.weightKg, 0, { message: 'Weight cannot be negative' });
       min(path.adoptionFee, 0, { message: 'Fee cannot be negative' });
       disabled(path.cityCode, { when: ({ valueOf }) => !valueOf(path.countryCode) });
       validate(path.expiresAtDate, ({ value }) => {
@@ -177,10 +197,6 @@ export class ListingForm {
     });
   }
 
-  isEdit(): boolean {
-    return !!this.id();
-  }
-
   onSpeciesChange(): void {
     this.breedCodes.set([]);
     const speciesCode = this.formModel().speciesCode;
@@ -225,11 +241,14 @@ export class ListingForm {
     this.formModel.update((m) => ({ ...m, latitude: null, longitude: null }));
   }
 
-  currentCoordinates(): Coordinates | null {
-    const { latitude, longitude } = this.formModel();
-    if (latitude == null || longitude == null) return null;
-    return { lat: latitude, lng: longitude };
-  }
+  currentCoordinates = computed<Coordinates | null>(
+    () => {
+      const { latitude, longitude } = this.formModel();
+      if (latitude == null || longitude == null) return null;
+      return { lat: latitude, lng: longitude };
+    },
+    { equal: (a, b) => a?.lat === b?.lat && a?.lng === b?.lng },
+  );
 
   openMapPicker(): void {
     this.showMapPicker.set(true);

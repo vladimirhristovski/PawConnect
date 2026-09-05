@@ -23,17 +23,26 @@
       <p class="species">
         {{ listing.pet.speciesName }}
         @if (listing.pet.breeds.length) {
-          · {{ breedNames(listing) }}
+          · {{ breedNames() }}
         }
       </p>
 
       <dl class="vitals">
-        <div><dt>Gender</dt><dd>{{ listing.pet.gender | titlecase }}</dd></div>
+        <div>
+          <dt>Gender</dt>
+          <dd>{{ listing.pet.gender | titlecase }}</dd>
+        </div>
         @if (listing.pet.size) {
-          <div><dt>Size</dt><dd>{{ listing.pet.size | titlecase }}</dd></div>
+          <div>
+            <dt>Size</dt>
+            <dd>{{ listing.pet.size | titlecase }}</dd>
+          </div>
         }
         @if (listing.pet.age) {
-          <div><dt>Age</dt><dd>{{ listing.pet.age }} yrs</dd></div>
+          <div>
+            <dt>Age</dt>
+            <dd>{{ listing.pet.age }} yrs</dd>
+          </div>
         }
         <div>
           <dt>Good with kids</dt>
@@ -78,12 +87,12 @@
           >
           <a class="button" [routerLink]="['/pets', listing.pet.id, 'photos']">Manage pet</a>
           @if (listing.statusCode === 'DRAFT') {
-            <button (click)="publish()">Publish</button>
+            <button [disabled]="actionBusy()" (click)="publish()">Publish</button>
           }
           @if (listing.statusCode === 'ACTIVE') {
-            <button (click)="cancel()">Cancel listing</button>
+            <button [disabled]="actionBusy()" (click)="cancel()">Cancel listing</button>
           }
-          <button class="danger" (click)="remove()">Delete</button>
+          <button class="danger" [disabled]="actionBusy()" (click)="remove()">Delete</button>
           @if (actionError()) {
             <p class="error">{{ actionError() }}</p>
           }
@@ -98,12 +107,9 @@
               >Message
               <textarea [formField]="applicationForm.message" rows="3"></textarea>
             </label>
+            <label>Contact phone <input [formField]="applicationForm.contactPhone" /></label>
             <label
-              >Contact phone <input [formField]="applicationForm.contactPhone"
-            /></label>
-            <label
-              >Contact email
-              <input [formField]="applicationForm.contactEmail" type="email"
+              >Contact email <input [formField]="applicationForm.contactEmail" type="email"
             /></label>
             @if (applicationError()) {
               <p class="error">{{ applicationError() }}</p>
@@ -111,10 +117,7 @@
             @if (applicationSent()) {
               <p class="success">Application submitted!</p>
             }
-            <button
-              type="submit"
-              [disabled]="applicationSent() || applicationForm().submitting()"
-            >
+            <button type="submit" [disabled]="applicationSent() || applicationForm().submitting()">
               Submit application
             </button>
           </form>

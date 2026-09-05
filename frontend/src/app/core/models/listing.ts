@@ -1,4 +1,4 @@
-import { PetSummary, Pet, CreatePetRequest } from './pet';
+import { PetSummary, Pet, CreatePetRequest, Gender, Size } from './pet';
 import { Business } from './business';
 
 export type ListingStatusCode = 'DRAFT' | 'ACTIVE' | 'ADOPTED' | 'EXPIRED' | 'CANCELLED';
@@ -62,8 +62,8 @@ export interface UpdateListingRequest {
 export interface ListingSearchParams {
   speciesCode?: string;
   municipalityCode?: string;
-  petSize?: string;
-  gender?: string;
+  petSize?: Size;
+  gender?: Gender;
   goodWithKids?: boolean;
   goodWithOtherPets?: boolean;
   minFee?: number;

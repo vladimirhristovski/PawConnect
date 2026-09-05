@@ -34,7 +34,9 @@
             <td>{{ app.reviewedBy ?? '—' }}</td>
             <td>
               @if (canWithdraw(app.statusCode)) {
-                <button class="danger" (click)="withdraw(app.id)">Withdraw</button>
+                <button class="danger" [disabled]="actionBusy()" (click)="withdraw(app.id)">
+                  Withdraw
+                </button>
               }
             </td>
           </tr>

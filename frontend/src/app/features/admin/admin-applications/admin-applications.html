@@ -12,8 +12,8 @@
     Status
     <select [formField]="filterForm.status" (change)="onFilterChange()">
       <option value="">All</option>
-      @for (s of statuses; track s) {
-        <option [value]="s">{{ s }}</option>
+      @for (s of lookup.applicationStatuses(); track s.code) {
+        <option [value]="s.code">{{ s.name }}</option>
       }
     </select>
   </label>

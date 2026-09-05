@@ -1,16 +1,16 @@
-import { Component, inject, signal, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, linkedSignal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { form, FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { debounceTime, skip } from 'rxjs/operators';
+import { EMPTY, map, tap, switchMap, catchError } from 'rxjs';
 import { ListingService } from '../../../core/services/listing.service';
 import { LookupService } from '../../../core/services/lookup.service';
 import { Pagination } from '../../../shared/pagination/pagination';
 import { ListingCard } from '../../../shared/ui/listing-card/listing-card';
 import { MapPicker } from '../../../shared/map-picker/map-picker';
 import { ListingSearchParams, ListingSummary } from '../../../core/models/listing';
+import { Gender, Size } from '../../../core/models/pet';
 import { Coordinates } from '../../../core/models/coordinates';
 import { Page } from '../../../core/models/page';
 import { apiErrorMessage } from '../../../core/api-error';
@@ -19,10 +19,7 @@ import {
   ParamSchema,
   filtersToQueryParams,
   readFiltersFromParams,
-  sameQueryParams,
 } from '../../../shared/query-params/query-param-sync';
-
-const FILTER_DEBOUNCE_MS = 400;
 
 const DEFAULT_FILTERS: ListingSearchParams = { page: 0, size: 12 };
 
@@ -42,17 +39,19 @@ const FILTER_SCHEMA: ParamSchema<ListingSearchParams> = {
   size: 'number',
 };
 
-const EMPTY_FILTER_FORM: ListingFilterForm = {
-  speciesCode: '',
-  municipalityCode: '',
-  petSize: '',
-  gender: '',
-  goodWithKids: false,
-  goodWithOtherPets: false,
-  minFee: null,
-  maxFee: null,
-  radiusKm: null,
-};
+function toFilterForm(filters: ListingSearchParams): ListingFilterForm {
+  return {
+    speciesCode: filters.speciesCode ?? '',
+    municipalityCode: filters.municipalityCode ?? '',
+    petSize: filters.petSize ?? '',
+    gender: filters.gender ?? '',
+    goodWithKids: filters.goodWithKids ?? false,
+    goodWithOtherPets: filters.goodWithOtherPets ?? false,
+    minFee: filters.minFee ?? null,
+    maxFee: filters.maxFee ?? null,
+    radiusKm: filters.radiusKm ?? null,
+  };
+}
 
 @Component({
   selector: 'app-listing-search',
@@ -63,93 +62,86 @@ const EMPTY_FILTER_FORM: ListingFilterForm = {
 export class ListingSearch {
   private listingService = inject(ListingService);
   protected lookup = inject(LookupService);
-  private destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  filters: ListingSearchParams = { ...DEFAULT_FILTERS };
-  filterModel = signal<ListingFilterForm>({ ...EMPTY_FILTER_FORM });
+  private paramsSignal = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
+  });
+  currentFilters = computed(() =>
+    readFiltersFromParams(this.paramsSignal(), FILTER_SCHEMA, DEFAULT_FILTERS),
+  );
+
+  filterModel = linkedSignal<ListingFilterForm>(() => toFilterForm(this.currentFilters()));
   filterForm = form(this.filterModel);
 
-  results = signal<Page<ListingSummary> | null>(null);
   loading = signal(true);
   loadError = signal<string | null>(null);
 
-  useNearby = signal(false);
+  results = toSignal<Page<ListingSummary> | null>(
+    this.route.queryParamMap.pipe(
+      map((pm) => readFiltersFromParams(pm, FILTER_SCHEMA, DEFAULT_FILTERS)),
+      tap(() => {
+        this.loading.set(true);
+        this.loadError.set(null);
+      }),
+      switchMap((filters) =>
+        this.listingService.search(filters).pipe(
+          tap(() => this.loading.set(false)),
+          catchError((err) => {
+            this.loadError.set(apiErrorMessage(err, 'Could not load listings.'));
+            this.loading.set(false);
+            return EMPTY;
+          }),
+        ),
+      ),
+    ),
+    { initialValue: null },
+  );
+
+  useNearby = computed(() => {
+    const f = this.currentFilters();
+    return f.lat != null && f.lng != null;
+  });
+  nearbyCoords = computed<Coordinates | null>(() => {
+    const f = this.currentFilters();
+    return f.lat != null && f.lng != null ? { lat: f.lat, lng: f.lng } : null;
+  });
+
   locating = signal(false);
   locationError = signal<string | null>(null);
   showLocationPicker = signal(false);
 
-  private filterChange$ = new Subject<void>();
-  private suppressNextParamSync = false;
-
   constructor() {
-    this.filterChange$
-      .pipe(debounceTime(FILTER_DEBOUNCE_MS), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.runSearch());
-
     this.lookup.loadSpecies();
     this.lookup.loadMunicipalities();
-
-    this.filters = readFiltersFromParams(this.route.snapshot.queryParamMap, FILTER_SCHEMA, {
-      ...DEFAULT_FILTERS,
-    });
-    this.useNearby.set(this.filters.lat != null && this.filters.lng != null);
-    this.syncFiltersToModel();
-    this.runSearch();
-
-    this.route.queryParamMap
-      .pipe(skip(1), takeUntilDestroyed(this.destroyRef))
-      .subscribe((paramMap) => {
-        if (this.suppressNextParamSync) {
-          this.suppressNextParamSync = false;
-          return;
-        }
-        this.filters = readFiltersFromParams(paramMap, FILTER_SCHEMA, { ...DEFAULT_FILTERS });
-        this.useNearby.set(this.filters.lat != null && this.filters.lng != null);
-        this.syncFiltersToModel();
-        this.runSearch();
-      });
   }
 
   search(): void {
-    this.syncModelToFilters();
-    this.filters.page = 0;
-    this.runSearch();
+    this.navigateWithFilters(this.buildFiltersFromForm(), true);
   }
 
   onFilterChange(): void {
-    this.syncModelToFilters();
-    this.filters.page = 0;
-    this.filterChange$.next();
-  }
-
-  clearFilters(): void {
-    this.filters = { ...DEFAULT_FILTERS };
-    this.filterModel.set({ ...EMPTY_FILTER_FORM });
-    this.useNearby.set(false);
-    this.locationError.set(null);
-    this.showLocationPicker.set(false);
     this.search();
   }
 
+  clearFilters(): void {
+    this.locationError.set(null);
+    this.showLocationPicker.set(false);
+    this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
   goToPage(page: number): void {
-    this.filters.page = page;
-    this.runSearch();
+    this.navigateWithFilters({ ...this.currentFilters(), page }, false);
   }
 
   toggleNearby(): void {
-    this.useNearby.update((v) => !v);
     this.locationError.set(null);
     if (this.useNearby()) {
-      const radiusKm = this.filterModel().radiusKm ?? 25;
-      this.filterModel.update((m) => ({ ...m, radiusKm }));
-      this.filters.radiusKm = radiusKm;
-      this.locateThenSearch();
+      const { lat, lng, radiusKm, ...rest } = this.currentFilters();
+      this.navigateWithFilters({ ...rest, page: 0 }, true);
     } else {
-      this.filters.lat = undefined;
-      this.filters.lng = undefined;
-      this.search();
+      this.locateThenSearch();
     }
   }
 
@@ -164,11 +156,6 @@ export class ListingSearch {
         this.locating.set(false);
         this.locationError.set(`${err.message} You can pick a spot on the map instead.`);
       });
-  }
-
-  nearbyCoords(): Coordinates | null {
-    const { lat, lng } = this.filters;
-    return lat != null && lng != null ? { lat, lng } : null;
   }
 
   openLocationPicker(): void {
@@ -186,71 +173,43 @@ export class ListingSearch {
   }
 
   private applyNearbyCoords(coords: Coordinates): void {
-    this.filters.lat = coords.lat;
-    this.filters.lng = coords.lng;
-    this.search();
+    const radiusKm = this.filterModel().radiusKm ?? 25;
+    this.navigateWithFilters(
+      { ...this.currentFilters(), lat: coords.lat, lng: coords.lng, radiusKm, page: 0 },
+      true,
+    );
   }
 
-  private runSearch(): void {
-    this.loading.set(true);
-    this.loadError.set(null);
-    this.listingService.search(this.filters).subscribe({
-      next: (page) => {
-        this.results.set(page);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.loadError.set(apiErrorMessage(err, 'Could not load listings.'));
-        this.loading.set(false);
-      },
-    });
-    this.updateUrl();
-  }
-
-  private updateUrl(): void {
-    const queryParams = filtersToQueryParams(this.filters, FILTER_SCHEMA, DEFAULT_FILTERS);
-    if (sameQueryParams(queryParams, this.route.snapshot.queryParams)) return;
-    this.suppressNextParamSync = true;
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      replaceUrl: true,
-    });
-  }
-
-  private syncModelToFilters(): void {
+  private buildFiltersFromForm(): ListingSearchParams {
     const f = this.filterModel();
-    this.filters.speciesCode = f.speciesCode || undefined;
-    this.filters.municipalityCode = f.municipalityCode || undefined;
-    this.filters.petSize = f.petSize || undefined;
-    this.filters.gender = f.gender || undefined;
-    this.filters.goodWithKids = f.goodWithKids || undefined;
-    this.filters.goodWithOtherPets = f.goodWithOtherPets || undefined;
-    this.filters.minFee = f.minFee ?? undefined;
-    this.filters.maxFee = f.maxFee ?? undefined;
-    this.filters.radiusKm = this.useNearby() ? (f.radiusKm ?? undefined) : undefined;
+    const current = this.currentFilters();
+    return {
+      speciesCode: f.speciesCode || undefined,
+      municipalityCode: f.municipalityCode || undefined,
+      petSize: f.petSize || undefined,
+      gender: f.gender || undefined,
+      goodWithKids: f.goodWithKids || undefined,
+      goodWithOtherPets: f.goodWithOtherPets || undefined,
+      minFee: f.minFee ?? undefined,
+      maxFee: f.maxFee ?? undefined,
+      lat: current.lat,
+      lng: current.lng,
+      radiusKm: this.useNearby() ? (f.radiusKm ?? undefined) : undefined,
+      page: 0,
+    };
   }
 
-  private syncFiltersToModel(): void {
-    this.filterModel.set({
-      speciesCode: this.filters.speciesCode ?? '',
-      municipalityCode: this.filters.municipalityCode ?? '',
-      petSize: this.filters.petSize ?? '',
-      gender: this.filters.gender ?? '',
-      goodWithKids: this.filters.goodWithKids ?? false,
-      goodWithOtherPets: this.filters.goodWithOtherPets ?? false,
-      minFee: this.filters.minFee ?? null,
-      maxFee: this.filters.maxFee ?? null,
-      radiusKm: this.filters.radiusKm ?? null,
-    });
+  private navigateWithFilters(filters: ListingSearchParams, replaceUrl: boolean): void {
+    const queryParams = filtersToQueryParams(filters, FILTER_SCHEMA, DEFAULT_FILTERS);
+    this.router.navigate([], { relativeTo: this.route, queryParams, replaceUrl });
   }
 }
 
 interface ListingFilterForm {
   speciesCode: string;
   municipalityCode: string;
-  petSize: string;
-  gender: string;
+  petSize: Size | '';
+  gender: Gender | '';
   goodWithKids: boolean;
   goodWithOtherPets: boolean;
   minFee: number | null;

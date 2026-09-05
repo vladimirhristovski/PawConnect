@@ -12,7 +12,10 @@ class LookupService(
     private val businessTypeRepository: BusinessTypeRepository,
     private val countryRepository: CountryRepository,
     private val cityRepository: CityRepository,
-    private val municipalityRepository: MunicipalityRepository
+    private val municipalityRepository: MunicipalityRepository,
+    private val listingStatusRepository: ListingStatusRepository,
+    private val applicationStatusRepository: ApplicationStatusRepository,
+    private val roleRepository: RoleRepository
 ) {
 
     @Cacheable("species")
@@ -33,4 +36,13 @@ class LookupService(
     @Cacheable("municipalities")
     fun getMunicipalities(cityCode: String?): List<Municipality> =
         municipalityRepository.findWithCityByCityCode(cityCode)
+
+    @Cacheable("listingStatuses")
+    fun getAllListingStatuses(): List<ListingStatus> = listingStatusRepository.findAll()
+
+    @Cacheable("applicationStatuses")
+    fun getAllApplicationStatuses(): List<ApplicationStatus> = applicationStatusRepository.findAll()
+
+    @Cacheable("roles")
+    fun getAllRoles(): List<Role> = roleRepository.findAll()
 }

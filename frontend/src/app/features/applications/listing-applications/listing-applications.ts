@@ -22,6 +22,7 @@ export class ListingApplications {
   loading = signal(true);
   loadError = signal<string | null>(null);
   actionError = signal<string | null>(null);
+  actionBusy = signal(false);
   reload$ = new ReplaySubject<void>(1);
 
   page = toSignal(
@@ -61,9 +62,16 @@ export class ListingApplications {
 
   decide(appId: number, decision: 'APPROVE' | 'REJECT'): void {
     this.actionError.set(null);
+    this.actionBusy.set(true);
     this.applicationService.review(appId, decision).subscribe({
-      next: () => this.reload$.next(),
-      error: (err) => this.actionError.set(apiErrorMessage(err, 'Could not update the application.')),
+      next: () => {
+        this.actionBusy.set(false);
+        this.reload$.next();
+      },
+      error: (err) => {
+        this.actionBusy.set(false);
+        this.actionError.set(apiErrorMessage(err, 'Could not update the application.'));
+      },
     });
   }
 

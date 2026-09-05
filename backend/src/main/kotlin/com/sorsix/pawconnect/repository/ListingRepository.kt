@@ -102,11 +102,19 @@ interface ListingRepository : JpaRepository<Listing, Long> {
             JOIN listing_statuses ls ON ls.id = l.status_id
             JOIN pets p ON p.id = l.pet_id
             JOIN pet_species ps ON ps.id = p.species_id
+            JOIN municipalities m ON m.id = l.municipality_id
             WHERE l.deleted_at IS NULL
               AND ls.code = '${ListingStatusCodes.ACTIVE}'
               AND l.latitude IS NOT NULL
               AND l.longitude IS NOT NULL
               AND (:speciesCode IS NULL OR ps.code = :speciesCode)
+              AND (:municipalityCode IS NULL OR m.code = :municipalityCode)
+              AND (:petSize IS NULL OR p.size = :petSize)
+              AND (:gender IS NULL OR p.gender = :gender)
+              AND (:goodWithKids IS NULL OR p.good_with_kids = :goodWithKids)
+              AND (:goodWithOtherPets IS NULL OR p.good_with_other_pets = :goodWithOtherPets)
+              AND (CAST(:minFee AS numeric) IS NULL OR l.adoption_fee >= :minFee)
+              AND (CAST(:maxFee AS numeric) IS NULL OR l.adoption_fee <= :maxFee)
               AND 6371 * acos(
                     LEAST(1.0, GREATEST(-1.0,
                       cos(radians(CAST(:lat AS double precision))) * cos(radians(CAST(l.latitude AS double precision))) *
@@ -128,11 +136,19 @@ interface ListingRepository : JpaRepository<Listing, Long> {
             JOIN listing_statuses ls ON ls.id = l.status_id
             JOIN pets p ON p.id = l.pet_id
             JOIN pet_species ps ON ps.id = p.species_id
+            JOIN municipalities m ON m.id = l.municipality_id
             WHERE l.deleted_at IS NULL
               AND ls.code = '${ListingStatusCodes.ACTIVE}'
               AND l.latitude IS NOT NULL
               AND l.longitude IS NOT NULL
               AND (:speciesCode IS NULL OR ps.code = :speciesCode)
+              AND (:municipalityCode IS NULL OR m.code = :municipalityCode)
+              AND (:petSize IS NULL OR p.size = :petSize)
+              AND (:gender IS NULL OR p.gender = :gender)
+              AND (:goodWithKids IS NULL OR p.good_with_kids = :goodWithKids)
+              AND (:goodWithOtherPets IS NULL OR p.good_with_other_pets = :goodWithOtherPets)
+              AND (CAST(:minFee AS numeric) IS NULL OR l.adoption_fee >= :minFee)
+              AND (CAST(:maxFee AS numeric) IS NULL OR l.adoption_fee <= :maxFee)
               AND 6371 * acos(
                     LEAST(1.0, GREATEST(-1.0,
                       cos(radians(CAST(:lat AS double precision))) * cos(radians(CAST(l.latitude AS double precision))) *
@@ -148,6 +164,13 @@ interface ListingRepository : JpaRepository<Listing, Long> {
         @Param("lng") lng: Double,
         @Param("radiusKm") radiusKm: Double,
         @Param("speciesCode") speciesCode: String?,
+        @Param("municipalityCode") municipalityCode: String?,
+        @Param("petSize") petSize: String?,
+        @Param("gender") gender: String?,
+        @Param("goodWithKids") goodWithKids: Boolean?,
+        @Param("goodWithOtherPets") goodWithOtherPets: Boolean?,
+        @Param("minFee") minFee: BigDecimal?,
+        @Param("maxFee") maxFee: BigDecimal?,
         pageable: Pageable
     ): Page<Listing>
 }

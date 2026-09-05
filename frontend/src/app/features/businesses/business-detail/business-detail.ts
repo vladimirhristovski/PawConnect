@@ -1,4 +1,4 @@
-import { Component, inject, input, effect, signal } from '@angular/core';
+import { Component, inject, input, effect, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { BusinessService } from '../../../core/services/business.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -26,11 +26,11 @@ export class BusinessDetail {
     effect(() => this.load(Number(this.id())));
   }
 
-  isOwner(): boolean {
+  isOwner = computed(() => {
     const biz = this.business();
     const user = this.auth.currentUser();
     return !!biz && !!user && biz.ownerUsername === user.username;
-  }
+  });
 
   remove(): void {
     const biz = this.business();

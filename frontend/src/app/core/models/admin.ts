@@ -1,6 +1,8 @@
+import { Role } from './user';
+
 export interface UserSearchParams {
   active?: boolean;
-  role?: string;
+  role?: Role;
   page?: number;
   size?: number;
 }

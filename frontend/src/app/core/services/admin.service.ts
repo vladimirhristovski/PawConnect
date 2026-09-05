@@ -2,8 +2,8 @@ import { Service, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user';
-import { Listing } from '../models/listing';
-import { Application } from '../models/application';
+import { Listing, ListingStatusCode } from '../models/listing';
+import { Application, ApplicationStatusCode } from '../models/application';
 import { Page } from '../models/page';
 import { UserSearchParams, UpdateUserStatusRequest } from '../models/admin';
 
@@ -30,13 +30,13 @@ export class AdminService {
     return this.http.delete<void>(`${this.baseUrl}/users/${id}`);
   }
 
-  searchListings(status: string | undefined, page = 0, size = 20) {
+  searchListings(status: ListingStatusCode | undefined, page = 0, size = 20) {
     let params = new HttpParams().set('page', page).set('size', size);
     if (status) params = params.set('status', status);
     return this.http.get<Page<Listing>>(`${this.baseUrl}/listings`, { params });
   }
 
-  searchApplications(status: string | undefined, page = 0, size = 20) {
+  searchApplications(status: ApplicationStatusCode | undefined, page = 0, size = 20) {
     let params = new HttpParams().set('page', page).set('size', size);
     if (status) params = params.set('status', status);
     return this.http.get<Page<Application>>(`${this.baseUrl}/applications`, { params });

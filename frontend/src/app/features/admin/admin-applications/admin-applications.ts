@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/r
 import { DatePipe } from '@angular/common';
 import { ReplaySubject, EMPTY, combineLatest, map, tap, switchMap, catchError } from 'rxjs';
 import { AdminService } from '../../../core/services/admin.service';
+import { LookupService } from '../../../core/services/lookup.service';
 import { Pagination } from '../../../shared/pagination/pagination';
 import { ApplicationStatusCode } from '../../../core/models/application';
 import { apiErrorMessage } from '../../../core/api-error';
@@ -17,20 +18,12 @@ import { apiErrorMessage } from '../../../core/api-error';
 })
 export class AdminApplications {
   private adminService = inject(AdminService);
+  protected lookup = inject(LookupService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  filterModel = signal({ status: '' });
+  filterModel = signal<{ status: ApplicationStatusCode | '' }>({ status: '' });
   filterForm = form(this.filterModel);
-
-  statuses: ApplicationStatusCode[] = [
-    'SUBMITTED',
-    'UNDER_REVIEW',
-    'APPROVED',
-    'REJECTED',
-    'WITHDRAWN',
-    'CLOSED',
-  ];
 
   loading = signal(true);
   loadError = signal<string | null>(null);
@@ -39,7 +32,7 @@ export class AdminApplications {
   page = toSignal(
     combineLatest([this.reload$, this.route.queryParamMap]).pipe(
       map(([, params]) => ({
-        status: params.get('status') ?? '',
+        status: (params.get('status') ?? '') as ApplicationStatusCode | '',
         pageNum: Number(params.get('page') ?? 0),
       })),
       tap(({ status }) => {
@@ -61,6 +54,7 @@ export class AdminApplications {
   );
 
   constructor() {
+    this.lookup.loadApplicationStatuses();
     this.reload$.next();
   }
 

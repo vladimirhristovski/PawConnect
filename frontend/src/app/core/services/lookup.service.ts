@@ -1,7 +1,17 @@
 import { Service, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { Species, Breed, BusinessType, Country, City, Municipality } from '../models/lookup';
+import {
+  Species,
+  Breed,
+  BusinessType,
+  Country,
+  City,
+  Municipality,
+  ListingStatus,
+  ApplicationStatus,
+} from '../models/lookup';
+import { Role } from '../models/user';
 
 @Service()
 export class LookupService {
@@ -14,6 +24,9 @@ export class LookupService {
   countries = signal<Country[]>([]);
   cities = signal<City[]>([]);
   municipalities = signal<Municipality[]>([]);
+  listingStatuses = signal<ListingStatus[]>([]);
+  applicationStatuses = signal<ApplicationStatus[]>([]);
+  roles = signal<Role[]>([]);
 
   loadSpecies(): void {
     this.http.get<Species[]>(`${this.baseUrl}/species`).subscribe((data) => this.species.set(data));
@@ -54,5 +67,18 @@ export class LookupService {
     this.http
       .get<Municipality[]>(`${this.baseUrl}/municipalities`, { params })
       .subscribe((data) => this.municipalities.set(data));
+  }
+  loadListingStatuses(): void {
+    this.http
+      .get<ListingStatus[]>(`${this.baseUrl}/listing-statuses`)
+      .subscribe((data) => this.listingStatuses.set(data));
+  }
+  loadApplicationStatuses(): void {
+    this.http
+      .get<ApplicationStatus[]>(`${this.baseUrl}/application-statuses`)
+      .subscribe((data) => this.applicationStatuses.set(data));
+  }
+  loadRoles(): void {
+    this.http.get<Role[]>(`${this.baseUrl}/roles`).subscribe((data) => this.roles.set(data));
   }
 }

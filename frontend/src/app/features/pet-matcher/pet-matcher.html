@@ -11,6 +11,7 @@
 
     <textarea
       rows="5"
+      maxlength="2000"
       placeholder="e.g. I live in a small apartment, work from home, have two young kids and no yard. I've never owned a pet before."
       [value]="prompt()"
       (input)="prompt.set($any($event.target).value)"

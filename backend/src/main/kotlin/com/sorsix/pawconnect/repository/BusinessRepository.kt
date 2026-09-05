@@ -20,10 +20,12 @@ interface BusinessRepository : JpaRepository<Business, Long>, JpaSpecificationEx
             SELECT b.*
             FROM businesses b
             JOIN business_types bt ON bt.id = b.type_id
+            JOIN municipalities m ON m.id = b.municipality_id
             WHERE b.deleted_at IS NULL
               AND b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND (:typeCode IS NULL OR bt.code = :typeCode)
+              AND (:municipalityCode IS NULL OR m.code = :municipalityCode)
               AND 6371 * acos(
                     LEAST(1.0, GREATEST(-1.0,
                       cos(radians(CAST(:lat AS double precision))) * cos(radians(CAST(b.latitude AS double precision))) *
@@ -43,10 +45,12 @@ interface BusinessRepository : JpaRepository<Business, Long>, JpaSpecificationEx
             SELECT count(*)
             FROM businesses b
             JOIN business_types bt ON bt.id = b.type_id
+            JOIN municipalities m ON m.id = b.municipality_id
             WHERE b.deleted_at IS NULL
               AND b.latitude IS NOT NULL
               AND b.longitude IS NOT NULL
               AND (:typeCode IS NULL OR bt.code = :typeCode)
+              AND (:municipalityCode IS NULL OR m.code = :municipalityCode)
               AND 6371 * acos(
                     LEAST(1.0, GREATEST(-1.0,
                       cos(radians(CAST(:lat AS double precision))) * cos(radians(CAST(b.latitude AS double precision))) *
@@ -62,6 +66,7 @@ interface BusinessRepository : JpaRepository<Business, Long>, JpaSpecificationEx
         @Param("lng") lng: Double,
         @Param("radiusKm") radiusKm: Double,
         @Param("typeCode") typeCode: String?,
+        @Param("municipalityCode") municipalityCode: String?,
         pageable: Pageable
     ): Page<Business>
 }

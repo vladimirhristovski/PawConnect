@@ -1,5 +1,13 @@
-import { Component, inject, input, effect, signal } from '@angular/core';
-import { disabled, email, form, FormField, FormRoot, maxLength, required } from '@angular/forms/signals';
+import { Component, inject, input, effect, signal, computed } from '@angular/core';
+import {
+  disabled,
+  email,
+  form,
+  FormField,
+  FormRoot,
+  maxLength,
+  required,
+} from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { EMPTY, from, catchError, finalize, firstValueFrom, map, mergeMap } from 'rxjs';
 import { BusinessService } from '../../../core/services/business.service';
@@ -44,6 +52,7 @@ export class BusinessForm {
   private router = inject(Router);
 
   id = input<string>();
+  isEdit = computed(() => !!this.id());
 
   formModel = signal<BusinessFormModel>({ ...EMPTY_BUSINESS_FORM });
 
@@ -150,10 +159,6 @@ export class BusinessForm {
     });
   }
 
-  isEdit(): boolean {
-    return !!this.id();
-  }
-
   onCountryChange(): void {
     this.formModel.update((m) => ({ ...m, cityCode: '', municipalityCode: '' }));
     this.lookup.loadCities(this.formModel().countryCode || undefined);
@@ -178,11 +183,14 @@ export class BusinessForm {
       });
   }
 
-  currentCoordinates(): Coordinates | null {
-    const { latitude, longitude } = this.formModel();
-    if (latitude == null || longitude == null) return null;
-    return { lat: latitude, lng: longitude };
-  }
+  currentCoordinates = computed<Coordinates | null>(
+    () => {
+      const { latitude, longitude } = this.formModel();
+      if (latitude == null || longitude == null) return null;
+      return { lat: latitude, lng: longitude };
+    },
+    { equal: (a, b) => a?.lat === b?.lat && a?.lng === b?.lng },
+  );
 
   openMapPicker(): void {
     this.showMapPicker.set(true);

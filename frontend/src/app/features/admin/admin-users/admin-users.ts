@@ -4,7 +4,9 @@ import { form, FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ReplaySubject, EMPTY, combineLatest, map, tap, switchMap, catchError } from 'rxjs';
 import { AdminService } from '../../../core/services/admin.service';
+import { LookupService } from '../../../core/services/lookup.service';
 import { Pagination } from '../../../shared/pagination/pagination';
+import { Role } from '../../../core/models/user';
 import { apiErrorMessage } from '../../../core/api-error';
 
 @Component({
@@ -15,22 +17,24 @@ import { apiErrorMessage } from '../../../core/api-error';
 })
 export class AdminUsers {
   private adminService = inject(AdminService);
+  protected lookup = inject(LookupService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  filterModel = signal({ active: '', role: '' });
+  filterModel = signal<{ active: string; role: Role | '' }>({ active: '', role: '' });
   filterForm = form(this.filterModel);
 
   loading = signal(true);
   loadError = signal<string | null>(null);
   error = signal<string | null>(null);
+  actionBusy = signal(false);
   reload$ = new ReplaySubject<void>(1);
 
   page = toSignal(
     combineLatest([this.reload$, this.route.queryParamMap]).pipe(
       map(([, params]) => ({
         active: params.get('active') ?? '',
-        role: params.get('role') ?? '',
+        role: (params.get('role') ?? '') as Role | '',
         pageNum: Number(params.get('page') ?? 0),
       })),
       tap(({ active, role }) => {
@@ -59,6 +63,7 @@ export class AdminUsers {
   );
 
   constructor() {
+    this.lookup.loadRoles();
     this.reload$.next();
   }
 
@@ -81,18 +86,32 @@ export class AdminUsers {
 
   toggleActive(id: number, currentlyActive: boolean): void {
     this.error.set(null);
+    this.actionBusy.set(true);
     this.adminService.updateUserStatus(id, { active: !currentlyActive }).subscribe({
-      next: () => this.reload$.next(),
-      error: (err) => this.error.set(apiErrorMessage(err, 'Could not update user status.')),
+      next: () => {
+        this.actionBusy.set(false);
+        this.reload$.next();
+      },
+      error: (err) => {
+        this.actionBusy.set(false);
+        this.error.set(apiErrorMessage(err, 'Could not update user status.'));
+      },
     });
   }
 
   remove(id: number, username: string): void {
     if (!confirm(`Permanently delete user "${username}"?`)) return;
     this.error.set(null);
+    this.actionBusy.set(true);
     this.adminService.deleteUser(id).subscribe({
-      next: () => this.reload$.next(),
-      error: (err) => this.error.set(apiErrorMessage(err, 'Could not delete user.')),
+      next: () => {
+        this.actionBusy.set(false);
+        this.reload$.next();
+      },
+      error: (err) => {
+        this.actionBusy.set(false);
+        this.error.set(apiErrorMessage(err, 'Could not delete user.'));
+      },
     });
   }
 }

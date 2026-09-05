@@ -107,9 +107,12 @@ class BusinessService(
 
     @Transactional(readOnly = true)
     fun searchNearby(
-        lat: BigDecimal, lng: BigDecimal, radiusKm: Double, typeCode: String?, pageable: Pageable
+        lat: BigDecimal, lng: BigDecimal, radiusKm: Double, typeCode: String?, municipalityCode: String?,
+        pageable: Pageable
     ): Page<BusinessResponse> {
-        val page = businessRepository.findNearby(lat.toDouble(), lng.toDouble(), radiusKm, typeCode, pageable)
+        val page = businessRepository.findNearby(
+            lat.toDouble(), lng.toDouble(), radiusKm, typeCode, municipalityCode, pageable
+        )
         return page.map { BusinessResponse.from(it) }
     }
 

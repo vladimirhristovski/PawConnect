@@ -31,4 +31,14 @@ class LookupController(private val lookupService: LookupService) {
     @GetMapping("/municipalities")
     fun getMunicipalities(@RequestParam(required = false) cityCode: String?) =
         lookupService.getMunicipalities(cityCode).map { MunicipalityResponse.from(it) }
+
+    @GetMapping("/listing-statuses")
+    fun getListingStatuses() = lookupService.getAllListingStatuses().map { ListingStatusResponse.from(it) }
+
+    @GetMapping("/application-statuses")
+    fun getApplicationStatuses() =
+        lookupService.getAllApplicationStatuses().map { ApplicationStatusResponse.from(it) }
+
+    @GetMapping("/roles")
+    fun getRoles() = lookupService.getAllRoles().map { it.name }
 }

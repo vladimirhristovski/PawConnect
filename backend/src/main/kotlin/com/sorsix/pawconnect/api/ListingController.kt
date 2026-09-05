@@ -56,7 +56,10 @@ class ListingController(
         pageable: Pageable
     ): Page<ListingSummaryResponse> {
         resolveNearbySearch(lat, lng, radiusKm)?.let {
-            return listingService.searchNearby(it.lat, it.lng, it.radiusKm, speciesCode, pageable)
+            return listingService.searchNearby(
+                it.lat, it.lng, it.radiusKm, speciesCode, municipalityCode,
+                petSize, gender, goodWithKids, goodWithOtherPets, minFee, maxFee, pageable
+            )
         }
         val page = listingService.searchListings(
             speciesCode, municipalityCode, petSize, gender,

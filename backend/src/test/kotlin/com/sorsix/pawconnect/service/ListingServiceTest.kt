@@ -5,10 +5,12 @@ import com.sorsix.pawconnect.common.ListingStatusCodes
 import com.sorsix.pawconnect.domain.AdoptionApplication
 import com.sorsix.pawconnect.domain.ApplicationStatus
 import com.sorsix.pawconnect.domain.Business
+import com.sorsix.pawconnect.domain.Gender
 import com.sorsix.pawconnect.domain.Listing
 import com.sorsix.pawconnect.domain.ListingStatus
 import com.sorsix.pawconnect.domain.Municipality
 import com.sorsix.pawconnect.domain.Pet
+import com.sorsix.pawconnect.domain.Size
 import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.domain.result.CancelListingResult
 import com.sorsix.pawconnect.domain.result.CreateListingResult
@@ -522,12 +524,25 @@ class ListingServiceTest {
     }
 
     @Test
-    fun `searchNearby delegates to the repository native query`() {
+    fun `searchNearby delegates to the repository native query with all filters`() {
         val pageable = PageRequest.of(0, 20)
         every {
-            listingRepository.findNearby(42.0, 21.4, 5.0, "DOG", pageable)
+            listingRepository.findNearby(
+                42.0, 21.4, 5.0, "DOG", "SK-CENTAR", "SMALL", "MALE", true, false,
+                BigDecimal("10"), BigDecimal("100"), pageable
+            )
         } returns PageImpl(emptyList())
-        service.searchNearby(BigDecimal("42.0"), BigDecimal("21.4"), 5.0, "DOG", pageable)
-        verify { listingRepository.findNearby(42.0, 21.4, 5.0, "DOG", pageable) }
+
+        service.searchNearby(
+            BigDecimal("42.0"), BigDecimal("21.4"), 5.0, "DOG", "SK-CENTAR",
+            Size.SMALL, Gender.MALE, true, false, BigDecimal("10"), BigDecimal("100"), pageable
+        )
+
+        verify {
+            listingRepository.findNearby(
+                42.0, 21.4, 5.0, "DOG", "SK-CENTAR", "SMALL", "MALE", true, false,
+                BigDecimal("10"), BigDecimal("100"), pageable
+            )
+        }
     }
 }

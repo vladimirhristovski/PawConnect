@@ -40,15 +40,3 @@ export function filtersToQueryParams<T extends Record<string, any>>(
   });
   return params;
 }
-
-/**
- * True when `next` describes the same query string as `current` (the router's
- * live `snapshot.queryParams`). Values are compared as strings because the
- * router stores them that way.
- */
-export function sameQueryParams(next: Params, current: Params): boolean {
-  const nextKeys = Object.keys(next);
-  const currentKeys = Object.keys(current);
-  if (nextKeys.length !== currentKeys.length) return false;
-  return nextKeys.every((key) => String(next[key]) === String(current[key]));
-}
