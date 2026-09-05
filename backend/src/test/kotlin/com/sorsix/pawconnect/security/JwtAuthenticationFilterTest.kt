@@ -15,7 +15,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class JwtAuthenticationFilterTest {
-
     private val jwtService = mockk<JwtService>()
     private val userDetailsService = mockk<UserDetailsService>()
     private val filter = JwtAuthenticationFilter(jwtService, userDetailsService)

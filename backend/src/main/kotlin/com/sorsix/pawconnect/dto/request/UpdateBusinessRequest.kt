@@ -13,5 +13,5 @@ data class UpdateBusinessRequest(
     @field:Size(min = 1, max = 255) val address: String? = null,
     @field:Size(min = 1, max = 40) val municipalityCode: String? = null,
     val latitude: BigDecimal? = null,
-    val longitude: BigDecimal? = null
+    val longitude: BigDecimal? = null,
 )

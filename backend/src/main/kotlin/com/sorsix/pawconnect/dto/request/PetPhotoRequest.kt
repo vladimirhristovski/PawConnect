@@ -6,5 +6,5 @@ import jakarta.validation.constraints.Size
 data class PetPhotoRequest(
     @field:NotBlank @field:Size(max = 500) val url: String,
     val isPrimary: Boolean = false,
-    val displayOrder: Int? = null
+    val displayOrder: Int? = null,
 )

@@ -1,6 +1,8 @@
 package com.sorsix.pawconnect.api
 
 import com.sorsix.pawconnect.common.problemResponse
+import com.sorsix.pawconnect.domain.Gender
+import com.sorsix.pawconnect.domain.Size
 import com.sorsix.pawconnect.domain.result.CancelListingResult
 import com.sorsix.pawconnect.domain.result.CreateListingResult
 import com.sorsix.pawconnect.domain.result.DeleteListingResult
@@ -10,8 +12,6 @@ import com.sorsix.pawconnect.dto.request.CreateListingRequest
 import com.sorsix.pawconnect.dto.request.UpdateListingRequest
 import com.sorsix.pawconnect.dto.response.ListingResponse
 import com.sorsix.pawconnect.dto.response.ListingSummaryResponse
-import com.sorsix.pawconnect.domain.Gender
-import com.sorsix.pawconnect.domain.Size
 import com.sorsix.pawconnect.service.AuthService
 import com.sorsix.pawconnect.service.ListingService
 import jakarta.validation.Valid
@@ -26,11 +26,12 @@ import java.math.BigDecimal
 @RequestMapping("/api/listings")
 class ListingController(
     private val listingService: ListingService,
-    private val authService: AuthService
+    private val authService: AuthService,
 ) {
-
     @PostMapping
-    fun createListing(@Valid @RequestBody request: CreateListingRequest): ResponseEntity<*> {
+    fun createListing(
+        @Valid @RequestBody request: CreateListingRequest,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = listingService.createListing(request, currentUser)) {
             is CreateListingResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(ListingResponse.from(result.listing))
@@ -53,18 +54,36 @@ class ListingController(
         @RequestParam(required = false) lat: BigDecimal?,
         @RequestParam(required = false) lng: BigDecimal?,
         @RequestParam(required = false) radiusKm: Double?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<ListingSummaryResponse> {
         resolveNearbySearch(lat, lng, radiusKm)?.let {
             return listingService.searchNearby(
-                it.lat, it.lng, it.radiusKm, speciesCode, municipalityCode,
-                petSize, gender, goodWithKids, goodWithOtherPets, minFee, maxFee, pageable
+                it.lat,
+                it.lng,
+                it.radiusKm,
+                speciesCode,
+                municipalityCode,
+                petSize,
+                gender,
+                goodWithKids,
+                goodWithOtherPets,
+                minFee,
+                maxFee,
+                pageable,
             )
         }
-        val page = listingService.searchListings(
-            speciesCode, municipalityCode, petSize, gender,
-            goodWithKids, goodWithOtherPets, minFee, maxFee, pageable
-        )
+        val page =
+            listingService.searchListings(
+                speciesCode,
+                municipalityCode,
+                petSize,
+                gender,
+                goodWithKids,
+                goodWithOtherPets,
+                minFee,
+                maxFee,
+                pageable,
+            )
         return page.map { ListingSummaryResponse.from(it) }
     }
 
@@ -76,7 +95,9 @@ class ListingController(
     }
 
     @GetMapping("/{id}")
-    fun getListing(@PathVariable id: Long): ResponseEntity<*> {
+    fun getListing(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.getCurrentUser()
         return listingService.getVisibleListing(id, currentUser)?.let { ResponseEntity.ok(ListingResponse.from(it)) }
             ?: problemResponse(HttpStatus.NOT_FOUND, "Listing not found")
@@ -85,7 +106,7 @@ class ListingController(
     @PutMapping("/{id}")
     fun updateListing(
         @PathVariable id: Long,
-        @Valid @RequestBody request: UpdateListingRequest
+        @Valid @RequestBody request: UpdateListingRequest,
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = listingService.updateListing(id, request, currentUser)) {
@@ -97,7 +118,9 @@ class ListingController(
     }
 
     @PostMapping("/{id}/publish")
-    fun publishListing(@PathVariable id: Long): ResponseEntity<*> {
+    fun publishListing(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = listingService.publishListing(id, currentUser)) {
             is PublishListingResult.Success -> ResponseEntity.ok(ListingResponse.from(result.listing))
@@ -108,7 +131,9 @@ class ListingController(
     }
 
     @PostMapping("/{id}/cancel")
-    fun cancelListing(@PathVariable id: Long): ResponseEntity<*> {
+    fun cancelListing(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = listingService.cancelListing(id, currentUser)) {
             is CancelListingResult.Success -> ResponseEntity.ok(ListingResponse.from(result.listing))
@@ -119,7 +144,9 @@ class ListingController(
     }
 
     @DeleteMapping("/{id}")
-    fun deleteListing(@PathVariable id: Long): ResponseEntity<*> {
+    fun deleteListing(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = listingService.deleteListing(id, currentUser)) {
             is DeleteListingResult.Success -> ResponseEntity.noContent().build<Unit>()

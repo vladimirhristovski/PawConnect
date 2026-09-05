@@ -102,7 +102,9 @@ export class MapPicker implements AfterViewInit, OnDestroy {
     }
 
     if (!this.leaflet || !this.map) return;
-    const marker = this.leaflet.marker([coords.lat, coords.lng], { draggable: true }).addTo(this.map);
+    const marker = this.leaflet
+      .marker([coords.lat, coords.lng], { draggable: true })
+      .addTo(this.map);
     marker.on('dragend', () => {
       const pos = marker.getLatLng();
       this.selected.set({ lat: pos.lat, lng: pos.lng });

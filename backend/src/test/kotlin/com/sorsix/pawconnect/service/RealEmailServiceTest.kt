@@ -11,7 +11,6 @@ import org.springframework.mail.javamail.JavaMailSenderImpl
 import kotlin.test.assertEquals
 
 class RealEmailServiceTest {
-
     private val mailSender = mockk<JavaMailSender>()
     private val service = RealEmailService(mailSender, "noreply@pawconnect.test")
 
@@ -25,7 +24,17 @@ class RealEmailServiceTest {
 
         verify { mailSender.send(any<MimeMessage>()) }
         assertEquals("Password Reset Request", sent.captured.subject)
-        assertEquals("noreply@pawconnect.test", sent.captured.from.single().toString())
-        assertEquals("applicant@mail.test", sent.captured.allRecipients.single().toString())
+        assertEquals(
+            "noreply@pawconnect.test",
+            sent.captured.from
+                .single()
+                .toString(),
+        )
+        assertEquals(
+            "applicant@mail.test",
+            sent.captured.allRecipients
+                .single()
+                .toString(),
+        )
     }
 }

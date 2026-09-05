@@ -1,19 +1,18 @@
 package com.sorsix.pawconnect.repository
 
 import com.sorsix.pawconnect.common.ListingStatusCodes
-import com.sorsix.pawconnect.domain.Listing
 import com.sorsix.pawconnect.domain.Gender
+import com.sorsix.pawconnect.domain.Listing
 import com.sorsix.pawconnect.domain.Size
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.math.BigDecimal
 import java.time.Instant
 
 interface ListingRepository : JpaRepository<Listing, Long> {
-
     companion object {
         private const val FULL_ASSOCIATIONS_FETCH = """
             JOIN FETCH l.pet p
@@ -31,16 +30,25 @@ interface ListingRepository : JpaRepository<Listing, Long> {
         """
     }
 
-    fun existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(petId: Long, codes: Collection<String>): Boolean
+    fun existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(
+        petId: Long,
+        codes: Collection<String>,
+    ): Boolean
 
     fun findByPostedBy_IdAndStatus_CodeInAndDeletedAtIsNull(
-        userId: Long, codes: Collection<String>
+        userId: Long,
+        codes: Collection<String>,
     ): List<Listing>
 
-    fun findByStatus_CodeAndExpiresAtBefore(statusCode: String, cutoff: Instant): List<Listing>
+    fun findByStatus_CodeAndExpiresAtBefore(
+        statusCode: String,
+        cutoff: Instant,
+    ): List<Listing>
 
     @Query("SELECT DISTINCT l FROM Listing l $FULL_ASSOCIATIONS_FETCH WHERE l.id = :id")
-    fun findByIdWithAllAssociations(@Param("id") id: Long): Listing?
+    fun findByIdWithAllAssociations(
+        @Param("id") id: Long,
+    ): Listing?
 
     @Query(
         """
@@ -60,7 +68,7 @@ interface ListingRepository : JpaRepository<Listing, Long> {
     AND (:goodWithOtherPets IS NULL OR p.goodWithOtherPets = :goodWithOtherPets)
     AND (:minFee IS NULL OR l.adoptionFee >= :minFee)
     AND (:maxFee IS NULL OR l.adoptionFee <= :maxFee)
-    """
+    """,
     )
     fun searchListings(
         @Param("speciesCode") speciesCode: String?,
@@ -71,7 +79,7 @@ interface ListingRepository : JpaRepository<Listing, Long> {
         @Param("goodWithOtherPets") goodWithOtherPets: Boolean?,
         @Param("minFee") minFee: BigDecimal?,
         @Param("maxFee") maxFee: BigDecimal?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<Listing>
 
     @Query(
@@ -79,18 +87,24 @@ interface ListingRepository : JpaRepository<Listing, Long> {
         SELECT DISTINCT l FROM Listing l $FULL_ASSOCIATIONS_FETCH
         WHERE l.postedBy.id = :userId
         AND l.deletedAt IS NULL
-        """
+        """,
     )
-    fun findMyListingsWithAssociations(@Param("userId") userId: Long, pageable: Pageable): Page<Listing>
+    fun findMyListingsWithAssociations(
+        @Param("userId") userId: Long,
+        pageable: Pageable,
+    ): Page<Listing>
 
     @Query(
         """
         SELECT DISTINCT l FROM Listing l $FULL_ASSOCIATIONS_FETCH
         WHERE (:statusCode IS NULL OR l.status.code = :statusCode)
         AND l.deletedAt IS NULL
-        """
+        """,
     )
-    fun findAllWithAssociations(@Param("statusCode") statusCode: String?, pageable: Pageable): Page<Listing>
+    fun findAllWithAssociations(
+        @Param("statusCode") statusCode: String?,
+        pageable: Pageable,
+    ): Page<Listing>
 
     @Query("SELECT l FROM Listing l JOIN FETCH l.municipality WHERE l.latitude IS NULL AND l.deletedAt IS NULL")
     fun findByLatitudeIsNullAndDeletedAtIsNull(): List<Listing>
@@ -157,7 +171,7 @@ interface ListingRepository : JpaRepository<Listing, Long> {
                     ))
                   ) <= :radiusKm
         """,
-        nativeQuery = true
+        nativeQuery = true,
     )
     fun findNearby(
         @Param("lat") lat: Double,
@@ -171,6 +185,6 @@ interface ListingRepository : JpaRepository<Listing, Long> {
         @Param("goodWithOtherPets") goodWithOtherPets: Boolean?,
         @Param("minFee") minFee: BigDecimal?,
         @Param("maxFee") maxFee: BigDecimal?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<Listing>
 }

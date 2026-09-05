@@ -14,7 +14,7 @@ interface MunicipalityRepository : JpaRepository<Municipality, Long> {
         LEFT JOIN FETCH m.city c
         LEFT JOIN FETCH c.country
         WHERE m.latitude IS NULL
-    """
+    """,
     )
     fun findByLatitudeIsNull(): List<Municipality>
 
@@ -23,7 +23,9 @@ interface MunicipalityRepository : JpaRepository<Municipality, Long> {
         SELECT m FROM Municipality m
         JOIN FETCH m.city
         WHERE (:cityCode IS NULL OR m.city.code = :cityCode)
-    """
+    """,
     )
-    fun findWithCityByCityCode(@Param("cityCode") cityCode: String?): List<Municipality>
+    fun findWithCityByCityCode(
+        @Param("cityCode") cityCode: String?,
+    ): List<Municipality>
 }

@@ -17,12 +17,12 @@ import org.springframework.web.bind.annotation.RestController
 class PetMatcherController(
     private val petMatcherService: PetMatcherService,
 ) {
-
     @PostMapping("/recommend")
-    fun recommend(@Valid @RequestBody request: PetMatcherRequest): ResponseEntity<*> {
-        return when (val result = petMatcherService.recommend(request)) {
+    fun recommend(
+        @Valid @RequestBody request: PetMatcherRequest,
+    ): ResponseEntity<*> =
+        when (val result = petMatcherService.recommend(request)) {
             is PetMatcherResult.Success -> ResponseEntity.ok(result.response)
             is PetMatcherResult.ServiceUnavailable -> problemResponse(HttpStatus.SERVICE_UNAVAILABLE, result.message)
         }
-    }
 }

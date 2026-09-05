@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class TokenCleanupJobTest {
-
     private val refreshTokenRepository = mockk<RefreshTokenRepository>()
     private val passwordResetTokenRepository = mockk<PasswordResetTokenRepository>()
     private lateinit var job: TokenCleanupJob

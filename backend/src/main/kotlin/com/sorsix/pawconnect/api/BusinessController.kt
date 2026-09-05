@@ -25,11 +25,13 @@ import java.math.BigDecimal
 @RestController
 @RequestMapping("/api/businesses")
 class BusinessController(
-    private val businessService: BusinessService, private val authService: AuthService
+    private val businessService: BusinessService,
+    private val authService: AuthService,
 ) {
-
     @PostMapping
-    fun createBusiness(@Valid @RequestBody request: CreateBusinessRequest): ResponseEntity<*> {
+    fun createBusiness(
+        @Valid @RequestBody request: CreateBusinessRequest,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = businessService.createBusiness(request, currentUser)) {
             is CreateBusinessResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.business)
@@ -44,7 +46,7 @@ class BusinessController(
         @RequestParam(required = false) lat: BigDecimal?,
         @RequestParam(required = false) lng: BigDecimal?,
         @RequestParam(required = false) radiusKm: Double?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<BusinessResponse> {
         resolveNearbySearch(lat, lng, radiusKm)?.let {
             return businessService.searchNearby(it.lat, it.lng, it.radiusKm, typeCode, municipalityCode, pageable)
@@ -53,13 +55,16 @@ class BusinessController(
     }
 
     @GetMapping("/{id}")
-    fun getBusiness(@PathVariable id: Long): ResponseEntity<*> =
+    fun getBusiness(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> =
         businessService.findBusiness(id)?.let { ResponseEntity.ok(it) }
             ?: problemResponse(HttpStatus.NOT_FOUND, "Business not found: $id")
 
     @PutMapping("/{id}")
     fun updateBusiness(
-        @PathVariable id: Long, @Valid @RequestBody request: UpdateBusinessRequest
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdateBusinessRequest,
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = businessService.updateBusiness(id, request, currentUser)) {
@@ -70,7 +75,9 @@ class BusinessController(
     }
 
     @DeleteMapping("/{id}")
-    fun deleteBusiness(@PathVariable id: Long): ResponseEntity<*> {
+    fun deleteBusiness(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = businessService.deleteBusiness(id, currentUser)) {
             is DeleteBusinessResult.Success -> ResponseEntity.noContent().build<Unit>()
@@ -80,7 +87,10 @@ class BusinessController(
     }
 
     @PostMapping("/{id}/photos")
-    fun addPhoto(@PathVariable id: Long, @Valid @RequestBody request: BusinessPhotoRequest): ResponseEntity<*> {
+    fun addPhoto(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: BusinessPhotoRequest,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = businessService.addPhoto(id, request, currentUser)) {
             is AddBusinessPhotoResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.photo)
@@ -94,7 +104,7 @@ class BusinessController(
         @PathVariable id: Long,
         @RequestPart("file") file: MultipartFile,
         @RequestParam(defaultValue = "false") isPrimary: Boolean,
-        @RequestParam(defaultValue = "0") displayOrder: Int
+        @RequestParam(defaultValue = "0") displayOrder: Int,
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = businessService.uploadAndAddPhoto(id, file, isPrimary, displayOrder, currentUser)) {
@@ -105,7 +115,10 @@ class BusinessController(
     }
 
     @DeleteMapping("/{id}/photos/{photoId}")
-    fun removePhoto(@PathVariable id: Long, @PathVariable photoId: Long): ResponseEntity<*> {
+    fun removePhoto(
+        @PathVariable id: Long,
+        @PathVariable photoId: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = businessService.removePhoto(id, photoId, currentUser)) {
             is RemoveBusinessPhotoResult.Success -> ResponseEntity.noContent().build<Unit>()

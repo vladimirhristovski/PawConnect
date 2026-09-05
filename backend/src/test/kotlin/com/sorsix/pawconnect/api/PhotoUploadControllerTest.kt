@@ -22,7 +22,6 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class PhotoUploadControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -51,11 +50,11 @@ class PhotoUploadControllerTest {
                 statement.execute("SET session_replication_role = 'replica'")
                 statement.execute(
                     """
-                TRUNCATE TABLE
-                    refresh_tokens, password_reset_tokens, user_roles, users,
-                    adoption_applications, businesses, listings, pet_photos, pets
-                RESTART IDENTITY CASCADE
-                """.trimIndent()
+                    TRUNCATE TABLE
+                        refresh_tokens, password_reset_tokens, user_roles, users,
+                        adoption_applications, businesses, listings, pet_photos, pets
+                    RESTART IDENTITY CASCADE
+                    """.trimIndent(),
                 )
                 statement.execute("SET session_replication_role = 'origin'")
             }
@@ -73,7 +72,7 @@ class PhotoUploadControllerTest {
                     "firstName": "Photo",
                     "lastName": "Uploader"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -94,7 +93,10 @@ class PhotoUploadControllerTest {
         }
     }
 
-    private fun tempFile(name: String, bytes: ByteArray = byteArrayOf(1, 2, 3, 4)): File {
+    private fun tempFile(
+        name: String,
+        bytes: ByteArray = byteArrayOf(1, 2, 3, 4),
+    ): File {
         val f = File.createTempFile(name, ".tmp")
         f.writeBytes(bytes)
         f.deleteOnExit()

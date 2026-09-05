@@ -1,11 +1,7 @@
 import { Service, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import {
-  Application,
-  ApplicationDecision,
-  CreateApplicationRequest,
-} from '../models/application';
+import { Application, ApplicationDecision, CreateApplicationRequest } from '../models/application';
 import { Page } from '../models/page';
 
 @Service()
@@ -21,10 +17,9 @@ export class ApplicationService {
   }
   getForListing(listingId: number, page = 0, size = 20) {
     const params = new HttpParams().set('page', page).set('size', size);
-    return this.http.get<Page<Application>>(
-      `${this.baseUrl}/listings/${listingId}/applications`,
-      { params },
-    );
+    return this.http.get<Page<Application>>(`${this.baseUrl}/listings/${listingId}/applications`, {
+      params,
+    });
   }
   getMine(page = 0, size = 20) {
     const params = new HttpParams().set('page', page).set('size', size);

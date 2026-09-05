@@ -14,10 +14,15 @@ interface RefreshTokenRepository : JpaRepository<RefreshToken, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("UPDATE RefreshToken rt SET rt.revokedAt = :now WHERE rt.user.id = :userId AND rt.revokedAt IS NULL")
-    fun revokeAllUserTokens(@Param("userId") userId: Long, @Param("now") now: Instant): Int
+    fun revokeAllUserTokens(
+        @Param("userId") userId: Long,
+        @Param("now") now: Instant,
+    ): Int
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("DELETE FROM RefreshToken rt WHERE rt.expiresAt < :now OR rt.revokedAt IS NOT NULL")
-    fun deleteExpiredOrRevoked(@Param("now") now: Instant): Int
+    fun deleteExpiredOrRevoked(
+        @Param("now") now: Instant,
+    ): Int
 }

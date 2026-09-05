@@ -24,30 +24,34 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val restAuthenticationEntryPoint: RestAuthenticationEntryPoint,
-
     @Value("\${app.cors.allowed-origins}")
-    private val allowedOrigins: String
+    private val allowedOrigins: String,
 ) {
-
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http.cors { it.configurationSource(corsConfigurationSource()) }.csrf { it.disable() }.sessionManagement {
-            it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        }.exceptionHandling {
-            it.authenticationEntryPoint(restAuthenticationEntryPoint)
-        }.authorizeHttpRequests {
-            it.requestMatchers(
-                "/api/auth/**", "/actuator/health", "/error"
-            ).permitAll()
-            it.requestMatchers(HttpMethod.GET, "/api/lookups/**").permitAll()
-            it.requestMatchers(HttpMethod.GET, "/api/pets/**").permitAll()
-            it.requestMatchers(HttpMethod.GET, "/api/businesses/**").permitAll()
-            it.requestMatchers(HttpMethod.GET, "/api/listings/mine").authenticated()
-            it.requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id}").permitAll()
-            it.requestMatchers(HttpMethod.POST, "/api/pet-matcher/**").authenticated()
-            it.requestMatchers("/api/admin/**").hasRole("ADMIN")
-            it.anyRequest().authenticated()
-        }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+        http
+            .cors { it.configurationSource(corsConfigurationSource()) }
+            .csrf { it.disable() }
+            .sessionManagement {
+                it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            }.exceptionHandling {
+                it.authenticationEntryPoint(restAuthenticationEntryPoint)
+            }.authorizeHttpRequests {
+                it
+                    .requestMatchers(
+                        "/api/auth/**",
+                        "/actuator/health",
+                        "/error",
+                    ).permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/lookups/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/pets/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/businesses/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/listings/mine").authenticated()
+                it.requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/{id}").permitAll()
+                it.requestMatchers(HttpMethod.POST, "/api/pet-matcher/**").authenticated()
+                it.requestMatchers("/api/admin/**").hasRole("ADMIN")
+                it.anyRequest().authenticated()
+            }.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 
         return http.build()
     }
@@ -56,18 +60,17 @@ class SecurityConfig(
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Bean
-    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager {
-        return config.authenticationManager
-    }
+    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager = config.authenticationManager
 
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
-        val config = CorsConfiguration().apply {
-            allowedOrigins = this@SecurityConfig.allowedOrigins.split(",").map { it.trim() }
-            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-            allowedHeaders = listOf("*")
-            allowCredentials = true
-        }
+        val config =
+            CorsConfiguration().apply {
+                allowedOrigins = this@SecurityConfig.allowedOrigins.split(",").map { it.trim() }
+                allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                allowedHeaders = listOf("*")
+                allowCredentials = true
+            }
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", config)
         return source

@@ -73,7 +73,10 @@
     @if (success()) {
       <p class="success">Account created — you can log in now.</p>
     }
-    <button type="submit" [disabled]="!registerForm().valid() || registerForm().submitting()">
+    <button
+      type="submit"
+      [disabled]="!registerForm().valid() || registerForm().submitting() || success()"
+    >
       @if (registerForm().submitting()) {
         Creating…
       } @else {

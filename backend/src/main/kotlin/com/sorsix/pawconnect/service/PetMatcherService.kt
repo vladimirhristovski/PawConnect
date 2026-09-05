@@ -16,10 +16,15 @@ class PetMatcherService(
 ) {
     private val logger = LoggerFactory.getLogger(PetMatcherService::class.java)
 
-    fun recommend(request: PetMatcherRequest): PetMatcherResult {
-        return try {
+    fun recommend(request: PetMatcherRequest): PetMatcherResult =
+        try {
             val response =
-                petMatcherRestClient.post().uri("/recommend").body(request).retrieve().body<PetMatcherResponse>()
+                petMatcherRestClient
+                    .post()
+                    .uri("/recommend")
+                    .body(request)
+                    .retrieve()
+                    .body<PetMatcherResponse>()
 
             if (response != null) {
                 PetMatcherResult.Success(response)
@@ -31,5 +36,4 @@ class PetMatcherService(
             logger.error("Call to pet-matcher service failed", ex)
             PetMatcherResult.ServiceUnavailable("Pet matcher service is currently unavailable")
         }
-    }
 }

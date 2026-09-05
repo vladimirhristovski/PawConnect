@@ -13,13 +13,15 @@ import java.util.UUID
 @Service
 @Profile("!test")
 class AzureBlobStorageService(
-    private val containerClient: BlobContainerClient
+    private val containerClient: BlobContainerClient,
 ) : BlobStorageService {
-
     private val allowedContentTypes = setOf("image/jpeg", "image/png", "image/webp")
     private val maxSizeBytes = 5L * 1024 * 1024
 
-    override fun upload(file: MultipartFile, folder: String): String {
+    override fun upload(
+        file: MultipartFile,
+        folder: String,
+    ): String {
         if (file.isEmpty) throw IllegalArgumentException("File must not be empty")
         if (file.contentType !in allowedContentTypes) {
             throw IllegalArgumentException("Unsupported file type: ${file.contentType}. Allowed: jpg, png, webp")
@@ -33,12 +35,13 @@ class AzureBlobStorageService(
             throw IllegalArgumentException("File content does not match declared type: ${file.contentType}")
         }
 
-        val extension = when (file.contentType) {
-            "image/jpeg" -> "jpg"
-            "image/png" -> "png"
-            "image/webp" -> "webp"
-            else -> "bin"
-        }
+        val extension =
+            when (file.contentType) {
+                "image/jpeg" -> "jpg"
+                "image/png" -> "png"
+                "image/webp" -> "webp"
+                else -> "bin"
+            }
         val blobName = "$folder/${UUID.randomUUID()}.$extension"
 
         return try {
@@ -73,20 +76,21 @@ class AzureBlobStorageService(
         }
     }
 
-    private fun detectImageContentType(bytes: ByteArray): String? = when {
-        bytes.size >= 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte() ->
-            "image/jpeg"
+    private fun detectImageContentType(bytes: ByteArray): String? =
+        when {
+            bytes.size >= 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte() ->
+                "image/jpeg"
 
-        bytes.size >= 8 && bytes.copyOfRange(0, 8).contentEquals(PNG_SIGNATURE) ->
-            "image/png"
+            bytes.size >= 8 && bytes.copyOfRange(0, 8).contentEquals(PNG_SIGNATURE) ->
+                "image/png"
 
-        bytes.size >= 12 &&
-            String(bytes, 0, 4, Charsets.US_ASCII) == "RIFF" &&
-            String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" ->
-            "image/webp"
+            bytes.size >= 12 &&
+                String(bytes, 0, 4, Charsets.US_ASCII) == "RIFF" &&
+                String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" ->
+                "image/webp"
 
-        else -> null
-    }
+            else -> null
+        }
 
     companion object {
         private val PNG_SIGNATURE =

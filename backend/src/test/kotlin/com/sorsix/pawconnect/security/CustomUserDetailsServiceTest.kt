@@ -11,24 +11,24 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException
 import java.time.Instant
 
 class CustomUserDetailsServiceTest {
-
     private val userRepository: UserRepository = mockk()
     private val userDetailsService = CustomUserDetailsService(userRepository)
 
     @Test
     fun `loadUserByUsername should return CustomUserDetails when user exists`() {
-        val user = User(
-            username = "john",
-            email = "john@mail.com",
-            password = "encoded",
-            firstName = "John",
-            lastName = "Doe",
-            phone = "123"
-        ).apply {
-            id = 1L
-            isActive = true
-            roles.add(Role("USER").apply { id = 1L })
-        }
+        val user =
+            User(
+                username = "john",
+                email = "john@mail.com",
+                password = "encoded",
+                firstName = "John",
+                lastName = "Doe",
+                phone = "123",
+            ).apply {
+                id = 1L
+                isActive = true
+                roles.add(Role("USER").apply { id = 1L })
+            }
         every { userRepository.findByUsernameActive("john") } returns user
 
         val details = userDetailsService.loadUserByUsername("john")
@@ -53,10 +53,11 @@ class CustomUserDetailsServiceTest {
 
     @Test
     fun `loadUserByUsername should return disabled user as not enabled`() {
-        val user = User("john", "john@mail.com", "encoded", null, null, null).apply {
-            id = 1L
-            isActive = false
-        }
+        val user =
+            User("john", "john@mail.com", "encoded", null, null, null).apply {
+                id = 1L
+                isActive = false
+            }
         every { userRepository.findByUsernameActive("john") } returns user
 
         val details = userDetailsService.loadUserByUsername("john")
@@ -65,11 +66,12 @@ class CustomUserDetailsServiceTest {
 
     @Test
     fun `loadUserByUsername should consider deleted user as disabled`() {
-        val user = User("john", "john@mail.com", "encoded", null, null, null).apply {
-            id = 1L
-            isActive = true
-            deletedAt = Instant.now()
-        }
+        val user =
+            User("john", "john@mail.com", "encoded", null, null, null).apply {
+                id = 1L
+                isActive = true
+                deletedAt = Instant.now()
+            }
         every { userRepository.findByUsernameActive("john") } returns user
 
         val details = userDetailsService.loadUserByUsername("john")

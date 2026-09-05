@@ -13,13 +13,12 @@ import java.net.URI
 
 @Component
 class RestAuthenticationEntryPoint(
-    private val jsonMapper: JsonMapper
+    private val jsonMapper: JsonMapper,
 ) : AuthenticationEntryPoint {
-
     override fun commence(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        authException: AuthenticationException
+        authException: AuthenticationException,
     ) {
         val pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authentication required")
         pd.type = URI.create("about:blank")

@@ -46,7 +46,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 class ListingServiceTest {
-
     private val listingRepository = mockk<ListingRepository>()
     private val petService = mockk<PetService>()
     private val businessRepository = mockk<BusinessRepository>()
@@ -59,13 +58,23 @@ class ListingServiceTest {
 
     @BeforeEach
     fun setup() {
-        service = ListingService(
-            listingRepository, petService, businessRepository, municipalityRepository,
-            listingStatusRepository, petRepository, adoptionApplicationRepository, applicationStatusRepository
-        )
+        service =
+            ListingService(
+                listingRepository,
+                petService,
+                businessRepository,
+                municipalityRepository,
+                listingStatusRepository,
+                petRepository,
+                adoptionApplicationRepository,
+                applicationStatusRepository,
+            )
     }
 
-    private fun mockUser(id: Long = 1L, admin: Boolean = false): User {
+    private fun mockUser(
+        id: Long = 1L,
+        admin: Boolean = false,
+    ): User {
         val user = mockk<User>(relaxed = true)
         every { user.id } returns id
         every { user.isAdmin() } returns admin
@@ -84,7 +93,10 @@ class ListingServiceTest {
         return status
     }
 
-    private fun mockMunicipality(lat: BigDecimal? = BigDecimal("42.0"), lng: BigDecimal? = BigDecimal("21.4")): Municipality {
+    private fun mockMunicipality(
+        lat: BigDecimal? = BigDecimal("42.0"),
+        lng: BigDecimal? = BigDecimal("21.4"),
+    ): Municipality {
         val m = mockk<Municipality>(relaxed = true)
         every { m.latitude } returns lat
         every { m.longitude } returns lng
@@ -95,7 +107,7 @@ class ListingServiceTest {
         id: Long = 10L,
         ownerId: Long = 1L,
         statusCode: String = ListingStatusCodes.ACTIVE,
-        deleted: Boolean = false
+        deleted: Boolean = false,
     ): Listing {
         val listing = mockk<Listing>(relaxed = true)
         every { listing.id } returns id
@@ -112,10 +124,16 @@ class ListingServiceTest {
         municipalityCode: String = "SK-CENTAR",
         saveAsDraft: Boolean = false,
         latitude: BigDecimal? = null,
-        longitude: BigDecimal? = null
+        longitude: BigDecimal? = null,
     ) = CreateListingRequest(
-        petId = petId, pet = pet, businessId = businessId, municipalityCode = municipalityCode,
-        title = "Adopt me", saveAsDraft = saveAsDraft, latitude = latitude, longitude = longitude
+        petId = petId,
+        pet = pet,
+        businessId = businessId,
+        municipalityCode = municipalityCode,
+        title = "Adopt me",
+        saveAsDraft = saveAsDraft,
+        latitude = latitude,
+        longitude = longitude,
     )
 
     @Test
@@ -184,14 +202,18 @@ class ListingServiceTest {
         every { listingRepository.existsByPet_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any()) } returns false
         every { municipalityRepository.findByCode("SK-CENTAR") } returns mockMunicipality()
         every { listingStatusRepository.findByCode(ListingStatusCodes.ACTIVE) } returns mockListingStatus(ListingStatusCodes.ACTIVE)
-        val constraintViolation = ConstraintViolationException(
-            "duplicate key", java.sql.SQLException("duplicate key"), "uq_listings_pet_open"
-        )
+        val constraintViolation =
+            ConstraintViolationException(
+                "duplicate key",
+                java.sql.SQLException("duplicate key"),
+                "uq_listings_pet_open",
+            )
         every { listingRepository.save(any()) } throws DataIntegrityViolationException("insert failed", constraintViolation)
 
-        val ex = assertFailsWith<IllegalArgumentException> {
-            service.createListing(createRequest(petId = 5L), mockUser(id = 1L))
-        }
+        val ex =
+            assertFailsWith<IllegalArgumentException> {
+                service.createListing(createRequest(petId = 5L), mockUser(id = 1L))
+            }
         assertEquals("This pet already has an open listing", ex.message)
     }
 
@@ -232,7 +254,7 @@ class ListingServiceTest {
 
         service.createListing(
             createRequest(petId = null, pet = mockk(relaxed = true), latitude = null, longitude = null),
-            mockUser(id = 1L)
+            mockUser(id = 1L),
         )
 
         verify { petService.createPet(any(), any()) }
@@ -306,7 +328,8 @@ class ListingServiceTest {
 
     @Test
     fun `getVisibleListing hides a DRAFT listing from an unrelated user`() {
-        every { listingRepository.findByIdWithAllAssociations(1L) } returns mockListing(id = 1L, ownerId = 8L, statusCode = ListingStatusCodes.DRAFT)
+        every { listingRepository.findByIdWithAllAssociations(1L) } returns
+            mockListing(id = 1L, ownerId = 8L, statusCode = ListingStatusCodes.DRAFT)
         assertNull(service.getVisibleListing(1L, mockUser(id = 3L)))
     }
 
@@ -318,13 +341,15 @@ class ListingServiceTest {
 
     @Test
     fun `publishListing forbids a non-owner`() {
-        every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.DRAFT)
+        every { listingRepository.findByIdWithAllAssociations(10L) } returns
+            mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.DRAFT)
         assertIs<PublishListingResult.Forbidden>(service.publishListing(10L, mockUser(id = 2L)))
     }
 
     @Test
     fun `publishListing throws conflict when the listing is not in DRAFT`() {
-        every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.ACTIVE)
+        every { listingRepository.findByIdWithAllAssociations(10L) } returns
+            mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.ACTIVE)
         assertIs<PublishListingResult.Conflict>(service.publishListing(10L, mockUser(id = 1L)))
     }
 
@@ -344,7 +369,8 @@ class ListingServiceTest {
 
     @Test
     fun `updateListing throws conflict when the listing is adopted`() {
-        every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.ADOPTED)
+        every { listingRepository.findByIdWithAllAssociations(10L) } returns
+            mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.ADOPTED)
         val result = service.updateListing(10L, UpdateListingRequest(title = "x"), mockUser(id = 1L))
         assertIs<UpdateListingResult.Conflict>(result)
     }
@@ -379,7 +405,7 @@ class ListingServiceTest {
         service.updateListing(
             10L,
             UpdateListingRequest(latitude = BigDecimal("1.5"), longitude = BigDecimal("2.5")),
-            mockUser(id = 1L)
+            mockUser(id = 1L),
         )
 
         verify { listing.latitude = BigDecimal("1.5") }
@@ -388,7 +414,8 @@ class ListingServiceTest {
 
     @Test
     fun `cancelListing throws conflict when already cancelled`() {
-        every { listingRepository.findByIdWithAllAssociations(10L) } returns mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.CANCELLED)
+        every { listingRepository.findByIdWithAllAssociations(10L) } returns
+            mockListing(id = 10L, ownerId = 1L, statusCode = ListingStatusCodes.CANCELLED)
         assertIs<CancelListingResult.Conflict>(service.cancelListing(10L, mockUser(id = 1L)))
     }
 
@@ -528,20 +555,50 @@ class ListingServiceTest {
         val pageable = PageRequest.of(0, 20)
         every {
             listingRepository.findNearby(
-                42.0, 21.4, 5.0, "DOG", "SK-CENTAR", "SMALL", "MALE", true, false,
-                BigDecimal("10"), BigDecimal("100"), pageable
+                42.0,
+                21.4,
+                5.0,
+                "DOG",
+                "SK-CENTAR",
+                "SMALL",
+                "MALE",
+                true,
+                false,
+                BigDecimal("10"),
+                BigDecimal("100"),
+                pageable,
             )
         } returns PageImpl(emptyList())
 
         service.searchNearby(
-            BigDecimal("42.0"), BigDecimal("21.4"), 5.0, "DOG", "SK-CENTAR",
-            Size.SMALL, Gender.MALE, true, false, BigDecimal("10"), BigDecimal("100"), pageable
+            BigDecimal("42.0"),
+            BigDecimal("21.4"),
+            5.0,
+            "DOG",
+            "SK-CENTAR",
+            Size.SMALL,
+            Gender.MALE,
+            true,
+            false,
+            BigDecimal("10"),
+            BigDecimal("100"),
+            pageable,
         )
 
         verify {
             listingRepository.findNearby(
-                42.0, 21.4, 5.0, "DOG", "SK-CENTAR", "SMALL", "MALE", true, false,
-                BigDecimal("10"), BigDecimal("100"), pageable
+                42.0,
+                21.4,
+                5.0,
+                "DOG",
+                "SK-CENTAR",
+                "SMALL",
+                "MALE",
+                true,
+                false,
+                BigDecimal("10"),
+                BigDecimal("100"),
+                pageable,
             )
         }
     }

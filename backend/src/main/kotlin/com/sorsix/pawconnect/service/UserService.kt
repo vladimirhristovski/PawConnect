@@ -1,9 +1,9 @@
 package com.sorsix.pawconnect.service
 
+import com.sorsix.pawconnect.common.requireId
 import com.sorsix.pawconnect.dto.response.UserResponse
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.UserRepository
-import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -18,12 +18,16 @@ class UserService(
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
     private val listingService: ListingService,
-    private val adoptionApplicationService: AdoptionApplicationService
+    private val adoptionApplicationService: AdoptionApplicationService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional(readOnly = true)
-    fun searchUsers(active: Boolean?, role: String?, pageable: Pageable): Page<UserResponse> {
+    fun searchUsers(
+        active: Boolean?,
+        role: String?,
+        pageable: Pageable,
+    ): Page<UserResponse> {
         val idPage = userRepository.searchUserIds(active, role, pageable)
         val usersById = userRepository.findAllByIdInWithRoles(idPage.content).associateBy { it.id }
         val users = idPage.content.mapNotNull { usersById[it] }.map { UserResponse.from(it) }
@@ -31,7 +35,10 @@ class UserService(
     }
 
     @Transactional
-    fun setActive(id: Long, active: Boolean): UserResponse? {
+    fun setActive(
+        id: Long,
+        active: Boolean,
+    ): UserResponse? {
         val user = userRepository.findByIdOrNull(id) ?: return null
         user.isActive = active
         val updated = userRepository.save(user)
@@ -53,7 +60,9 @@ class UserService(
         refreshTokenRepository.revokeAllUserTokens(user.requireId(), Instant.now())
         log.info(
             "User {} soft-deleted; {} open listing(s) cancelled, {} pending application(s) withdrawn",
-            user.id, cancelledListings, withdrawnApplications
+            user.id,
+            cancelledListings,
+            withdrawnApplications,
         )
         return true
     }

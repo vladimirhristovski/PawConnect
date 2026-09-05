@@ -20,7 +20,6 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class AdminControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -55,11 +54,11 @@ class AdminControllerTest {
                 statement.execute("SET session_replication_role = 'replica'")
                 statement.execute(
                     """
-                TRUNCATE TABLE
-                    refresh_tokens, password_reset_tokens, user_roles, users,
-                    adoption_applications, businesses, listings, pet_photos, pets
-                RESTART IDENTITY CASCADE
-                """.trimIndent()
+                    TRUNCATE TABLE
+                        refresh_tokens, password_reset_tokens, user_roles, users,
+                        adoption_applications, businesses, listings, pet_photos, pets
+                    RESTART IDENTITY CASCADE
+                    """.trimIndent(),
                 )
                 statement.execute("SET session_replication_role = 'origin'")
             }
@@ -75,7 +74,7 @@ class AdminControllerTest {
                     SELECT u.id, r.id FROM users u, roles r
                     WHERE u.username = '$username' AND r.name = 'ADMIN'
                     ON CONFLICT (user_id, role_id) DO NOTHING
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
             }
         }
@@ -92,8 +91,8 @@ class AdminControllerTest {
         }
     }
 
-    private fun getFirstSpeciesCode(): String {
-        return Given {
+    private fun getFirstSpeciesCode(): String =
+        Given {
             accept(ContentType.JSON)
         } When {
             get("/api/lookups/species")
@@ -102,10 +101,9 @@ class AdminControllerTest {
         } Extract {
             jsonPath().getString("[0].code")
         }
-    }
 
-    private fun getFirstMunicipalityCode(): String {
-        return Given {
+    private fun getFirstMunicipalityCode(): String =
+        Given {
             accept(ContentType.JSON)
         } When {
             get("/api/lookups/municipalities")
@@ -114,10 +112,9 @@ class AdminControllerTest {
         } Extract {
             jsonPath().getString("[0].code")
         }
-    }
 
-    private fun getFirstBusinessTypeCode(): String {
-        return Given {
+    private fun getFirstBusinessTypeCode(): String =
+        Given {
             accept(ContentType.JSON)
         } When {
             get("/api/lookups/business-types")
@@ -126,18 +123,18 @@ class AdminControllerTest {
         } Extract {
             jsonPath().getString("[0].code")
         }
-    }
 
     private fun createBusiness(token: String): Long {
-        val payload = """
-        {
-            "name": "Admin Test Business",
-            "typeCode": "${getFirstBusinessTypeCode()}",
-            "municipalityCode": "${getFirstMunicipalityCode()}",
-            "address": "123 Main St",
-            "phone": "123456789"
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "name": "Admin Test Business",
+                "typeCode": "${getFirstBusinessTypeCode()}",
+                "municipalityCode": "${getFirstMunicipalityCode()}",
+                "address": "123 Main St",
+                "phone": "123456789"
+            }
+            """.trimIndent()
 
         return Given {
             header("Authorization", "Bearer $token")
@@ -152,21 +149,26 @@ class AdminControllerTest {
         }
     }
 
-    private fun createListing(token: String, petName: String, draft: Boolean): Long {
-        val payload = """
-        {
-            "pet": {
-                "name": "$petName",
-                "speciesCode": "${getFirstSpeciesCode()}",
-                "gender": "MALE",
-                "size": "MEDIUM"
-            },
-            "municipalityCode": "${getFirstMunicipalityCode()}",
-            "title": "$petName listing",
-            "adoptionFee": 20,
-            "saveAsDraft": $draft
-        }
-        """.trimIndent()
+    private fun createListing(
+        token: String,
+        petName: String,
+        draft: Boolean,
+    ): Long {
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "$petName",
+                    "speciesCode": "${getFirstSpeciesCode()}",
+                    "gender": "MALE",
+                    "size": "MEDIUM"
+                },
+                "municipalityCode": "${getFirstMunicipalityCode()}",
+                "title": "$petName listing",
+                "adoptionFee": 20,
+                "saveAsDraft": $draft
+            }
+            """.trimIndent()
 
         return Given {
             header("Authorization", "Bearer $token")
@@ -192,7 +194,7 @@ class AdminControllerTest {
                     "firstName": "Test",
                     "lastName": "User"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -297,16 +299,17 @@ class AdminControllerTest {
 
     @Test
     fun `deactivated user's refresh token stops working immediately`() {
-        val refreshToken = Given {
-            body("""{"username":"$plainUsername","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getString("refreshToken")
-        }
+        val refreshToken =
+            Given {
+                body("""{"username":"$plainUsername","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getString("refreshToken")
+            }
 
         Given {
             header("Authorization", "Bearer $adminToken")
@@ -485,33 +488,35 @@ class AdminControllerTest {
     @Test
     fun `admin can see a listing posted by a business account`() {
         val businessId = createBusiness(plainToken)
-        val payload = """
-        {
-            "pet": {
-                "name": "BizPet",
-                "speciesCode": "${getFirstSpeciesCode()}",
-                "gender": "MALE",
-                "size": "MEDIUM"
-            },
-            "businessId": $businessId,
-            "municipalityCode": "${getFirstMunicipalityCode()}",
-            "title": "Business listing",
-            "adoptionFee": 20,
-            "saveAsDraft": false
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "BizPet",
+                    "speciesCode": "${getFirstSpeciesCode()}",
+                    "gender": "MALE",
+                    "size": "MEDIUM"
+                },
+                "businessId": $businessId,
+                "municipalityCode": "${getFirstMunicipalityCode()}",
+                "title": "Business listing",
+                "adoptionFee": 20,
+                "saveAsDraft": false
+            }
+            """.trimIndent()
 
-        val listingId = Given {
-            header("Authorization", "Bearer $plainToken")
-            body(payload)
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/listings")
-        } Then {
-            statusCode(201)
-        } Extract {
-            jsonPath().getLong("id")
-        }
+        val listingId =
+            Given {
+                header("Authorization", "Bearer $plainToken")
+                body(payload)
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/listings")
+            } Then {
+                statusCode(201)
+            } Extract {
+                jsonPath().getLong("id")
+            }
 
         Given {
             header("Authorization", "Bearer $adminToken")

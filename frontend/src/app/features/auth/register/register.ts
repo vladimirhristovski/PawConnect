@@ -1,5 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
-import { email, form, FormField, FormRoot, maxLength, minLength, required } from '@angular/forms/signals';
+import { Component, inject, signal, DestroyRef } from '@angular/core';
+import {
+  email,
+  form,
+  FormField,
+  FormRoot,
+  maxLength,
+  minLength,
+  required,
+} from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
@@ -14,6 +22,7 @@ import { apiErrorMessage } from '../../../core/api-error';
 export class Register {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   registerModel = signal<RegisterForm>({
     username: '',
@@ -49,7 +58,8 @@ export class Register {
           try {
             await firstValueFrom(this.auth.register(form().value()));
             this.success.set(true);
-            setTimeout(() => this.router.navigate(['/login']), 1200);
+            const timeoutId = setTimeout(() => this.router.navigate(['/login']), 1200);
+            this.destroyRef.onDestroy(() => clearTimeout(timeoutId));
           } catch (err) {
             this.error.set(apiErrorMessage(err, 'Registration failed.'));
           }

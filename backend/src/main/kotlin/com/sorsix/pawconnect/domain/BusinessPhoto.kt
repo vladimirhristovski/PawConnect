@@ -7,17 +7,15 @@ import jakarta.persistence.*
 @Table(name = "business_photos")
 class BusinessPhoto(
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(
-        name = "business_id", nullable = false
+        name = "business_id",
+        nullable = false,
     )
     var business: Business,
-
     @Column(nullable = false)
     var url: String,
-
     @Column(name = "is_primary", nullable = false)
     override var isPrimary: Boolean = false,
-
     @Column(name = "display_order", nullable = false)
     override var displayOrder: Int = 0,
-
-    ) : BaseEntity(), Photo
+) : BaseEntity(),
+    Photo

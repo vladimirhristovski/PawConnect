@@ -1,6 +1,7 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.dto.request.*
+import com.sorsix.pawconnect.common.requireId
+import com.sorsix.pawconnect.common.sha256Hex
 import com.sorsix.pawconnect.domain.PasswordResetToken
 import com.sorsix.pawconnect.domain.RefreshToken
 import com.sorsix.pawconnect.domain.Role
@@ -9,14 +10,13 @@ import com.sorsix.pawconnect.domain.result.DeleteOwnAccountResult
 import com.sorsix.pawconnect.domain.result.RefreshTokenResult
 import com.sorsix.pawconnect.domain.result.RegisterResult
 import com.sorsix.pawconnect.domain.result.ResetPasswordResult
+import com.sorsix.pawconnect.dto.request.*
 import com.sorsix.pawconnect.repository.PasswordResetTokenRepository
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.RoleRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
-import com.sorsix.pawconnect.common.requireId
-import com.sorsix.pawconnect.common.sha256Hex
 import io.mockk.*
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.jupiter.api.Assertions.*
@@ -34,7 +34,6 @@ import java.time.Instant
 import kotlin.test.assertIs
 
 class AuthServiceTest {
-
     private lateinit var userRepository: UserRepository
     private lateinit var refreshTokenRepository: RefreshTokenRepository
     private lateinit var roleRepository: RoleRepository
@@ -60,42 +59,48 @@ class AuthServiceTest {
         emailService = mockk(relaxed = true)
         userService = mockk()
 
-        authService = AuthService(
-            userRepository,
-            refreshTokenRepository,
-            roleRepository,
-            passwordEncoder,
-            jwtService,
-            authenticationManager,
-            passwordResetTokenRepository,
-            emailService,
-            userService,
-            900_000L,
-            resetTokenTtl,
-            "http://localhost:4200"
-        )
+        authService =
+            AuthService(
+                userRepository,
+                refreshTokenRepository,
+                roleRepository,
+                passwordEncoder,
+                jwtService,
+                authenticationManager,
+                passwordResetTokenRepository,
+                emailService,
+                userService,
+                900_000L,
+                resetTokenTtl,
+                "http://localhost:4200",
+            )
         SecurityContextHolder.clearContext()
     }
 
     @Test
     fun `register should save user with USER role`() {
-        val request = RegisterRequest(
-            username = "john_doe",
-            email = "john@example.com",
-            password = "secret123",
-            firstName = "John",
-            lastName = "Doe",
-            phone = "123456789"
-        )
+        val request =
+            RegisterRequest(
+                username = "john_doe",
+                email = "john@example.com",
+                password = "secret123",
+                firstName = "John",
+                lastName = "Doe",
+                phone = "123456789",
+            )
         val userRole = Role("USER").apply { id = 1L }
-        val savedUser = User(
-            username = request.username,
-            email = request.email,
-            password = "encoded",
-            firstName = request.firstName,
-            lastName = request.lastName,
-            phone = request.phone
-        ).apply { id = 100L; roles.add(userRole) }
+        val savedUser =
+            User(
+                username = request.username,
+                email = request.email,
+                password = "encoded",
+                firstName = request.firstName,
+                lastName = request.lastName,
+                phone = request.phone,
+            ).apply {
+                id = 100L
+                roles.add(userRole)
+            }
 
         every { userRepository.existsByUsernameAndDeletedAtIsNull(request.username) } returns false
         every { userRepository.existsByEmailAndDeletedAtIsNull(request.email) } returns false
@@ -147,25 +152,34 @@ class AuthServiceTest {
         every { userRepository.existsByEmailAndDeletedAtIsNull(request.email) } returns false
         every { roleRepository.findByName("USER") } returns Role("USER").apply { id = 1L }
         every { passwordEncoder.encode(request.password) } returns "encoded"
-        val constraintViolation = ConstraintViolationException(
-            "duplicate key", java.sql.SQLException("duplicate key"), "uq_users_username_active"
-        )
+        val constraintViolation =
+            ConstraintViolationException(
+                "duplicate key",
+                java.sql.SQLException("duplicate key"),
+                "uq_users_username_active",
+            )
         every { userRepository.save(any()) } throws DataIntegrityViolationException("insert failed", constraintViolation)
 
-        val ex = assertThrows(IllegalArgumentException::class.java) {
-            authService.register(request)
-        }
+        val ex =
+            assertThrows(IllegalArgumentException::class.java) {
+                authService.register(request)
+            }
         assertEquals("Username already taken", ex.message)
     }
 
     @Test
     fun `login should return tokens and revoke old refresh tokens`() {
         val request = LoginRequest("john", "secret")
-        val user = User("john", "john@mail.com", "encoded", null, null, null)
-            .apply { id = 1L; roles.add(Role("USER").apply { id = 1L }) }
-        val authentication = mockk<Authentication> {
-            every { principal } returns CustomUserDetails(user)
-        }
+        val user =
+            User("john", "john@mail.com", "encoded", null, null, null)
+                .apply {
+                    id = 1L
+                    roles.add(Role("USER").apply { id = 1L })
+                }
+        val authentication =
+            mockk<Authentication> {
+                every { principal } returns CustomUserDetails(user)
+            }
 
         every { authenticationManager.authenticate(any<UsernamePasswordAuthenticationToken>()) } returns authentication
         every { refreshTokenRepository.revokeAllUserTokens(user.requireId(), any()) } returns 1
@@ -197,12 +211,13 @@ class AuthServiceTest {
     fun `refreshToken should rotate tokens and revoke old refresh token`() {
         val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
 
-        val oldRefreshToken = RefreshToken(
-            user = user,
-            tokenHash = "hash",
-            expiresAt = Instant.now().plusSeconds(3600),
-            revokedAt = null
-        )
+        val oldRefreshToken =
+            RefreshToken(
+                user = user,
+                tokenHash = "hash",
+                expiresAt = Instant.now().plusSeconds(3600),
+                revokedAt = null,
+            )
 
         every { jwtService.verifyRefreshToken("old_token") } returns oldRefreshToken
         every { refreshTokenRepository.save(oldRefreshToken) } returns oldRefreshToken
@@ -290,12 +305,13 @@ class AuthServiceTest {
         val user = User("john", "john@mail.com", "oldEncoded", null, null, null).apply { id = 1L }
         val rawToken = "rawToken"
         val tokenHash = sha256Hex(rawToken)
-        val resetToken = PasswordResetToken(
-            user = user,
-            tokenHash = tokenHash,
-            expiresAt = Instant.now().plusSeconds(3600),
-            usedAt = null
-        )
+        val resetToken =
+            PasswordResetToken(
+                user = user,
+                tokenHash = tokenHash,
+                expiresAt = Instant.now().plusSeconds(3600),
+                usedAt = null,
+            )
 
         every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns resetToken
         every { passwordEncoder.encode("newPass123") } returns "newEncoded"
@@ -331,12 +347,13 @@ class AuthServiceTest {
         val user = User("john", "john@mail.com", "old", null, null, null).apply { id = 1L }
         val rawToken = "usedToken"
         val tokenHash = sha256Hex(rawToken)
-        val resetToken = PasswordResetToken(
-            user = user,
-            tokenHash = tokenHash,
-            expiresAt = Instant.now().plusSeconds(3600),
-            usedAt = Instant.now()
-        )
+        val resetToken =
+            PasswordResetToken(
+                user = user,
+                tokenHash = tokenHash,
+                expiresAt = Instant.now().plusSeconds(3600),
+                usedAt = Instant.now(),
+            )
         every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns resetToken
 
         val request = ResetPasswordRequest(rawToken, "newPass")
@@ -352,12 +369,13 @@ class AuthServiceTest {
         val user = User("john", "john@mail.com", "old", null, null, null).apply { id = 1L }
         val rawToken = "expiredToken"
         val tokenHash = sha256Hex(rawToken)
-        val resetToken = PasswordResetToken(
-            user = user,
-            tokenHash = tokenHash,
-            expiresAt = Instant.now().minusSeconds(1),
-            usedAt = null
-        )
+        val resetToken =
+            PasswordResetToken(
+                user = user,
+                tokenHash = tokenHash,
+                expiresAt = Instant.now().minusSeconds(1),
+                usedAt = null,
+            )
         every { passwordResetTokenRepository.findByTokenHash(tokenHash) } returns resetToken
 
         val request = ResetPasswordRequest(rawToken, "newPass")
@@ -408,10 +426,11 @@ class AuthServiceTest {
 
     @Test
     fun `getCurrentUserResponse should return UserResponse when user authenticated`() {
-        val user = User("john", "john@mail.com", "encoded", "John", "Doe", "123").apply {
-            id = 1L
-            roles.add(Role("USER").apply { id = 1L })
-        }
+        val user =
+            User("john", "john@mail.com", "encoded", "John", "Doe", "123").apply {
+                id = 1L
+                roles.add(Role("USER").apply { id = 1L })
+            }
         val auth = UsernamePasswordAuthenticationToken(CustomUserDetails(user), null, emptyList())
         SecurityContextHolder.getContext().authentication = auth
 

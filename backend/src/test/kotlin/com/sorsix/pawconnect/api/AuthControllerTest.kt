@@ -25,7 +25,6 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class AuthControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -57,7 +56,7 @@ class AuthControllerTest {
                         user_roles,
                         users
                     RESTART IDENTITY CASCADE
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
 
                 statement.execute("SET session_replication_role = 'origin'")
@@ -78,7 +77,7 @@ class AuthControllerTest {
                     "lastName": "User",
                     "phone": "123456789"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -105,7 +104,7 @@ class AuthControllerTest {
                     "email": "test1@example.com",
                     "password": "password123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -122,7 +121,7 @@ class AuthControllerTest {
                     "email": "test2@example.com",
                     "password": "password123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -143,7 +142,7 @@ class AuthControllerTest {
                     "email": "login@example.com",
                     "password": "secret123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -152,26 +151,27 @@ class AuthControllerTest {
             statusCode(201)
         }
 
-        val response = Given {
-            body(
-                """
-                {
-                    "username": "loginuser",
-                    "password": "secret123"
-                }
-                """.trimIndent()
-            )
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-            body("accessToken", notNullValue())
-            body("refreshToken", notNullValue())
-            body("expiresIn", greaterThan(0))
-        } Extract {
-            jsonPath()
-        }
+        val response =
+            Given {
+                body(
+                    """
+                    {
+                        "username": "loginuser",
+                        "password": "secret123"
+                    }
+                    """.trimIndent(),
+                )
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+                body("accessToken", notNullValue())
+                body("refreshToken", notNullValue())
+                body("expiresIn", greaterThan(0))
+            } Extract {
+                jsonPath()
+            }
 
         val accessToken = response.getString("accessToken")
 
@@ -195,7 +195,7 @@ class AuthControllerTest {
                     "email": "wrong@example.com",
                     "password": "correctpass"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -211,7 +211,7 @@ class AuthControllerTest {
                     "username": "wrongpass",
                     "password": "wrongpassword"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -232,7 +232,7 @@ class AuthControllerTest {
                     "email": "refresh@example.com",
                     "password": "password123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -241,51 +241,53 @@ class AuthControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body(
-                """
-                {
-                    "username": "refreshuser",
-                    "password": "password123"
-                }
-                """.trimIndent()
-            )
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body(
+                    """
+                    {
+                        "username": "refreshuser",
+                        "password": "password123"
+                    }
+                    """.trimIndent(),
+                )
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
 
         val oldRefreshToken = loginResponse.getString("refreshToken")
         val oldAccessToken = loginResponse.getString("accessToken")
 
-        val refreshResponse = Given {
-            body(
-                mapOf(
-                    "refreshToken" to oldRefreshToken
+        val refreshResponse =
+            Given {
+                body(
+                    mapOf(
+                        "refreshToken" to oldRefreshToken,
+                    ),
                 )
-            )
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/refresh")
-        } Then {
-            statusCode(200)
-            body("accessToken", not(equalTo(oldAccessToken)))
-            body("refreshToken", not(equalTo(oldRefreshToken)))
-        } Extract {
-            jsonPath()
-        }
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/refresh")
+            } Then {
+                statusCode(200)
+                body("accessToken", not(equalTo(oldAccessToken)))
+                body("refreshToken", not(equalTo(oldRefreshToken)))
+            } Extract {
+                jsonPath()
+            }
 
         val newRefreshToken = refreshResponse.getString("refreshToken")
 
         Given {
             body(
                 mapOf(
-                    "refreshToken" to oldRefreshToken
-                )
+                    "refreshToken" to oldRefreshToken,
+                ),
             )
             contentType(ContentType.JSON)
         } When {
@@ -298,8 +300,8 @@ class AuthControllerTest {
         Given {
             body(
                 mapOf(
-                    "refreshToken" to newRefreshToken
-                )
+                    "refreshToken" to newRefreshToken,
+                ),
             )
             contentType(ContentType.JSON)
         } When {
@@ -321,7 +323,7 @@ class AuthControllerTest {
                     "email": "logout@example.com",
                     "password": "password123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -330,31 +332,32 @@ class AuthControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body(
-                """
-                {
-                    "username": "logoutuser",
-                    "password": "password123"
-                }
-                """.trimIndent()
-            )
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body(
+                    """
+                    {
+                        "username": "logoutuser",
+                        "password": "password123"
+                    }
+                    """.trimIndent(),
+                )
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
 
         val refreshToken = loginResponse.getString("refreshToken")
 
         Given {
             body(
                 mapOf(
-                    "refreshToken" to refreshToken
-                )
+                    "refreshToken" to refreshToken,
+                ),
             )
             contentType(ContentType.JSON)
         } When {
@@ -366,8 +369,8 @@ class AuthControllerTest {
         Given {
             body(
                 mapOf(
-                    "refreshToken" to refreshToken
-                )
+                    "refreshToken" to refreshToken,
+                ),
             )
             contentType(ContentType.JSON)
         } When {
@@ -391,7 +394,7 @@ class AuthControllerTest {
                     "lastName": "User",
                     "phone": "5551234"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -400,23 +403,24 @@ class AuthControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body(
-                """
-                {
-                    "username": "meuser",
-                    "password": "password123"
-                }
-                """.trimIndent()
-            )
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body(
+                    """
+                    {
+                        "username": "meuser",
+                        "password": "password123"
+                    }
+                    """.trimIndent(),
+                )
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
 
         val accessToken = loginResponse.getString("accessToken")
 
@@ -455,7 +459,7 @@ class AuthControllerTest {
                     "email": "forgot@example.com",
                     "password": "password123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -467,8 +471,8 @@ class AuthControllerTest {
         Given {
             body(
                 mapOf(
-                    "email" to "forgot@example.com"
-                )
+                    "email" to "forgot@example.com",
+                ),
             )
             contentType(ContentType.JSON)
         } When {
@@ -480,7 +484,7 @@ class AuthControllerTest {
         verify(emailService).sendEmail(
             eq("forgot@example.com"),
             eq("Password Reset Request"),
-            any()
+            any(),
         )
     }
 
@@ -489,8 +493,8 @@ class AuthControllerTest {
         Given {
             body(
                 mapOf(
-                    "email" to "nonexistent@example.com"
-                )
+                    "email" to "nonexistent@example.com",
+                ),
             )
             contentType(ContentType.JSON)
         } When {
@@ -502,7 +506,7 @@ class AuthControllerTest {
         verify(emailService, never()).sendEmail(
             any(),
             any(),
-            any()
+            any(),
         )
     }
 
@@ -516,7 +520,7 @@ class AuthControllerTest {
                     "email": "delete@example.com",
                     "password": "password123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -525,23 +529,24 @@ class AuthControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body(
-                """
-                {
-                    "username": "deleteuser",
-                    "password": "password123"
-                }
-                """.trimIndent()
-            )
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body(
+                    """
+                    {
+                        "username": "deleteuser",
+                        "password": "password123"
+                    }
+                    """.trimIndent(),
+                )
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
 
         val accessToken = loginResponse.getString("accessToken")
         val refreshToken = loginResponse.getString("refreshToken")
@@ -561,7 +566,7 @@ class AuthControllerTest {
                     "username": "deleteuser",
                     "password": "password123"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -595,8 +600,8 @@ class AuthControllerTest {
             body(
                 mapOf(
                     "token" to "invalid-token-123",
-                    "newPassword" to "newSecurePassword123"
-                )
+                    "newPassword" to "newSecurePassword123",
+                ),
             )
             contentType(ContentType.JSON)
         } When {

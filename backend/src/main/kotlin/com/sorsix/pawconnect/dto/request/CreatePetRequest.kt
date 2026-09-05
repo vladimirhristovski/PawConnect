@@ -6,9 +6,9 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.PositiveOrZero
-import jakarta.validation.constraints.Size as SizeConstraint
 import java.math.BigDecimal
 import java.time.LocalDate
+import jakarta.validation.constraints.Size as SizeConstraint
 
 data class CreatePetRequest(
     @field:NotBlank @field:SizeConstraint(max = 100) val name: String,
@@ -22,5 +22,5 @@ data class CreatePetRequest(
     @field:SizeConstraint(max = 5000) val description: String? = null,
     val goodWithKids: Boolean = false,
     val goodWithOtherPets: Boolean = false,
-    @field:Valid val photos: List<PetPhotoRequest> = emptyList()
+    @field:Valid val photos: List<PetPhotoRequest> = emptyList(),
 )

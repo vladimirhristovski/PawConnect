@@ -14,21 +14,34 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class AzureBlobStorageServiceTest {
-
     private val containerClient = mockk<BlobContainerClient>()
     private val service = AzureBlobStorageService(containerClient)
 
-    private fun validImageBytes(contentType: String, size: Int): ByteArray {
-        val header = when (contentType) {
-            "image/jpeg" -> byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
-            "image/png" -> byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
-            "image/webp" -> byteArrayOf(
-                'R'.code.toByte(), 'I'.code.toByte(), 'F'.code.toByte(), 'F'.code.toByte(),
-                0, 0, 0, 0,
-                'W'.code.toByte(), 'E'.code.toByte(), 'B'.code.toByte(), 'P'.code.toByte()
-            )
-            else -> ByteArray(0)
-        }
+    private fun validImageBytes(
+        contentType: String,
+        size: Int,
+    ): ByteArray {
+        val header =
+            when (contentType) {
+                "image/jpeg" -> byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
+                "image/png" -> byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+                "image/webp" ->
+                    byteArrayOf(
+                        'R'.code.toByte(),
+                        'I'.code.toByte(),
+                        'F'.code.toByte(),
+                        'F'.code.toByte(),
+                        0,
+                        0,
+                        0,
+                        0,
+                        'W'.code.toByte(),
+                        'E'.code.toByte(),
+                        'B'.code.toByte(),
+                        'P'.code.toByte(),
+                    )
+                else -> ByteArray(0)
+            }
         val result = ByteArray(maxOf(size, header.size))
         header.copyInto(result)
         return result
@@ -38,7 +51,7 @@ class AzureBlobStorageServiceTest {
         contentType: String = "image/jpeg",
         size: Long = 1024,
         empty: Boolean = false,
-        bytes: ByteArray = validImageBytes(contentType, size.toInt())
+        bytes: ByteArray = validImageBytes(contentType, size.toInt()),
     ): MultipartFile {
         val file = mockk<MultipartFile>()
         every { file.contentType } returns contentType

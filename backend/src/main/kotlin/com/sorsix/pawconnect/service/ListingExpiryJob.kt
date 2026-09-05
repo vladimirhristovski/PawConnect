@@ -14,7 +14,7 @@ import java.time.Instant
 class ListingExpiryJob(
     private val listingRepository: ListingRepository,
     private val listingStatusRepository: ListingStatusRepository,
-    private val listingService: ListingService
+    private val listingService: ListingService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -31,7 +31,8 @@ class ListingExpiryJob(
         val rejectedApplications = listingService.rejectPendingApplications(overdue, reviewedBy = null)
         log.info(
             "Listing expiry: {} listing(s) marked EXPIRED, {} pending application(s) rejected",
-            overdue.size, rejectedApplications
+            overdue.size,
+            rejectedApplications,
         )
     }
 }

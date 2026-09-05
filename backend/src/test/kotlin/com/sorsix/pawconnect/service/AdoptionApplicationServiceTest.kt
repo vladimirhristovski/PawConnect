@@ -7,19 +7,19 @@ import com.sorsix.pawconnect.domain.ApplicationStatus
 import com.sorsix.pawconnect.domain.Listing
 import com.sorsix.pawconnect.domain.ListingStatus
 import com.sorsix.pawconnect.domain.User
-import com.sorsix.pawconnect.dto.request.ApplicationDecision
-import com.sorsix.pawconnect.dto.request.CreateApplicationRequest
 import com.sorsix.pawconnect.domain.result.ListApplicationsForListingResult
 import com.sorsix.pawconnect.domain.result.ReviewApplicationResult
 import com.sorsix.pawconnect.domain.result.SubmitApplicationResult
 import com.sorsix.pawconnect.domain.result.WithdrawApplicationResult
+import com.sorsix.pawconnect.dto.request.ApplicationDecision
+import com.sorsix.pawconnect.dto.request.CreateApplicationRequest
 import com.sorsix.pawconnect.repository.AdoptionApplicationRepository
 import com.sorsix.pawconnect.repository.ApplicationStatusRepository
 import com.sorsix.pawconnect.repository.ListingRepository
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
-import io.mockk.just
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
@@ -33,7 +33,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertSame
 
 class AdoptionApplicationServiceTest {
-
     private val applicationRepository = mockk<AdoptionApplicationRepository>()
     private val listingRepository = mockk<ListingRepository>()
     private val applicationStatusRepository = mockk<ApplicationStatusRepository>()
@@ -42,12 +41,21 @@ class AdoptionApplicationServiceTest {
 
     @BeforeEach
     fun setup() {
-        service = AdoptionApplicationService(
-            applicationRepository, listingRepository, applicationStatusRepository, listingService
-        )
+        service =
+            AdoptionApplicationService(
+                applicationRepository,
+                listingRepository,
+                applicationStatusRepository,
+                listingService,
+            )
     }
 
-    private fun mockUser(id: Long = 1L, admin: Boolean = false, phone: String? = "070000000", email: String = "u$id@mail.test"): User {
+    private fun mockUser(
+        id: Long = 1L,
+        admin: Boolean = false,
+        phone: String? = "070000000",
+        email: String = "u$id@mail.test",
+    ): User {
         val user = mockk<User>(relaxed = true)
         every { user.id } returns id
         every { user.isAdmin() } returns admin
@@ -62,7 +70,11 @@ class AdoptionApplicationServiceTest {
         return status
     }
 
-    private fun mockListing(id: Long = 10L, ownerId: Long = 1L, statusCode: String = ListingStatusCodes.ACTIVE): Listing {
+    private fun mockListing(
+        id: Long = 10L,
+        ownerId: Long = 1L,
+        statusCode: String = ListingStatusCodes.ACTIVE,
+    ): Listing {
         val listing = mockk<Listing>(relaxed = true)
         val status = mockk<ListingStatus>(relaxed = true)
         every { status.code } returns statusCode
@@ -76,7 +88,7 @@ class AdoptionApplicationServiceTest {
         id: Long = 100L,
         listing: Listing = mockListing(),
         applicant: User = mockUser(id = 2L),
-        statusCode: String = ApplicationStatusCodes.SUBMITTED
+        statusCode: String = ApplicationStatusCodes.SUBMITTED,
     ): AdoptionApplication {
         val app = mockk<AdoptionApplication>(relaxed = true)
         every { app.id } returns id
@@ -115,7 +127,9 @@ class AdoptionApplicationServiceTest {
         every { listingRepository.findById(10L) } returns Optional.of(listing)
         every {
             applicationRepository.findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
-                10L, 2L, ApplicationStatusCodes.PENDING_STATUSES
+                10L,
+                2L,
+                ApplicationStatusCodes.PENDING_STATUSES,
             )
         } returns listOf(mockApplication())
         val result = service.submitApplication(10L, CreateApplicationRequest(), mockUser(id = 2L))
@@ -170,7 +184,8 @@ class AdoptionApplicationServiceTest {
         every {
             applicationRepository.findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(any(), any(), any())
         } returns emptyList()
-        every { applicationStatusRepository.findByCode(ApplicationStatusCodes.SUBMITTED) } returns mockStatus(ApplicationStatusCodes.SUBMITTED)
+        every { applicationStatusRepository.findByCode(ApplicationStatusCodes.SUBMITTED) } returns
+            mockStatus(ApplicationStatusCodes.SUBMITTED)
         val savedMock = mockk<AdoptionApplication>(relaxed = true)
         every { savedMock.id } returns 501L
         every { applicationRepository.save(any()) } returns savedMock
@@ -179,7 +194,7 @@ class AdoptionApplicationServiceTest {
         service.submitApplication(
             10L,
             CreateApplicationRequest(contactPhone = "999", contactEmail = "override@mail.test"),
-            mockUser(id = 2L)
+            mockUser(id = 2L),
         )
 
         val slot = slot<AdoptionApplication>()
@@ -237,11 +252,12 @@ class AdoptionApplicationServiceTest {
 
     @Test
     fun `reviewApplication throws conflict when application is not pending`() {
-        val app = mockApplication(
-            id = 100L,
-            listing = mockListing(id = 10L, ownerId = 1L),
-            statusCode = ApplicationStatusCodes.APPROVED
-        )
+        val app =
+            mockApplication(
+                id = 100L,
+                listing = mockListing(id = 10L, ownerId = 1L),
+                statusCode = ApplicationStatusCodes.APPROVED,
+            )
         every { applicationRepository.findByIdWithAllAssociations(100L) } returns app
         val result = service.reviewApplication(100L, ApplicationDecision.REJECT, mockUser(id = 1L))
         assertIs<ReviewApplicationResult.Conflict>(result)
@@ -322,11 +338,12 @@ class AdoptionApplicationServiceTest {
 
     @Test
     fun `withdrawApplication throws conflict when application is no longer pending`() {
-        val app = mockApplication(
-            id = 100L,
-            applicant = mockUser(id = 2L),
-            statusCode = ApplicationStatusCodes.REJECTED
-        )
+        val app =
+            mockApplication(
+                id = 100L,
+                applicant = mockUser(id = 2L),
+                statusCode = ApplicationStatusCodes.REJECTED,
+            )
         every { applicationRepository.findByIdWithAllAssociations(100L) } returns app
         val result = service.withdrawApplication(100L, mockUser(id = 2L))
         assertIs<WithdrawApplicationResult.Conflict>(result)

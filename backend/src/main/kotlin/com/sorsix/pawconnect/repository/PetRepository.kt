@@ -12,8 +12,7 @@ interface PetRepository : JpaRepository<Pet, Long> {
         LEFT JOIN FETCH p.breeds
         LEFT JOIN FETCH p.photos
         WHERE p.id = :id
-    """
+    """,
     )
     fun findByIdWithAllAssociations(id: Long): Pet?
-
 }

@@ -6,5 +6,5 @@ import jakarta.validation.constraints.Size
 data class BusinessPhotoRequest(
     @field:NotBlank @field:Size(max = 1024) val url: String,
     val isPrimary: Boolean = false,
-    val displayOrder: Int? = null
+    val displayOrder: Int? = null,
 )

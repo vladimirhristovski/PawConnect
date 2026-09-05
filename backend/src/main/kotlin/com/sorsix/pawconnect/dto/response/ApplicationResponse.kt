@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.domain.AdoptionApplication
 import com.sorsix.pawconnect.common.requireId
+import com.sorsix.pawconnect.domain.AdoptionApplication
 import java.time.Instant
 
 data class ApplicationResponse(
@@ -18,11 +18,11 @@ data class ApplicationResponse(
     val reviewedBy: String?, // username
     val reviewedAt: Instant?,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(app: AdoptionApplication): ApplicationResponse {
-            return ApplicationResponse(
+        fun from(app: AdoptionApplication): ApplicationResponse =
+            ApplicationResponse(
                 id = app.requireId(),
                 listingId = app.listing.requireId(),
                 petName = app.listing.pet.name,
@@ -36,8 +36,7 @@ data class ApplicationResponse(
                 reviewedBy = app.reviewedBy?.username,
                 reviewedAt = app.reviewedAt,
                 createdAt = app.createdAt,
-                updatedAt = app.updatedAt
+                updatedAt = app.updatedAt,
             )
-        }
     }
 }

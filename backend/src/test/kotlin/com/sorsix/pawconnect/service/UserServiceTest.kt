@@ -17,7 +17,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 class UserServiceTest {
-
     private val userRepository = mockk<UserRepository>()
     private val refreshTokenRepository = mockk<RefreshTokenRepository>(relaxed = true)
     private val listingService = mockk<ListingService>(relaxed = true)
@@ -29,7 +28,10 @@ class UserServiceTest {
         service = UserService(userRepository, refreshTokenRepository, listingService, adoptionApplicationService)
     }
 
-    private fun mockUser(id: Long = 1L, deleted: Boolean = false): User {
+    private fun mockUser(
+        id: Long = 1L,
+        deleted: Boolean = false,
+    ): User {
         val user = mockk<User>(relaxed = true)
         every { user.id } returns id
         every { user.deletedAt } returns if (deleted) Instant.now() else null

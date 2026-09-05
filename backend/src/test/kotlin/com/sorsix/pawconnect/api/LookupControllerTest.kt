@@ -12,12 +12,10 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class LookupControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -39,13 +37,14 @@ class LookupControllerTest {
 
     @Test
     fun `get breeds with species code returns filtered`() {
-        val speciesResponse = Given {
-            accept(ContentType.JSON)
-        } When {
-            get("/api/lookups/species")
-        } Then {
-            statusCode(200)
-        }
+        val speciesResponse =
+            Given {
+                accept(ContentType.JSON)
+            } When {
+                get("/api/lookups/species")
+            } Then {
+                statusCode(200)
+            }
         val speciesCode = speciesResponse.extract().jsonPath().getString("[0].code")
 
         Given {
@@ -90,13 +89,14 @@ class LookupControllerTest {
 
     @Test
     fun `get cities with country code returns filtered`() {
-        val countryResponse = Given {
-            accept(ContentType.JSON)
-        } When {
-            get("/api/lookups/countries")
-        } Then {
-            statusCode(200)
-        }
+        val countryResponse =
+            Given {
+                accept(ContentType.JSON)
+            } When {
+                get("/api/lookups/countries")
+            } Then {
+                statusCode(200)
+            }
         val countryCode = countryResponse.extract().jsonPath().getString("[0].code")
 
         Given {
@@ -111,13 +111,14 @@ class LookupControllerTest {
 
     @Test
     fun `get municipalities with city code returns filtered`() {
-        val cityResponse = Given {
-            accept(ContentType.JSON)
-        } When {
-            get("/api/lookups/cities")
-        } Then {
-            statusCode(200)
-        }
+        val cityResponse =
+            Given {
+                accept(ContentType.JSON)
+            } When {
+                get("/api/lookups/cities")
+            } Then {
+                statusCode(200)
+            }
         val cityCode = cityResponse.extract().jsonPath().getString("[0].code")
 
         Given {

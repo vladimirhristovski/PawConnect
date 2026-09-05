@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.domain.Business
 import com.sorsix.pawconnect.common.requireId
+import com.sorsix.pawconnect.domain.Business
 import java.math.BigDecimal
 
 data class BusinessResponse(
@@ -18,11 +18,11 @@ data class BusinessResponse(
     val ownerUsername: String?,
     val latitude: BigDecimal?,
     val longitude: BigDecimal?,
-    val photos: List<BusinessPhotoResponse>
+    val photos: List<BusinessPhotoResponse>,
 ) {
     companion object {
-        fun from(business: Business): BusinessResponse {
-            return BusinessResponse(
+        fun from(business: Business): BusinessResponse =
+            BusinessResponse(
                 id = business.requireId(),
                 typeCode = business.type.code,
                 typeName = business.type.name,
@@ -36,8 +36,7 @@ data class BusinessResponse(
                 ownerUsername = business.owner?.username,
                 latitude = business.latitude,
                 longitude = business.longitude,
-                photos = business.photos.map { BusinessPhotoResponse.from(it) }.sortedBy { it.displayOrder }
+                photos = business.photos.map { BusinessPhotoResponse.from(it) }.sortedBy { it.displayOrder },
             )
-        }
     }
 }

@@ -9,16 +9,11 @@ import java.math.BigDecimal
 class Municipality(
     @Column(nullable = false, unique = true)
     val code: String,
-
     @Column(nullable = false)
     val name: String,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "city_id")
     var city: City? = null,
-
     var latitude: BigDecimal? = null,
-
     var longitude: BigDecimal? = null,
-
-    ) : BaseEntity()
+) : BaseEntity()

@@ -3,8 +3,6 @@ package com.sorsix.pawconnect.security
 import com.sorsix.pawconnect.domain.RefreshToken
 import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
-import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.security.Keys
 import io.mockk.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -13,7 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails
 import java.time.Instant
 
 class JwtServiceTest {
-
     private lateinit var refreshTokenRepository: RefreshTokenRepository
     private lateinit var jwtService: JwtService
 
@@ -29,9 +26,10 @@ class JwtServiceTest {
 
     @Test
     fun `generateAccessToken should produce valid token with correct subject`() {
-        val userDetails = mockk<UserDetails> {
-            every { username } returns "john"
-        }
+        val userDetails =
+            mockk<UserDetails> {
+                every { username } returns "john"
+            }
         val token = jwtService.generateAccessToken(userDetails)
         assertNotNull(token)
 
@@ -74,12 +72,13 @@ class JwtServiceTest {
         val raw = "raw_refresh"
         val hash = jwtService.hashToken(raw)
         val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
-        val refreshToken = RefreshToken(
-            user = user,
-            tokenHash = hash,
-            expiresAt = Instant.now().plusSeconds(3600),
-            revokedAt = null
-        )
+        val refreshToken =
+            RefreshToken(
+                user = user,
+                tokenHash = hash,
+                expiresAt = Instant.now().plusSeconds(3600),
+                revokedAt = null,
+            )
         every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
 
         val result = jwtService.verifyRefreshToken(raw)
@@ -92,12 +91,13 @@ class JwtServiceTest {
         val raw = "raw_refresh"
         val hash = jwtService.hashToken(raw)
         val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
-        val refreshToken = RefreshToken(
-            user = user,
-            tokenHash = hash,
-            expiresAt = Instant.now().minusSeconds(1),
-            revokedAt = null
-        )
+        val refreshToken =
+            RefreshToken(
+                user = user,
+                tokenHash = hash,
+                expiresAt = Instant.now().minusSeconds(1),
+                revokedAt = null,
+            )
         every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
 
         val result = jwtService.verifyRefreshToken(raw)
@@ -109,12 +109,13 @@ class JwtServiceTest {
         val raw = "raw_refresh"
         val hash = jwtService.hashToken(raw)
         val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
-        val refreshToken = RefreshToken(
-            user = user,
-            tokenHash = hash,
-            expiresAt = Instant.now().plusSeconds(3600),
-            revokedAt = Instant.now()
-        )
+        val refreshToken =
+            RefreshToken(
+                user = user,
+                tokenHash = hash,
+                expiresAt = Instant.now().plusSeconds(3600),
+                revokedAt = Instant.now(),
+            )
         every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
 
         val result = jwtService.verifyRefreshToken(raw)
@@ -126,12 +127,13 @@ class JwtServiceTest {
         val raw = "raw_refresh"
         val hash = jwtService.hashToken(raw)
         val user = User("john", "john@mail.com", "encoded", null, null, null).apply { id = 1L }
-        val refreshToken = RefreshToken(
-            user = user,
-            tokenHash = hash,
-            expiresAt = Instant.now().plusSeconds(3600),
-            revokedAt = null
-        )
+        val refreshToken =
+            RefreshToken(
+                user = user,
+                tokenHash = hash,
+                expiresAt = Instant.now().plusSeconds(3600),
+                revokedAt = null,
+            )
         every { refreshTokenRepository.findByTokenHash(hash) } returns refreshToken
         every { refreshTokenRepository.save(refreshToken) } returns refreshToken
 

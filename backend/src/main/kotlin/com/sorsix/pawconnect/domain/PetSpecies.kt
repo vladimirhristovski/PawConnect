@@ -10,8 +10,6 @@ import jakarta.persistence.Table
 class PetSpecies(
     @Column(nullable = false, unique = true)
     val code: String,
-
     @Column(nullable = false)
     val name: String,
-
-    ) : BaseEntity()
+) : BaseEntity()

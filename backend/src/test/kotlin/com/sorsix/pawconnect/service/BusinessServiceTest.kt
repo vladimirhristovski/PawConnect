@@ -1,7 +1,5 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.dto.request.CreateBusinessRequest
-import com.sorsix.pawconnect.dto.request.UpdateBusinessRequest
 import com.sorsix.pawconnect.domain.Business
 import com.sorsix.pawconnect.domain.BusinessType
 import com.sorsix.pawconnect.domain.Municipality
@@ -9,8 +7,10 @@ import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.domain.result.CreateBusinessResult
 import com.sorsix.pawconnect.domain.result.DeleteBusinessResult
 import com.sorsix.pawconnect.domain.result.UpdateBusinessResult
-import com.sorsix.pawconnect.repository.BusinessRepository
+import com.sorsix.pawconnect.dto.request.CreateBusinessRequest
+import com.sorsix.pawconnect.dto.request.UpdateBusinessRequest
 import com.sorsix.pawconnect.repository.BusinessPhotoRepository
+import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.BusinessTypeRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository
 import io.mockk.*
@@ -25,7 +25,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
 class BusinessServiceTest {
-
     private val businessRepository = mockk<BusinessRepository>()
     private val businessPhotoRepository = mockk<BusinessPhotoRepository>()
     private val businessTypeRepository = mockk<BusinessTypeRepository>()
@@ -35,16 +34,20 @@ class BusinessServiceTest {
 
     @BeforeEach
     fun setup() {
-        service = BusinessService(
-            businessRepository,
-            businessPhotoRepository,
-            businessTypeRepository,
-            municipalityRepository,
-            blobStorageService
-        )
+        service =
+            BusinessService(
+                businessRepository,
+                businessPhotoRepository,
+                businessTypeRepository,
+                municipalityRepository,
+                blobStorageService,
+            )
     }
 
-    private fun mockUser(id: Long = 1L, admin: Boolean = false): User {
+    private fun mockUser(
+        id: Long = 1L,
+        admin: Boolean = false,
+    ): User {
         val user = mockk<User>(relaxed = true)
         every { user.id } returns id
         every { user.isAdmin() } returns admin
@@ -55,7 +58,7 @@ class BusinessServiceTest {
         id: Long = 1L,
         owner: User = mockUser(),
         type: BusinessType = mockk(relaxed = true),
-        municipality: Municipality = mockk(relaxed = true)
+        municipality: Municipality = mockk(relaxed = true),
     ): Business {
         val business = mockk<Business>(relaxed = true)
         every { business.id } returns id
@@ -80,17 +83,18 @@ class BusinessServiceTest {
         every { businessTypeRepository.findByCode("SHELTER") } returns type
         every { municipalityRepository.findByCode("SK-CENTAR") } returns municipality
 
-        val request = CreateBusinessRequest(
-            typeCode = "SHELTER",
-            name = "Happy Paws",
-            description = "A great shelter",
-            phone = "+38971234567",
-            email = "info@happypaws.mk",
-            address = "Street 1",
-            municipalityCode = "SK-CENTAR",
-            latitude = 42.0.toBigDecimal(),
-            longitude = 21.4.toBigDecimal()
-        )
+        val request =
+            CreateBusinessRequest(
+                typeCode = "SHELTER",
+                name = "Happy Paws",
+                description = "A great shelter",
+                phone = "+38971234567",
+                email = "info@happypaws.mk",
+                address = "Street 1",
+                municipalityCode = "SK-CENTAR",
+                latitude = 42.0.toBigDecimal(),
+                longitude = 21.4.toBigDecimal(),
+            )
         val user = mockUser()
         val savedBusiness = mockBusiness(id = 100L, owner = user, type = type, municipality = municipality)
         every { businessRepository.save(any<Business>()) } returns savedBusiness
@@ -119,9 +123,14 @@ class BusinessServiceTest {
     @Test
     fun `createBusiness should throw when type not found`() {
         every { businessTypeRepository.findByCode("UNKNOWN") } returns null
-        val request = CreateBusinessRequest(
-            typeCode = "UNKNOWN", name = "Test", phone = "123", address = "St", municipalityCode = "SK"
-        )
+        val request =
+            CreateBusinessRequest(
+                typeCode = "UNKNOWN",
+                name = "Test",
+                phone = "123",
+                address = "St",
+                municipalityCode = "SK",
+            )
         val result = service.createBusiness(request, mockUser())
         assertIs<CreateBusinessResult.NotFound>(result)
         verify(exactly = 0) { businessRepository.save(any()) }
@@ -132,9 +141,14 @@ class BusinessServiceTest {
         val type = mockk<BusinessType>(relaxed = true)
         every { businessTypeRepository.findByCode("SHELTER") } returns type
         every { municipalityRepository.findByCode("BAD") } returns null
-        val request = CreateBusinessRequest(
-            typeCode = "SHELTER", name = "Test", phone = "123", address = "St", municipalityCode = "BAD"
-        )
+        val request =
+            CreateBusinessRequest(
+                typeCode = "SHELTER",
+                name = "Test",
+                phone = "123",
+                address = "St",
+                municipalityCode = "BAD",
+            )
         val result = service.createBusiness(request, mockUser())
         assertIs<CreateBusinessResult.NotFound>(result)
         verify(exactly = 0) { businessRepository.save(any()) }
@@ -209,9 +223,15 @@ class BusinessServiceTest {
         val page = PageImpl(listOf(business))
         every { businessRepository.findNearby(42.0, 21.4, 10.0, "VET", "SK-CENTAR", pageable) } returns page
 
-        val result = service.searchNearby(
-            42.0.toBigDecimal(), 21.4.toBigDecimal(), 10.0, "VET", "SK-CENTAR", pageable
-        )
+        val result =
+            service.searchNearby(
+                42.0.toBigDecimal(),
+                21.4.toBigDecimal(),
+                10.0,
+                "VET",
+                "SK-CENTAR",
+                pageable,
+            )
 
         assertEquals(1, result.totalElements)
         assertEquals(7L, result.content[0].id)
@@ -225,17 +245,18 @@ class BusinessServiceTest {
         every { businessRepository.findByIdWithAssociations(10L) } returns business
         every { businessRepository.save(any()) } returns business
 
-        val request = UpdateBusinessRequest(
-            name = "New Name",
-            description = "New desc",
-            phone = "111",
-            email = "new@mail",
-            address = "New address",
-            municipalityCode = "NEW-MUN",
-            latitude = 1.0.toBigDecimal(),
-            longitude = 2.0.toBigDecimal(),
-            typeCode = "VET"
-        )
+        val request =
+            UpdateBusinessRequest(
+                name = "New Name",
+                description = "New desc",
+                phone = "111",
+                email = "new@mail",
+                address = "New address",
+                municipalityCode = "NEW-MUN",
+                latitude = 1.0.toBigDecimal(),
+                longitude = 2.0.toBigDecimal(),
+                typeCode = "VET",
+            )
         val newType = mockk<BusinessType>(relaxed = true)
         val newMunicipality = mockk<Municipality>(relaxed = true)
         every { businessTypeRepository.findByCode("VET") } returns newType
@@ -318,7 +339,6 @@ class BusinessServiceTest {
         verify { business.deletedAt = any<Instant>() }
         verify { businessRepository.save(business) }
     }
-
 
     @Test
     fun `deleteBusiness should throw when business not found`() {

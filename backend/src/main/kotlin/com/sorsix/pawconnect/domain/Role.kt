@@ -10,5 +10,4 @@ import jakarta.persistence.Table
 class Role(
     @Column(nullable = false, unique = true)
     val name: String,
-
-    ) : BaseEntity()
+) : BaseEntity()

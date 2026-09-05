@@ -1,9 +1,9 @@
 package com.sorsix.pawconnect.service
 
+import com.sorsix.pawconnect.common.geocodeQuery
 import com.sorsix.pawconnect.repository.BusinessRepository
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.repository.MunicipalityRepository
-import com.sorsix.pawconnect.common.geocodeQuery
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.scheduling.annotation.Scheduled
@@ -14,7 +14,7 @@ class GeocodingRetryJob(
     private val municipalityRepository: MunicipalityRepository,
     private val businessRepository: BusinessRepository,
     private val listingRepository: ListingRepository,
-    private val geocodingService: GeocodingService
+    private val geocodingService: GeocodingService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -28,7 +28,9 @@ class GeocodingRetryJob(
         if (municipalitiesResolved > 0 || businessesUpgraded > 0 || listingsSynced > 0) {
             log.info(
                 "Geocoding retry: {} municipality(ies) resolved, {} business(es) upgraded to precise address, {} listing(s) synced from municipality",
-                municipalitiesResolved, businessesUpgraded, listingsSynced
+                municipalitiesResolved,
+                businessesUpgraded,
+                listingsSynced,
             )
         }
     }
@@ -37,9 +39,10 @@ class GeocodingRetryJob(
         val municipalities = municipalityRepository.findByLatitudeIsNull()
         var resolved = 0
         for (municipality in municipalities) {
-            val coordinates = runCatching { geocodingService.geocode(municipality.geocodeQuery()) }
-                .onFailure { log.warn("Failed to geocode municipality {}: {}", municipality.id, it.message) }
-                .getOrNull()
+            val coordinates =
+                runCatching { geocodingService.geocode(municipality.geocodeQuery()) }
+                    .onFailure { log.warn("Failed to geocode municipality {}: {}", municipality.id, it.message) }
+                    .getOrNull()
             if (coordinates != null) {
                 municipality.latitude = coordinates.latitude
                 municipality.longitude = coordinates.longitude
@@ -55,9 +58,10 @@ class GeocodingRetryJob(
         val businesses = businessRepository.findByAddressGeocodedFalseAndDeletedAtIsNull()
         var upgraded = 0
         for (business in businesses) {
-            val coordinates = runCatching { geocodingService.geocode(business.address) }
-                .onFailure { log.warn("Failed to geocode business {}: {}", business.id, it.message) }
-                .getOrNull()
+            val coordinates =
+                runCatching { geocodingService.geocode(business.address) }
+                    .onFailure { log.warn("Failed to geocode business {}: {}", business.id, it.message) }
+                    .getOrNull()
             if (coordinates != null) {
                 business.latitude = coordinates.latitude
                 business.longitude = coordinates.longitude

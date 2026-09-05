@@ -23,7 +23,6 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class AdoptionApplicationControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -65,7 +64,7 @@ class AdoptionApplicationControllerTest {
                         pet_photos,
                         pets
                     RESTART IDENTITY CASCADE
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 statement.execute("SET session_replication_role = 'origin'")
             }
@@ -112,7 +111,10 @@ class AdoptionApplicationControllerTest {
         applicantToken = applicantLogin.getString("accessToken")
     }
 
-    private fun registerUser(username: String, email: String) {
+    private fun registerUser(
+        username: String,
+        email: String,
+    ) {
         Given {
             body(
                 """
@@ -123,7 +125,7 @@ class AdoptionApplicationControllerTest {
                     "firstName": "Test",
                     "lastName": "User"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -133,8 +135,8 @@ class AdoptionApplicationControllerTest {
         }
     }
 
-    private fun login(username: String): io.restassured.path.json.JsonPath {
-        return Given {
+    private fun login(username: String): io.restassured.path.json.JsonPath =
+        Given {
             body("""{"username":"$username","password":"Password1!"}""")
             contentType(ContentType.JSON)
         } When {
@@ -144,54 +146,28 @@ class AdoptionApplicationControllerTest {
         } Extract {
             jsonPath()
         }
-    }
 
-    private fun createActiveListing(token: String, petName: String = "TestPet"): Long {
-        val payload = """
-        {
-            "pet": {
-                "name": "$petName",
-                "speciesCode": "$speciesCode",
-                "breedCodes": [],
-                "gender": "MALE",
-                "size": "MEDIUM",
-                "description": "Test pet"
-            },
-            "municipalityCode": "$municipalityCode",
-            "title": "Active Listing",
-            "adoptionFee": 50,
-            "saveAsDraft": false
-        }
-        """.trimIndent()
-
-        return Given {
-            header("Authorization", "Bearer $token")
-            body(payload)
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/listings")
-        } Then {
-            statusCode(201)
-        } Extract {
-            jsonPath().getLong("id")
-        }
-    }
-
-    private fun createDraftListing(token: String, petName: String = "DraftPet"): Long {
-        val payload = """
-        {
-            "pet": {
-                "name": "$petName",
-                "speciesCode": "$speciesCode",
-                "breedCodes": [],
-                "gender": "MALE",
-                "size": "MEDIUM"
-            },
-            "municipalityCode": "$municipalityCode",
-            "title": "Draft Listing",
-            "saveAsDraft": true
-        }
-        """.trimIndent()
+    private fun createActiveListing(
+        token: String,
+        petName: String = "TestPet",
+    ): Long {
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "$petName",
+                    "speciesCode": "$speciesCode",
+                    "breedCodes": [],
+                    "gender": "MALE",
+                    "size": "MEDIUM",
+                    "description": "Test pet"
+                },
+                "municipalityCode": "$municipalityCode",
+                "title": "Active Listing",
+                "adoptionFee": 50,
+                "saveAsDraft": false
+            }
+            """.trimIndent()
 
         return Given {
             header("Authorization", "Bearer $token")
@@ -206,14 +182,52 @@ class AdoptionApplicationControllerTest {
         }
     }
 
-    private fun submitApplication(token: String, listingId: Long, message: String = "I want this pet"): Long {
-        val payload = """
-        {
-            "message": "$message",
-            "contactPhone": "123456789",
-            "contactEmail": "applicant@test.com"
+    private fun createDraftListing(
+        token: String,
+        petName: String = "DraftPet",
+    ): Long {
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "$petName",
+                    "speciesCode": "$speciesCode",
+                    "breedCodes": [],
+                    "gender": "MALE",
+                    "size": "MEDIUM"
+                },
+                "municipalityCode": "$municipalityCode",
+                "title": "Draft Listing",
+                "saveAsDraft": true
+            }
+            """.trimIndent()
+
+        return Given {
+            header("Authorization", "Bearer $token")
+            body(payload)
+            contentType(ContentType.JSON)
+        } When {
+            post("/api/listings")
+        } Then {
+            statusCode(201)
+        } Extract {
+            jsonPath().getLong("id")
         }
-        """.trimIndent()
+    }
+
+    private fun submitApplication(
+        token: String,
+        listingId: Long,
+        message: String = "I want this pet",
+    ): Long {
+        val payload =
+            """
+            {
+                "message": "$message",
+                "contactPhone": "123456789",
+                "contactEmail": "applicant@test.com"
+            }
+            """.trimIndent()
 
         return Given {
             header("Authorization", "Bearer $token")
@@ -227,7 +241,6 @@ class AdoptionApplicationControllerTest {
             jsonPath().getLong("id")
         }
     }
-
 
     @Test
     fun `submit application to active listing returns 201`() {

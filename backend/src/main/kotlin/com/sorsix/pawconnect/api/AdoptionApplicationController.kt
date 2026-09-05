@@ -19,12 +19,13 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class AdoptionApplicationController(
-    private val applicationService: AdoptionApplicationService, private val authService: AuthService
+    private val applicationService: AdoptionApplicationService,
+    private val authService: AuthService,
 ) {
-
     @PostMapping("/api/listings/{listingId}/applications")
     fun submitApplication(
-        @PathVariable listingId: Long, @Valid @RequestBody request: CreateApplicationRequest
+        @PathVariable listingId: Long,
+        @Valid @RequestBody request: CreateApplicationRequest,
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = applicationService.submitApplication(listingId, request, currentUser)) {
@@ -38,7 +39,8 @@ class AdoptionApplicationController(
 
     @GetMapping("/api/listings/{listingId}/applications")
     fun listApplicationsForListing(
-        @PathVariable listingId: Long, pageable: Pageable
+        @PathVariable listingId: Long,
+        pageable: Pageable,
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = applicationService.listApplicationsForListing(listingId, currentUser, pageable)) {
@@ -58,7 +60,8 @@ class AdoptionApplicationController(
 
     @PatchMapping("/api/applications/{id}/review")
     fun reviewApplication(
-        @PathVariable id: Long, @RequestParam decision: ApplicationDecision
+        @PathVariable id: Long,
+        @RequestParam decision: ApplicationDecision,
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = applicationService.reviewApplication(id, decision, currentUser)) {
@@ -70,7 +73,9 @@ class AdoptionApplicationController(
     }
 
     @PostMapping("/api/applications/{id}/withdraw")
-    fun withdrawApplication(@PathVariable id: Long): ResponseEntity<*> {
+    fun withdrawApplication(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = applicationService.withdrawApplication(id, currentUser)) {
             is WithdrawApplicationResult.Success -> ResponseEntity.ok(ApplicationResponse.from(result.application))

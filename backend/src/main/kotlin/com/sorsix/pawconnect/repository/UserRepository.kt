@@ -9,12 +9,17 @@ import org.springframework.data.repository.query.Param
 
 interface UserRepository : JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.username = :username AND u.deletedAt IS NULL")
-    fun findByUsernameActive(@Param("username") username: String): User?
+    fun findByUsernameActive(
+        @Param("username") username: String,
+    ): User?
 
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.deletedAt IS NULL")
-    fun findByEmailActive(@Param("email") email: String): User?
+    fun findByEmailActive(
+        @Param("email") email: String,
+    ): User?
 
     fun existsByUsernameAndDeletedAtIsNull(username: String): Boolean
+
     fun existsByEmailAndDeletedAtIsNull(email: String): Boolean
 
     @Query(
@@ -23,14 +28,16 @@ interface UserRepository : JpaRepository<User, Long> {
         LEFT JOIN u.roles r
         WHERE (:active IS NULL OR u.isActive = :active)
         AND (:role IS NULL OR r.name = :role)
-        """
+        """,
     )
     fun searchUserIds(
         @Param("active") active: Boolean?,
         @Param("role") role: String?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<Long>
 
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE u.id IN :ids")
-    fun findAllByIdInWithRoles(@Param("ids") ids: List<Long>): List<User>
+    fun findAllByIdInWithRoles(
+        @Param("ids") ids: List<Long>,
+    ): List<User>
 }

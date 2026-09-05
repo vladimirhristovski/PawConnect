@@ -14,10 +14,15 @@ interface PasswordResetTokenRepository : JpaRepository<PasswordResetToken, Long>
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("UPDATE PasswordResetToken t SET t.usedAt = :now WHERE t.user.id = :userId AND t.usedAt IS NULL")
-    fun revokeAllUnusedTokensForUser(@Param("userId") userId: Long, @Param("now") now: Instant): Int
+    fun revokeAllUnusedTokensForUser(
+        @Param("userId") userId: Long,
+        @Param("now") now: Instant,
+    ): Int
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("DELETE FROM PasswordResetToken t WHERE t.expiresAt < :now OR t.usedAt IS NOT NULL")
-    fun deleteExpiredOrUsed(@Param("now") now: Instant): Int
+    fun deleteExpiredOrUsed(
+        @Param("now") now: Instant,
+    ): Int
 }

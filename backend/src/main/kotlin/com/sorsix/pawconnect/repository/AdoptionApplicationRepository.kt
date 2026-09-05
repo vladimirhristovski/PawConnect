@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
 interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Long> {
-
     companion object {
         private const val ASSOCIATIONS_FETCH = """
             JOIN FETCH a.listing l
@@ -23,18 +22,20 @@ interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Lon
     }
 
     @Query("SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH WHERE a.id = :id")
-    fun findByIdWithAllAssociations(@Param("id") id: Long): AdoptionApplication?
+    fun findByIdWithAllAssociations(
+        @Param("id") id: Long,
+    ): AdoptionApplication?
 
     @Query(
         """
         SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH
         WHERE a.applicant.id = :applicantId
         AND a.deletedAt IS NULL
-        """
+        """,
     )
     fun findByApplicant_IdAndDeletedAtIsNull(
         @Param("applicantId") applicantId: Long,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<AdoptionApplication>
 
     @Query(
@@ -42,11 +43,11 @@ interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Lon
         SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH
         WHERE a.listing.id = :listingId
         AND a.deletedAt IS NULL
-        """
+        """,
     )
     fun findByListing_IdAndDeletedAtIsNull(
         @Param("listingId") listingId: Long,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<AdoptionApplication>
 
     @Query(
@@ -54,27 +55,27 @@ interface AdoptionApplicationRepository : JpaRepository<AdoptionApplication, Lon
         SELECT a FROM AdoptionApplication a $ASSOCIATIONS_FETCH
         WHERE (:statusCode IS NULL OR a.status.code = :statusCode)
         AND a.deletedAt IS NULL
-        """
+        """,
     )
     fun findAllWithAssociations(
         @Param("statusCode") statusCode: String?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<AdoptionApplication>
 
     // Simple existence checks (no FETCH needed)
     fun findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
         listingId: Long,
         applicantId: Long,
-        statusCodes: Collection<String>
+        statusCodes: Collection<String>,
     ): List<AdoptionApplication>
 
     fun findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
         listingId: Long,
-        statusCodes: Collection<String>
+        statusCodes: Collection<String>,
     ): List<AdoptionApplication>
 
     fun findByApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
         applicantId: Long,
-        statusCodes: Collection<String>
+        statusCodes: Collection<String>,
     ): List<AdoptionApplication>
 }

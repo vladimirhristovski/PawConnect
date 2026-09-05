@@ -13,7 +13,9 @@ interface CityRepository : JpaRepository<City, Long> {
         SELECT c FROM City c
         JOIN FETCH c.country
         WHERE (:countryCode IS NULL OR c.country.code = :countryCode)
-    """
+    """,
     )
-    fun findWithCountryByCountryCode(@Param("countryCode") countryCode: String?): List<City>
+    fun findWithCountryByCountryCode(
+        @Param("countryCode") countryCode: String?,
+    ): List<City>
 }

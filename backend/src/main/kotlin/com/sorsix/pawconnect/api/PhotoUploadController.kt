@@ -13,12 +13,13 @@ import java.util.UUID
 @RequestMapping("/api/photos")
 class PhotoUploadController(
     private val blobStorageService: BlobStorageService,
-    private val authService: AuthService
+    private val authService: AuthService,
 ) {
-
     @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @ResponseStatus(HttpStatus.CREATED)
-    fun uploadTempPhoto(@RequestPart("file") file: MultipartFile): TempUploadResponse {
+    fun uploadTempPhoto(
+        @RequestPart("file") file: MultipartFile,
+    ): TempUploadResponse {
         authService.requireCurrentUser()
         val url = blobStorageService.upload(file, "temp/${UUID.randomUUID()}")
         return TempUploadResponse(url)

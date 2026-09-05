@@ -1,20 +1,20 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.dto.request.ApplicationDecision
-import com.sorsix.pawconnect.dto.request.CreateApplicationRequest
+import com.sorsix.pawconnect.common.ApplicationStatusCodes
+import com.sorsix.pawconnect.common.ListingStatusCodes
+import com.sorsix.pawconnect.common.requireByCode
+import com.sorsix.pawconnect.common.requireId
 import com.sorsix.pawconnect.domain.AdoptionApplication
 import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.domain.result.ListApplicationsForListingResult
 import com.sorsix.pawconnect.domain.result.ReviewApplicationResult
 import com.sorsix.pawconnect.domain.result.SubmitApplicationResult
 import com.sorsix.pawconnect.domain.result.WithdrawApplicationResult
+import com.sorsix.pawconnect.dto.request.ApplicationDecision
+import com.sorsix.pawconnect.dto.request.CreateApplicationRequest
 import com.sorsix.pawconnect.repository.AdoptionApplicationRepository
 import com.sorsix.pawconnect.repository.ApplicationStatusRepository
 import com.sorsix.pawconnect.repository.ListingRepository
-import com.sorsix.pawconnect.common.ApplicationStatusCodes
-import com.sorsix.pawconnect.common.ListingStatusCodes
-import com.sorsix.pawconnect.common.requireByCode
-import com.sorsix.pawconnect.common.requireId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -28,14 +28,19 @@ class AdoptionApplicationService(
     private val applicationRepository: AdoptionApplicationRepository,
     private val listingRepository: ListingRepository,
     private val applicationStatusRepository: ApplicationStatusRepository,
-    private val listingService: ListingService
+    private val listingService: ListingService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun submitApplication(listingId: Long, request: CreateApplicationRequest, currentUser: User): SubmitApplicationResult {
-        val listing = listingRepository.findByIdOrNull(listingId)
-            ?: return SubmitApplicationResult.NotFound("Listing not found: $listingId")
+    fun submitApplication(
+        listingId: Long,
+        request: CreateApplicationRequest,
+        currentUser: User,
+    ): SubmitApplicationResult {
+        val listing =
+            listingRepository.findByIdOrNull(listingId)
+                ?: return SubmitApplicationResult.NotFound("Listing not found: $listingId")
 
         if (listing.status.code != ListingStatusCodes.ACTIVE) {
             return SubmitApplicationResult.Conflict("Listing is not currently accepting applications")
@@ -45,45 +50,57 @@ class AdoptionApplicationService(
             return SubmitApplicationResult.Forbidden("You cannot apply to your own listing")
         }
 
-        val existing = applicationRepository.findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
-            listingId, currentUser.requireId(), ApplicationStatusCodes.PENDING_STATUSES
-        )
+        val existing =
+            applicationRepository.findByListing_IdAndApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
+                listingId,
+                currentUser.requireId(),
+                ApplicationStatusCodes.PENDING_STATUSES,
+            )
         if (existing.isNotEmpty()) {
             return SubmitApplicationResult.Conflict("You already have a pending application for this listing")
         }
 
         val submittedStatus = applicationStatusRepository.requireByCode(ApplicationStatusCodes.SUBMITTED)
 
-        val application = AdoptionApplication(
-            listing = listing,
-            applicant = currentUser,
-            status = submittedStatus,
-            message = request.message,
-            contactPhone = request.contactPhone ?: currentUser.phone,
-            contactEmail = request.contactEmail ?: currentUser.email
-        )
+        val application =
+            AdoptionApplication(
+                listing = listing,
+                applicant = currentUser,
+                status = submittedStatus,
+                message = request.message,
+                contactPhone = request.contactPhone ?: currentUser.phone,
+                contactEmail = request.contactEmail ?: currentUser.email,
+            )
 
         val saved = applicationRepository.save(application)
         log.info("Application {} submitted by user {} for listing {}", saved.id, currentUser.id, listingId)
-        val reloaded = applicationRepository.findByIdWithAllAssociations(saved.requireId())
-            ?: throw IllegalStateException("Application not found after save")
+        val reloaded =
+            applicationRepository.findByIdWithAllAssociations(saved.requireId())
+                ?: throw IllegalStateException("Application not found after save")
         return SubmitApplicationResult.Success(reloaded)
     }
 
     @Transactional(readOnly = true)
-    fun listMyApplications(currentUser: User, pageable: Pageable): Page<AdoptionApplication> {
-        return applicationRepository.findByApplicant_IdAndDeletedAtIsNull(currentUser.requireId(), pageable)
-    }
+    fun listMyApplications(
+        currentUser: User,
+        pageable: Pageable,
+    ): Page<AdoptionApplication> = applicationRepository.findByApplicant_IdAndDeletedAtIsNull(currentUser.requireId(), pageable)
 
     @Transactional(readOnly = true)
-    fun adminListApplications(statusCode: String?, pageable: Pageable): Page<AdoptionApplication> {
-        return applicationRepository.findAllWithAssociations(statusCode, pageable)
-    }
+    fun adminListApplications(
+        statusCode: String?,
+        pageable: Pageable,
+    ): Page<AdoptionApplication> = applicationRepository.findAllWithAssociations(statusCode, pageable)
 
     @Transactional(readOnly = true)
-    fun listApplicationsForListing(listingId: Long, currentUser: User, pageable: Pageable): ListApplicationsForListingResult {
-        val listing = listingRepository.findByIdOrNull(listingId)
-            ?: return ListApplicationsForListingResult.NotFound("Listing not found: $listingId")
+    fun listApplicationsForListing(
+        listingId: Long,
+        currentUser: User,
+        pageable: Pageable,
+    ): ListApplicationsForListingResult {
+        val listing =
+            listingRepository.findByIdOrNull(listingId)
+                ?: return ListApplicationsForListingResult.NotFound("Listing not found: $listingId")
         if (listing.postedBy.id != currentUser.id && !currentUser.isAdmin()) {
             return ListApplicationsForListingResult.Forbidden("You are not authorized to view applications for this listing")
         }
@@ -92,9 +109,14 @@ class AdoptionApplicationService(
     }
 
     @Transactional
-    fun reviewApplication(applicationId: Long, decision: ApplicationDecision, currentUser: User): ReviewApplicationResult {
-        val app = applicationRepository.findByIdWithAllAssociations(applicationId)
-            ?: return ReviewApplicationResult.NotFound("Application not found: $applicationId")
+    fun reviewApplication(
+        applicationId: Long,
+        decision: ApplicationDecision,
+        currentUser: User,
+    ): ReviewApplicationResult {
+        val app =
+            applicationRepository.findByIdWithAllAssociations(applicationId)
+                ?: return ReviewApplicationResult.NotFound("Application not found: $applicationId")
 
         val listing = app.listing
         if (listing.postedBy.id != currentUser.id && !currentUser.isAdmin()) {
@@ -115,9 +137,12 @@ class AdoptionApplicationService(
             listingService.markAdopted(listing)
 
             val rejectedStatus = applicationStatusRepository.requireByCode(ApplicationStatusCodes.REJECTED)
-            val otherPending = applicationRepository.findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
-                listing.requireId(), ApplicationStatusCodes.PENDING_STATUSES
-            ).filter { it.id != app.id }
+            val otherPending =
+                applicationRepository
+                    .findByListing_IdAndStatus_CodeInAndDeletedAtIsNull(
+                        listing.requireId(),
+                        ApplicationStatusCodes.PENDING_STATUSES,
+                    ).filter { it.id != app.id }
             otherPending.forEach { other ->
                 other.status = rejectedStatus
                 other.reviewedBy = currentUser
@@ -131,7 +156,7 @@ class AdoptionApplicationService(
                 saved.id,
                 currentUser.id,
                 listing.id,
-                otherPending.size
+                otherPending.size,
             )
             return ReviewApplicationResult.Success(saved)
         } else {
@@ -144,9 +169,13 @@ class AdoptionApplicationService(
     }
 
     @Transactional
-    fun withdrawApplication(applicationId: Long, currentUser: User): WithdrawApplicationResult {
-        val app = applicationRepository.findByIdWithAllAssociations(applicationId)
-            ?: return WithdrawApplicationResult.NotFound("Application not found: $applicationId")
+    fun withdrawApplication(
+        applicationId: Long,
+        currentUser: User,
+    ): WithdrawApplicationResult {
+        val app =
+            applicationRepository.findByIdWithAllAssociations(applicationId)
+                ?: return WithdrawApplicationResult.NotFound("Application not found: $applicationId")
 
         if (app.applicant.id != currentUser.id) {
             return WithdrawApplicationResult.Forbidden("You are not the applicant")
@@ -164,9 +193,11 @@ class AdoptionApplicationService(
 
     @Transactional
     fun withdrawPendingForApplicant(user: User): Int {
-        val pending = applicationRepository.findByApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
-            user.requireId(), ApplicationStatusCodes.PENDING_STATUSES
-        )
+        val pending =
+            applicationRepository.findByApplicant_IdAndStatus_CodeInAndDeletedAtIsNull(
+                user.requireId(),
+                ApplicationStatusCodes.PENDING_STATUSES,
+            )
         if (pending.isEmpty()) return 0
         val withdrawnStatus = applicationStatusRepository.requireByCode(ApplicationStatusCodes.WITHDRAWN)
         pending.forEach { it.status = withdrawnStatus }

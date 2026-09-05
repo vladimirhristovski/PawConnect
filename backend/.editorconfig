@@ -1,0 +1,6 @@
+root = true
+
+[*.{kt,kts}]
+ij_kotlin_packages_to_use_import_on_demand = unlimited
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_function-naming = disabled

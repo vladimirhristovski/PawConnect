@@ -7,10 +7,13 @@ import org.springframework.stereotype.Service
 @Service
 @ConditionalOnProperty(name = ["app.mail.enabled"], havingValue = "false")
 class NoOpEmailService : EmailService {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun sendEmail(to: String, subject: String, body: String) {
+    override fun sendEmail(
+        to: String,
+        subject: String,
+        body: String,
+    ) {
         log.info("Email would be sent to: {}, subject: {}", to, subject)
     }
 }

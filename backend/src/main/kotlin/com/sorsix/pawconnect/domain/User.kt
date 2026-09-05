@@ -10,23 +10,16 @@ import org.hibernate.annotations.SQLRestriction
 class User(
     @Column(nullable = false, unique = true)
     var username: String,
-
     @Column(nullable = false, unique = true)
     var email: String,
-
     @Column(nullable = false)
     var password: String,
-
     @Column(name = "first_name")
     var firstName: String? = null,
-
     @Column(name = "last_name")
     var lastName: String? = null,
-
     var phone: String? = null,
-
-    ) : SoftDeletableEntity() {
-
+) : SoftDeletableEntity() {
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
@@ -39,6 +32,6 @@ class User(
     var isActive: Boolean = true
 
     fun hasRole(roleName: String): Boolean = roles.any { it.name.equals(roleName, ignoreCase = true) }
-    fun isAdmin(): Boolean = hasRole("ADMIN")
 
+    fun isAdmin(): Boolean = hasRole("ADMIN")
 }

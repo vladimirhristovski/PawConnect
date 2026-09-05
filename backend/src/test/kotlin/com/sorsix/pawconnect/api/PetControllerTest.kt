@@ -22,7 +22,6 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class PetControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -52,11 +51,11 @@ class PetControllerTest {
                 statement.execute("SET session_replication_role = 'replica'")
                 statement.execute(
                     """
-                TRUNCATE TABLE
-                    refresh_tokens, password_reset_tokens, user_roles, users,
-                    adoption_applications, businesses, listings, pet_photos, pets
-                RESTART IDENTITY CASCADE
-                """.trimIndent()
+                    TRUNCATE TABLE
+                        refresh_tokens, password_reset_tokens, user_roles, users,
+                        adoption_applications, businesses, listings, pet_photos, pets
+                    RESTART IDENTITY CASCADE
+                    """.trimIndent(),
                 )
                 statement.execute("SET session_replication_role = 'origin'")
             }
@@ -76,7 +75,7 @@ class PetControllerTest {
                     "firstName": "Pet",
                     "lastName": "Owner"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -85,37 +84,39 @@ class PetControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body("""{"username":"$username","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body("""{"username":"$username","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
 
         ownerToken = loginResponse.getString("accessToken")
 
         val speciesCode = getFirstSpeciesCode()
         val municipalityCode = getFirstMunicipalityCode()
 
-        val listingPayload = """
-        {
-            "pet": {
-                "name": "TestPet",
-                "speciesCode": "$speciesCode",
-                "gender": "MALE",
-                "size": "MEDIUM",
-                "description": "Test pet"
-            },
-            "municipalityCode": "$municipalityCode",
-            "title": "Test Listing",
-            "adoptionFee": 50,
-            "saveAsDraft": true
-        }
-        """.trimIndent()
+        val listingPayload =
+            """
+            {
+                "pet": {
+                    "name": "TestPet",
+                    "speciesCode": "$speciesCode",
+                    "gender": "MALE",
+                    "size": "MEDIUM",
+                    "description": "Test pet"
+                },
+                "municipalityCode": "$municipalityCode",
+                "title": "Test Listing",
+                "adoptionFee": 50,
+                "saveAsDraft": true
+            }
+            """.trimIndent()
 
         petId = Given {
             header("Authorization", "Bearer $ownerToken")
@@ -130,8 +131,8 @@ class PetControllerTest {
         }
     }
 
-    private fun getFirstSpeciesCode(): String {
-        return Given {
+    private fun getFirstSpeciesCode(): String =
+        Given {
             accept(ContentType.JSON)
         } When {
             get("/api/lookups/species")
@@ -140,10 +141,9 @@ class PetControllerTest {
         } Extract {
             jsonPath().getString("[0].code")
         }
-    }
 
-    private fun getFirstMunicipalityCode(): String {
-        return Given {
+    private fun getFirstMunicipalityCode(): String =
+        Given {
             accept(ContentType.JSON)
         } When {
             get("/api/lookups/municipalities")
@@ -152,9 +152,11 @@ class PetControllerTest {
         } Extract {
             jsonPath().getString("[0].code")
         }
-    }
 
-    private fun tempFile(name: String, bytes: ByteArray = byteArrayOf(1, 2, 3, 4)): File {
+    private fun tempFile(
+        name: String,
+        bytes: ByteArray = byteArrayOf(1, 2, 3, 4),
+    ): File {
         val f = File.createTempFile(name, ".tmp")
         f.writeBytes(bytes)
         f.deleteOnExit()
@@ -177,13 +179,14 @@ class PetControllerTest {
 
     @Test
     fun `update pet modifies fields`() {
-        val updatePayload = """
-        {
-            "name": "UpdatedName",
-            "description": "New description",
-            "goodWithKids": true
-        }
-        """.trimIndent()
+        val updatePayload =
+            """
+            {
+                "name": "UpdatedName",
+                "description": "New description",
+                "goodWithKids": true
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -201,12 +204,13 @@ class PetControllerTest {
 
     @Test
     fun `add photo to pet returns photo details`() {
-        val photoPayload = """
-        {
-            "url": "https://example.com/photo.jpg",
-            "isPrimary": true
-        }
-        """.trimIndent()
+        val photoPayload =
+            """
+            {
+                "url": "https://example.com/photo.jpg",
+                "isPrimary": true
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -224,17 +228,18 @@ class PetControllerTest {
     @Test
     fun `remove photo from pet returns 204`() {
         val photoPayload = """{"url":"https://example.com/photo2.jpg","isPrimary":false}"""
-        val photoId = Given {
-            header("Authorization", "Bearer $ownerToken")
-            body(photoPayload)
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/pets/$petId/photos")
-        } Then {
-            statusCode(201)
-        } Extract {
-            jsonPath().getLong("id")
-        }
+        val photoId =
+            Given {
+                header("Authorization", "Bearer $ownerToken")
+                body(photoPayload)
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/pets/$petId/photos")
+            } Then {
+                statusCode(201)
+            } Extract {
+                jsonPath().getLong("id")
+            }
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -265,7 +270,7 @@ class PetControllerTest {
                     "email": "$otherUsername@test.com",
                     "password": "Password1!"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -274,16 +279,17 @@ class PetControllerTest {
             statusCode(201)
         }
 
-        val otherToken = Given {
-            body("""{"username":"$otherUsername","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getString("accessToken")
-        }
+        val otherToken =
+            Given {
+                body("""{"username":"$otherUsername","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getString("accessToken")
+            }
 
         val updatePayload = """{"name":"Hacked"}"""
         Given {
@@ -320,30 +326,32 @@ class PetControllerTest {
     @Test
     fun `uploading a second primary photo unsets the previous primary`() {
         val first = tempFile("first")
-        val firstId = Given {
-            header("Authorization", "Bearer $ownerToken")
-            multiPart("file", first, "image/jpeg")
-            queryParam("isPrimary", true)
-        } When {
-            post("/api/pets/$petId/photos/upload")
-        } Then {
-            statusCode(201)
-        } Extract {
-            jsonPath().getLong("id")
-        }
+        val firstId =
+            Given {
+                header("Authorization", "Bearer $ownerToken")
+                multiPart("file", first, "image/jpeg")
+                queryParam("isPrimary", true)
+            } When {
+                post("/api/pets/$petId/photos/upload")
+            } Then {
+                statusCode(201)
+            } Extract {
+                jsonPath().getLong("id")
+            }
 
         val second = tempFile("second")
-        val secondId = Given {
-            header("Authorization", "Bearer $ownerToken")
-            multiPart("file", second, "image/jpeg")
-            queryParam("isPrimary", true)
-        } When {
-            post("/api/pets/$petId/photos/upload")
-        } Then {
-            statusCode(201)
-        } Extract {
-            jsonPath().getLong("id")
-        }
+        val secondId =
+            Given {
+                header("Authorization", "Bearer $ownerToken")
+                multiPart("file", second, "image/jpeg")
+                queryParam("isPrimary", true)
+            } When {
+                post("/api/pets/$petId/photos/upload")
+            } Then {
+                statusCode(201)
+            } Extract {
+                jsonPath().getLong("id")
+            }
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -400,16 +408,17 @@ class PetControllerTest {
     @Test
     fun `removing an uploaded photo deletes it from blob storage`() {
         val file = tempFile("photo")
-        val photoUrl = Given {
-            header("Authorization", "Bearer $ownerToken")
-            multiPart("file", file, "image/jpeg")
-        } When {
-            post("/api/pets/$petId/photos/upload")
-        } Then {
-            statusCode(201)
-        } Extract {
-            jsonPath()
-        }
+        val photoUrl =
+            Given {
+                header("Authorization", "Bearer $ownerToken")
+                multiPart("file", file, "image/jpeg")
+            } When {
+                post("/api/pets/$petId/photos/upload")
+            } Then {
+                statusCode(201)
+            } Extract {
+                jsonPath()
+            }
 
         val photoId = photoUrl.getLong("id")
         val url = photoUrl.getString("url")
@@ -438,7 +447,7 @@ class PetControllerTest {
                     "email": "$otherUsername@test.com",
                     "password": "Password1!"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -447,16 +456,17 @@ class PetControllerTest {
             statusCode(201)
         }
 
-        val otherToken = Given {
-            body("""{"username":"$otherUsername","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getString("accessToken")
-        }
+        val otherToken =
+            Given {
+                body("""{"username":"$otherUsername","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getString("accessToken")
+            }
 
         val file = tempFile("photo")
         Given {

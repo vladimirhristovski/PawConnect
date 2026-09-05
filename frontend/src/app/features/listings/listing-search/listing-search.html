@@ -78,7 +78,9 @@
           <p class="hint">Finding your location…</p>
         }
         @if (nearbyCoords(); as c) {
-          <p class="hint">Centred on {{ c.lat | number: '1.3-3' }}, {{ c.lng | number: '1.3-3' }}</p>
+          <p class="hint">
+            Centred on {{ c.lat | number: '1.3-3' }}, {{ c.lng | number: '1.3-3' }}
+          </p>
         }
         @if (locationError()) {
           <p class="error">{{ locationError() }}</p>

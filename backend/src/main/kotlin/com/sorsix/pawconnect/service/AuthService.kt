@@ -1,23 +1,23 @@
 package com.sorsix.pawconnect.service
 
-import com.sorsix.pawconnect.dto.request.*
-import com.sorsix.pawconnect.dto.response.AuthResponse
-import com.sorsix.pawconnect.dto.response.UserResponse
+import com.sorsix.pawconnect.common.constraintName
+import com.sorsix.pawconnect.common.requireId
+import com.sorsix.pawconnect.common.sha256Hex
 import com.sorsix.pawconnect.domain.PasswordResetToken
 import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.domain.result.DeleteOwnAccountResult
 import com.sorsix.pawconnect.domain.result.RefreshTokenResult
 import com.sorsix.pawconnect.domain.result.RegisterResult
 import com.sorsix.pawconnect.domain.result.ResetPasswordResult
+import com.sorsix.pawconnect.dto.request.*
+import com.sorsix.pawconnect.dto.response.AuthResponse
+import com.sorsix.pawconnect.dto.response.UserResponse
 import com.sorsix.pawconnect.repository.PasswordResetTokenRepository
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
 import com.sorsix.pawconnect.repository.RoleRepository
 import com.sorsix.pawconnect.repository.UserRepository
 import com.sorsix.pawconnect.security.CustomUserDetails
 import com.sorsix.pawconnect.security.JwtService
-import com.sorsix.pawconnect.common.constraintName
-import com.sorsix.pawconnect.common.requireId
-import com.sorsix.pawconnect.common.sha256Hex
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
@@ -45,7 +45,7 @@ class AuthService(
     private val userService: UserService,
     @Value("\${app.jwt.access-token-ttl}") private val accessTokenTtl: Long,
     @Value("\${app.reset-token-ttl}") private val resetTokenTtl: Long,
-    @Value("\${app.frontend-url}") private val frontendUrl: String
+    @Value("\${app.frontend-url}") private val frontendUrl: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -58,38 +58,44 @@ class AuthService(
             return RegisterResult.Conflict("Email already registered")
         }
 
-        val user = User(
-            username = request.username,
-            email = request.email,
-            password = passwordEncoder.encode(request.password)
-                ?: throw IllegalStateException("Password encoder returned null"),
-            firstName = request.firstName,
-            lastName = request.lastName,
-            phone = request.phone
-        )
-        val userRole = roleRepository.findByName("USER")
-            ?: throw IllegalStateException("USER role not found")
+        val user =
+            User(
+                username = request.username,
+                email = request.email,
+                password =
+                    passwordEncoder.encode(request.password)
+                        ?: throw IllegalStateException("Password encoder returned null"),
+                firstName = request.firstName,
+                lastName = request.lastName,
+                phone = request.phone,
+            )
+        val userRole =
+            roleRepository.findByName("USER")
+                ?: throw IllegalStateException("USER role not found")
         user.roles.add(userRole)
 
-        val saved = try {
-            userRepository.save(user)
-        } catch (ex: DataIntegrityViolationException) {
-            val message = when (ex.constraintName()) {
-                "uq_users_username_active" -> "Username already taken"
-                "uq_users_email_active" -> "Email already registered"
-                else -> "Username or email already registered"
+        val saved =
+            try {
+                userRepository.save(user)
+            } catch (ex: DataIntegrityViolationException) {
+                val message =
+                    when (ex.constraintName()) {
+                        "uq_users_username_active" -> "Username already taken"
+                        "uq_users_email_active" -> "Email already registered"
+                        else -> "Username or email already registered"
+                    }
+                throw IllegalArgumentException(message)
             }
-            throw IllegalArgumentException(message)
-        }
         log.info("User registered: {}", saved.id)
         return RegisterResult.Success(saved)
     }
 
     @Transactional
     fun login(request: LoginRequest): AuthResponse {
-        val auth = authenticationManager.authenticate(
-            UsernamePasswordAuthenticationToken(request.username, request.password)
-        )
+        val auth =
+            authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken(request.username, request.password),
+            )
         val user = (auth.principal as CustomUserDetails).getUser()
 
         refreshTokenRepository.revokeAllUserTokens(user.requireId(), Instant.now())
@@ -103,14 +109,15 @@ class AuthService(
         return AuthResponse(
             accessToken = accessToken,
             refreshToken = rawRefresh,
-            expiresIn = accessTokenTtl / 1000
+            expiresIn = accessTokenTtl / 1000,
         )
     }
 
     @Transactional
     fun refreshToken(refreshToken: String): RefreshTokenResult {
-        val rt = jwtService.verifyRefreshToken(refreshToken)
-            ?: return RefreshTokenResult.Invalid("Invalid or expired refresh token")
+        val rt =
+            jwtService.verifyRefreshToken(refreshToken)
+                ?: return RefreshTokenResult.Invalid("Invalid or expired refresh token")
 
         val user = rt.user
         rt.revokedAt = Instant.now()
@@ -127,8 +134,8 @@ class AuthService(
             AuthResponse(
                 accessToken = newAccess,
                 refreshToken = newRawRefresh,
-                expiresIn = accessTokenTtl / 1000
-            )
+                expiresIn = accessTokenTtl / 1000,
+            ),
         )
     }
 
@@ -152,23 +159,25 @@ class AuthService(
         val tokenHash = sha256Hex(rawToken)
         val expiry = Instant.now().plusMillis(resetTokenTtl)
 
-        val resetToken = PasswordResetToken(
-            user = user,
-            tokenHash = tokenHash,
-            expiresAt = expiry
-        )
+        val resetToken =
+            PasswordResetToken(
+                user = user,
+                tokenHash = tokenHash,
+                expiresAt = expiry,
+            )
         passwordResetTokenRepository.save(resetToken)
 
         log.info("Password reset requested for user {}", user.id)
 
         val resetLink = "$frontendUrl/reset-password?token=$rawToken"
-        val emailBody = """
+        val emailBody =
+            """
             You requested a password reset.
             Click the link below to set a new password:
             $resetLink
             
             If you did not request this, please ignore this email.
-        """.trimIndent()
+            """.trimIndent()
 
         try {
             emailService.sendEmail(user.email, "Password Reset Request", emailBody)
@@ -178,11 +187,13 @@ class AuthService(
 
         return true
     }
+
     @Transactional
     fun resetPassword(request: ResetPasswordRequest): ResetPasswordResult {
         val tokenHash = sha256Hex(request.token)
-        val resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
-            ?: return ResetPasswordResult.Invalid("Invalid token")
+        val resetToken =
+            passwordResetTokenRepository.findByTokenHash(tokenHash)
+                ?: return ResetPasswordResult.Invalid("Invalid token")
 
         if (resetToken.usedAt != null) {
             return ResetPasswordResult.Invalid("Token already used")
@@ -214,11 +225,14 @@ class AuthService(
 
     fun getCurrentUser(): User? {
         val authentication = SecurityContextHolder.getContext().authentication
-        return if (authentication != null && authentication.isAuthenticated &&
+        return if (authentication != null &&
+            authentication.isAuthenticated &&
             authentication.principal is CustomUserDetails
         ) {
             (authentication.principal as CustomUserDetails).getUser()
-        } else null
+        } else {
+            null
+        }
     }
 
     fun getCurrentUserResponse(): UserResponse? {
@@ -226,7 +240,5 @@ class AuthService(
         return UserResponse.from(user)
     }
 
-    fun requireCurrentUser(): User {
-        return getCurrentUser() ?: throw IllegalStateException("No authenticated user in security context")
-    }
+    fun requireCurrentUser(): User = getCurrentUser() ?: throw IllegalStateException("No authenticated user in security context")
 }

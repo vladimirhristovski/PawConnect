@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class LookupServiceTest {
-
     private val speciesRepository = mockk<PetSpeciesRepository>()
     private val breedRepository = mockk<PetBreedRepository>()
     private val businessTypeRepository = mockk<BusinessTypeRepository>(relaxed = true)
@@ -23,11 +22,18 @@ class LookupServiceTest {
     private val applicationStatusRepository = mockk<ApplicationStatusRepository>(relaxed = true)
     private val roleRepository = mockk<RoleRepository>(relaxed = true)
 
-    private val service = LookupService(
-        speciesRepository, breedRepository, businessTypeRepository,
-        countryRepository, cityRepository, municipalityRepository,
-        listingStatusRepository, applicationStatusRepository, roleRepository
-    )
+    private val service =
+        LookupService(
+            speciesRepository,
+            breedRepository,
+            businessTypeRepository,
+            countryRepository,
+            cityRepository,
+            municipalityRepository,
+            listingStatusRepository,
+            applicationStatusRepository,
+            roleRepository,
+        )
 
     @Test
     fun `getAllSpecies delegates to the repository`() {

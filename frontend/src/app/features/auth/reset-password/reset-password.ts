@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, DestroyRef } from '@angular/core';
 import { form, FormField, FormRoot, minLength, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -15,6 +15,7 @@ export class ResetPassword {
   private auth = inject(AuthService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   token = this.route.snapshot.queryParamMap.get('token') ?? '';
   resetModel = signal({ newPassword: '' });
@@ -32,11 +33,10 @@ export class ResetPassword {
         action: async (form) => {
           this.error.set(null);
           try {
-            await firstValueFrom(
-              this.auth.resetPassword(this.token, form().value().newPassword),
-            );
+            await firstValueFrom(this.auth.resetPassword(this.token, form().value().newPassword));
             this.success.set(true);
-            setTimeout(() => this.router.navigate(['/login']), 1200);
+            const timeoutId = setTimeout(() => this.router.navigate(['/login']), 1200);
+            this.destroyRef.onDestroy(() => clearTimeout(timeoutId));
           } catch (err) {
             this.error.set(apiErrorMessage(err, 'Reset failed — the link may have expired.'));
           }

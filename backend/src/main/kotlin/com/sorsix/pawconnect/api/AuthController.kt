@@ -18,55 +18,64 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/auth")
 class AuthController(
-    private val authService: AuthService
+    private val authService: AuthService,
 ) {
-
     @PostMapping("/register")
-    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<*> {
-        return when (val result = authService.register(request)) {
+    fun register(
+        @Valid @RequestBody request: RegisterRequest,
+    ): ResponseEntity<*> =
+        when (val result = authService.register(request)) {
             is RegisterResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(result.user))
             is RegisterResult.Conflict -> problemResponse(HttpStatus.CONFLICT, result.message)
         }
-    }
 
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {
+    fun login(
+        @Valid @RequestBody request: LoginRequest,
+    ): ResponseEntity<AuthResponse> {
         val response = authService.login(request)
         return ResponseEntity.ok(response)
     }
 
     @PostMapping("/refresh")
-    fun refresh(@Valid @RequestBody request: RefreshTokenRequest): ResponseEntity<*> {
-        return when (val result = authService.refreshToken(request.refreshToken)) {
+    fun refresh(
+        @Valid @RequestBody request: RefreshTokenRequest,
+    ): ResponseEntity<*> =
+        when (val result = authService.refreshToken(request.refreshToken)) {
             is RefreshTokenResult.Success -> ResponseEntity.ok(result.response)
             is RefreshTokenResult.Invalid -> problemResponse(HttpStatus.BAD_REQUEST, result.message)
         }
-    }
 
     @PostMapping("/logout")
-    fun logout(@Valid @RequestBody request: RefreshTokenRequest): ResponseEntity<Void> {
+    fun logout(
+        @Valid @RequestBody request: RefreshTokenRequest,
+    ): ResponseEntity<Void> {
         authService.logout(request.refreshToken)
         return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/forgot-password")
-    fun forgotPassword(@Valid @RequestBody request: ForgotPasswordRequest): ResponseEntity<Void> {
+    fun forgotPassword(
+        @Valid @RequestBody request: ForgotPasswordRequest,
+    ): ResponseEntity<Void> {
         authService.forgotPassword(request)
         return ResponseEntity.ok().build()
     }
 
     @PostMapping("/reset-password")
-    fun resetPassword(@Valid @RequestBody request: ResetPasswordRequest): ResponseEntity<*> {
-        return when (val result = authService.resetPassword(request)) {
+    fun resetPassword(
+        @Valid @RequestBody request: ResetPasswordRequest,
+    ): ResponseEntity<*> =
+        when (val result = authService.resetPassword(request)) {
             is ResetPasswordResult.Success -> ResponseEntity.ok().build<Unit>()
             is ResetPasswordResult.Invalid -> problemResponse(HttpStatus.BAD_REQUEST, result.message)
         }
-    }
 
     @GetMapping("/me")
     fun me(): ResponseEntity<UserResponse> {
-        val user = authService.getCurrentUserResponse()
-            ?: throw UnauthorizedException("Not authenticated")
+        val user =
+            authService.getCurrentUserResponse()
+                ?: throw UnauthorizedException("Not authenticated")
         return ResponseEntity.ok(user)
     }
 

@@ -1,7 +1,6 @@
 package com.sorsix.pawconnect.security
 
 import com.sorsix.pawconnect.common.sha256Hex
-import com.sorsix.pawconnect.domain.PasswordResetToken
 import com.sorsix.pawconnect.domain.RefreshToken
 import com.sorsix.pawconnect.domain.User
 import com.sorsix.pawconnect.repository.RefreshTokenRepository
@@ -18,44 +17,57 @@ class JwtService(
     private val refreshTokenRepository: RefreshTokenRepository,
     @Value("\${app.jwt.secret}") private val secret: String,
     @Value("\${app.jwt.access-token-ttl}") private val accessTokenTtl: Long,
-    @Value("\${app.jwt.refresh-token-ttl}") private val refreshTokenTtl: Long
+    @Value("\${app.jwt.refresh-token-ttl}") private val refreshTokenTtl: Long,
 ) {
-
     private val key = Keys.hmacShaKeyFor(secret.toByteArray())
 
-    fun generateAccessToken(userDetails: UserDetails): String {
-        return Jwts.builder()
+    fun generateAccessToken(userDetails: UserDetails): String =
+        Jwts
+            .builder()
             .subject(userDetails.username)
             .issuedAt(Date.from(Instant.now()))
             .expiration(Date.from(Instant.now().plusMillis(accessTokenTtl)))
             .claim("jti", UUID.randomUUID().toString())
             .signWith(key)
             .compact()
-    }
 
-    fun validateAccessToken(token: String): Boolean {
-        return try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token)
+    fun validateAccessToken(token: String): Boolean =
+        try {
+            Jwts
+                .parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
             true
         } catch (e: Exception) {
             false
         }
-    }
 
-    fun extractUsername(token: String): String? {
-        return try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload.subject
+    fun extractUsername(token: String): String? =
+        try {
+            Jwts
+                .parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .payload.subject
         } catch (e: Exception) {
             null
         }
-    }
 
     fun hashToken(token: String): String = sha256Hex(token)
 
     fun verifyRefreshToken(token: String): RefreshToken? {
         val hashed = hashToken(token)
         val refreshToken = refreshTokenRepository.findByTokenHash(hashed)
-        return if (refreshToken != null && refreshToken.revokedAt == null && refreshToken.expiresAt.isAfter(Instant.now())) refreshToken else null
+        return if (refreshToken != null &&
+            refreshToken.revokedAt == null &&
+            refreshToken.expiresAt.isAfter(Instant.now())
+        ) {
+            refreshToken
+        } else {
+            null
+        }
     }
 
     fun revokeRefreshToken(token: String): Boolean {
@@ -72,10 +84,12 @@ class JwtService(
     fun generateRefreshToken(user: User): Pair<String, RefreshToken> {
         val raw = UUID.randomUUID().toString()
         val hashed = hashToken(raw)
-        val entity = RefreshToken(
-            user = user, tokenHash = hashed, expiresAt = Instant.now().plusMillis(refreshTokenTtl)
-        )
+        val entity =
+            RefreshToken(
+                user = user,
+                tokenHash = hashed,
+                expiresAt = Instant.now().plusMillis(refreshTokenTtl),
+            )
         return raw to entity
     }
-
 }

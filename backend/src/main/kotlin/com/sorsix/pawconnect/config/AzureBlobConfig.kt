@@ -13,9 +13,8 @@ import org.springframework.context.annotation.Profile
 @Profile("!test")
 class AzureBlobConfig(
     @Value("\${azure.storage.connection-string}") private val connectionString: String,
-    @Value("\${azure.storage.container-name}") private val containerName: String
+    @Value("\${azure.storage.container-name}") private val containerName: String,
 ) {
-
     @Bean
     fun blobServiceClient(): BlobServiceClient =
         BlobServiceClientBuilder()

@@ -24,7 +24,6 @@ import kotlin.test.assertFalse
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class GeocodingRetryJobPersistenceTest {
-
     @Autowired
     private lateinit var job: GeocodingRetryJob
 
@@ -54,19 +53,21 @@ class GeocodingRetryJobPersistenceTest {
     @Test
     fun `resolves a municipality's lazy city and country chain, then a dependent business falls back to it`() {
         val skopje = cityRepository.findByCode("SK")!!
-        val municipality = municipalityRepository.save(
-            Municipality(code = "SK-TEST-${System.currentTimeMillis()}", name = "Test Municipality", city = skopje)
-        )
-        val vet = businessTypeRepository.findByCode("VET")!!
-        val business = businessRepository.save(
-            Business(
-                type = vet,
-                name = "Test Vet",
-                phone = "070000000",
-                address = "some unresolvable address",
-                municipality = municipality
+        val municipality =
+            municipalityRepository.save(
+                Municipality(code = "SK-TEST-${System.currentTimeMillis()}", name = "Test Municipality", city = skopje),
             )
-        )
+        val vet = businessTypeRepository.findByCode("VET")!!
+        val business =
+            businessRepository.save(
+                Business(
+                    type = vet,
+                    name = "Test Vet",
+                    phone = "070000000",
+                    address = "some unresolvable address",
+                    municipality = municipality,
+                ),
+            )
 
         val coordinates = GeoCoordinates(BigDecimal("41.998100"), BigDecimal("21.425400"))
         whenever(geocodingService.geocode(argThat { startsWith(municipality.name) })).thenReturn(coordinates)

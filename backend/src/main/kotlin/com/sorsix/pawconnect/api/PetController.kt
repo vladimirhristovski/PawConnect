@@ -20,18 +20,23 @@ import org.springframework.web.multipart.MultipartFile
 @RestController
 @RequestMapping("/api/pets")
 class PetController(
-    private val petService: PetService, private val authService: AuthService
+    private val petService: PetService,
+    private val authService: AuthService,
 ) {
-
     @GetMapping("/{id}")
-    fun getPet(@PathVariable id: Long): ResponseEntity<*> {
+    fun getPet(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.getCurrentUser()
         return petService.getVisiblePet(id, currentUser)?.let { ResponseEntity.ok(PetResponse.from(it)) }
             ?: problemResponse(HttpStatus.NOT_FOUND, "Pet not found: $id")
     }
 
     @PutMapping("/{id}")
-    fun updatePet(@PathVariable id: Long, @Valid @RequestBody request: UpdatePetRequest): ResponseEntity<*> {
+    fun updatePet(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdatePetRequest,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = petService.updatePet(id, request, currentUser)) {
             is UpdatePetResult.Success -> ResponseEntity.ok(PetResponse.from(result.pet))
@@ -41,7 +46,10 @@ class PetController(
     }
 
     @PostMapping("/{id}/photos")
-    fun addPhoto(@PathVariable id: Long, @Valid @RequestBody request: PetPhotoRequest): ResponseEntity<*> {
+    fun addPhoto(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: PetPhotoRequest,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = petService.addPhoto(id, request, currentUser)) {
             is AddPetPhotoResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(PetPhotoResponse.from(result.photo))
@@ -55,7 +63,7 @@ class PetController(
         @PathVariable id: Long,
         @RequestPart("file") file: MultipartFile,
         @RequestParam(defaultValue = "false") isPrimary: Boolean,
-        @RequestParam(defaultValue = "0") displayOrder: Int
+        @RequestParam(defaultValue = "0") displayOrder: Int,
     ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = petService.uploadAndAddPhoto(id, file, isPrimary, displayOrder, currentUser)) {
@@ -66,7 +74,10 @@ class PetController(
     }
 
     @DeleteMapping("/{id}/photos/{photoId}")
-    fun removePhoto(@PathVariable id: Long, @PathVariable photoId: Long): ResponseEntity<*> {
+    fun removePhoto(
+        @PathVariable id: Long,
+        @PathVariable photoId: Long,
+    ): ResponseEntity<*> {
         val currentUser = authService.requireCurrentUser()
         return when (val result = petService.removePhoto(id, photoId, currentUser)) {
             is RemovePetPhotoResult.Success -> ResponseEntity.noContent().build<Unit>()

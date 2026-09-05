@@ -20,8 +20,10 @@
   <div class="body">
     <h3>{{ listing().pet.name }}</h3>
     <p class="meta">
-      {{ listing().pet.speciesName }}, {{ listing().pet.gender | titlecase
-      }}@if (listing().pet.size) {, {{ listing().pet.size | titlecase }}}
+      {{ listing().pet.speciesName }}, {{ listing().pet.gender | titlecase }}
+      @if (listing().pet.size) {
+        , {{ listing().pet.size | titlecase }}
+      }
     </p>
     <p class="loc">{{ listing().municipalityName }}</p>
     <span class="fee">{{

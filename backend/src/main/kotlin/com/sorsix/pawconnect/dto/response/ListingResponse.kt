@@ -1,7 +1,7 @@
 package com.sorsix.pawconnect.dto.response
 
-import com.sorsix.pawconnect.domain.Listing
 import com.sorsix.pawconnect.common.requireId
+import com.sorsix.pawconnect.domain.Listing
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -21,11 +21,11 @@ data class ListingResponse(
     val longitude: BigDecimal?,
     val expiresAt: Instant?,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
-        fun from(listing: Listing): ListingResponse {
-            return ListingResponse(
+        fun from(listing: Listing): ListingResponse =
+            ListingResponse(
                 id = listing.requireId(),
                 pet = PetResponse.from(listing.pet),
                 postedBy = listing.postedBy.username,
@@ -41,8 +41,7 @@ data class ListingResponse(
                 longitude = listing.longitude,
                 expiresAt = listing.expiresAt,
                 createdAt = listing.createdAt,
-                updatedAt = listing.updatedAt
+                updatedAt = listing.updatedAt,
             )
-        }
     }
 }

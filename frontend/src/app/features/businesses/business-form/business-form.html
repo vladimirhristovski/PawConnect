@@ -112,7 +112,9 @@
     }
   </label>
 
-  <label>Latitude <input type="number" step="0.000001" [formField]="businessForm.latitude" /></label>
+  <label
+    >Latitude <input type="number" step="0.000001" [formField]="businessForm.latitude"
+  /></label>
   <label
     >Longitude <input type="number" step="0.000001" [formField]="businessForm.longitude"
   /></label>
@@ -174,8 +176,6 @@
     <p class="error">{{ error() }}</p>
   }
   <button type="submit" [disabled]="!businessForm().valid() || businessForm().submitting()">
-    {{
-      businessForm().submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create business'
-    }}
+    {{ businessForm().submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create business' }}
   </button>
 </form>

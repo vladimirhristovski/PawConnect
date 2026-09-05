@@ -10,7 +10,7 @@ import java.time.Instant
 @Component
 class TokenCleanupJob(
     private val refreshTokenRepository: RefreshTokenRepository,
-    private val passwordResetTokenRepository: PasswordResetTokenRepository
+    private val passwordResetTokenRepository: PasswordResetTokenRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -23,7 +23,8 @@ class TokenCleanupJob(
         if (refreshTokensDeleted > 0 || resetTokensDeleted > 0) {
             log.info(
                 "Token cleanup: {} refresh token(s), {} password reset token(s) deleted",
-                refreshTokensDeleted, resetTokensDeleted
+                refreshTokensDeleted,
+                resetTokensDeleted,
             )
         }
     }

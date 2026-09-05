@@ -10,7 +10,7 @@ import java.net.URI
 fun problemResponse(
     status: HttpStatus,
     detail: String,
-    properties: Map<String, Any?> = emptyMap()
+    properties: Map<String, Any?> = emptyMap(),
 ): ResponseEntity<ProblemDetail> {
     val pd = ProblemDetail.forStatusAndDetail(status, detail)
     pd.type = URI.create("about:blank")

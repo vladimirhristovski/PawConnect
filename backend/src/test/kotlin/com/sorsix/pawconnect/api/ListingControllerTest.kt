@@ -24,7 +24,6 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class ListingControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -67,7 +66,7 @@ class ListingControllerTest {
                         pet_photos,
                         pets
                     RESTART IDENTITY CASCADE
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 statement.execute("SET session_replication_role = 'origin'")
             }
@@ -75,15 +74,16 @@ class ListingControllerTest {
     }
 
     private fun prepareLookupCodes() {
-        val speciesResponse = Given {
-            accept(ContentType.JSON)
-        } When {
-            get("/api/lookups/species")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val speciesResponse =
+            Given {
+                accept(ContentType.JSON)
+            } When {
+                get("/api/lookups/species")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
         speciesCode = speciesResponse.getString("[0].code")
         speciesName = speciesResponse.getString("[0].name")
 
@@ -123,7 +123,7 @@ class ListingControllerTest {
                     "firstName": "Listing",
                     "lastName": "Owner"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -132,29 +132,31 @@ class ListingControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body("""{"username":"$username","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body("""{"username":"$username","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
         ownerToken = loginResponse.getString("accessToken")
 
-        val createBusinessPayload = """
-        {
-            "name": "Test Business",
-            "typeCode": "$businessTypeCode",
-            "municipalityCode": "$municipalityCode",
-            "address": "123 Main St",
-            "phone": "123456789",
-            "email": "business@test.com",
-            "description": "A test business"
-        }
-        """.trimIndent()
+        val createBusinessPayload =
+            """
+            {
+                "name": "Test Business",
+                "typeCode": "$businessTypeCode",
+                "municipalityCode": "$municipalityCode",
+                "address": "123 Main St",
+                "phone": "123456789",
+                "email": "business@test.com",
+                "description": "A test business"
+            }
+            """.trimIndent()
 
         businessId = Given {
             header("Authorization", "Bearer $ownerToken")
@@ -177,27 +179,31 @@ class ListingControllerTest {
         useBusiness: Boolean = false,
         speciesCodeOverride: String = speciesCode,
         latitude: BigDecimal? = null,
-        longitude: BigDecimal? = null
+        longitude: BigDecimal? = null,
     ): Long {
         val businessField = if (useBusiness) """, "businessId": $businessId""" else ""
-        val locationFields = if (latitude != null && longitude != null) {
-            """, "latitude": $latitude, "longitude": $longitude"""
-        } else ""
-        val payload = """
-        {
-            "pet": {
-                "name": "$petName",
-                "speciesCode": "$speciesCodeOverride",
-                "breedCodes": [],
-                "gender": "MALE",
-                "size": "MEDIUM"
-            },
-            "municipalityCode": "$municipality",
-            "saveAsDraft": $draft
-            $businessField
-            $locationFields
-        }
-        """.trimIndent()
+        val locationFields =
+            if (latitude != null && longitude != null) {
+                """, "latitude": $latitude, "longitude": $longitude"""
+            } else {
+                ""
+            }
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "$petName",
+                    "speciesCode": "$speciesCodeOverride",
+                    "breedCodes": [],
+                    "gender": "MALE",
+                    "size": "MEDIUM"
+                },
+                "municipalityCode": "$municipality",
+                "saveAsDraft": $draft
+                $businessField
+                $locationFields
+            }
+            """.trimIndent()
 
         return Given {
             header("Authorization", "Bearer $token")
@@ -226,7 +232,7 @@ class ListingControllerTest {
                     "firstName": "Test",
                     "lastName": "User"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -235,38 +241,39 @@ class ListingControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body("""{"username":"$username","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body("""{"username":"$username","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
         return loginResponse.getString("accessToken")
     }
 
-
     @Test
     fun `create listing with new pet as draft returns 201`() {
-        val payload = """
-        {
-            "pet": {
-                "name": "Buddy",
-                "speciesCode": "$speciesCode",
-                "breedCodes": [],
-                "gender": "MALE",
-                "size": "MEDIUM",
-                "description": "Friendly dog"
-            },
-            "municipalityCode": "$municipalityCode",
-            "title": "Buddy looking for home",
-            "adoptionFee": 50.00,
-            "saveAsDraft": true
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "Buddy",
+                    "speciesCode": "$speciesCode",
+                    "breedCodes": [],
+                    "gender": "MALE",
+                    "size": "MEDIUM",
+                    "description": "Friendly dog"
+                },
+                "municipalityCode": "$municipalityCode",
+                "title": "Buddy looking for home",
+                "adoptionFee": 50.00,
+                "saveAsDraft": true
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -289,15 +296,16 @@ class ListingControllerTest {
     @Test
     fun `create listing with existing pet returns 201`() {
         val firstListingId = createListing(ownerToken, "ExistingPet", draft = true)
-        val petId = Given {
-            header("Authorization", "Bearer $ownerToken")
-        } When {
-            get("/api/listings/$firstListingId")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getLong("pet.id")
-        }
+        val petId =
+            Given {
+                header("Authorization", "Bearer $ownerToken")
+            } When {
+                get("/api/listings/$firstListingId")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getLong("pet.id")
+            }
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -307,15 +315,16 @@ class ListingControllerTest {
             statusCode(204)
         }
 
-        val payload = """
-        {
-            "petId": $petId,
-            "municipalityCode": "$municipalityCode",
-            "title": "Second listing for same pet",
-            "adoptionFee": 30.00,
-            "saveAsDraft": true
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "petId": $petId,
+                "municipalityCode": "$municipalityCode",
+                "title": "Second listing for same pet",
+                "adoptionFee": 30.00,
+                "saveAsDraft": true
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -332,21 +341,22 @@ class ListingControllerTest {
 
     @Test
     fun `create listing with business association returns 201`() {
-        val payload = """
-        {
-            "pet": {
-                "name": "BizPet",
-                "speciesCode": "$speciesCode",
-                "breedCodes": [],
-                "gender": "MALE",
-                "size": "LARGE"
-            },
-            "businessId": $businessId,
-            "municipalityCode": "$municipalityCode",
-            "title": "Business listing",
-            "saveAsDraft": true
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "BizPet",
+                    "speciesCode": "$speciesCode",
+                    "breedCodes": [],
+                    "gender": "MALE",
+                    "size": "LARGE"
+                },
+                "businessId": $businessId,
+                "municipalityCode": "$municipalityCode",
+                "title": "Business listing",
+                "saveAsDraft": true
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -363,19 +373,20 @@ class ListingControllerTest {
 
     @Test
     fun `create listing with both pet and petId returns 400`() {
-        val payload = """
-        {
-            "petId": 1,
-            "pet": {
-                "name": "Invalid",
-                "speciesCode": "$speciesCode",
-                "breedCodes": [],
-                "gender": "MALE",
-                "size": "MEDIUM"
-            },
-            "municipalityCode": "$municipalityCode"
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "petId": 1,
+                "pet": {
+                    "name": "Invalid",
+                    "speciesCode": "$speciesCode",
+                    "breedCodes": [],
+                    "gender": "MALE",
+                    "size": "MEDIUM"
+                },
+                "municipalityCode": "$municipalityCode"
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -391,11 +402,12 @@ class ListingControllerTest {
 
     @Test
     fun `create listing with neither pet nor petId returns 400`() {
-        val payload = """
-        {
-            "municipalityCode": "$municipalityCode"
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "municipalityCode": "$municipalityCode"
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -411,18 +423,19 @@ class ListingControllerTest {
 
     @Test
     fun `create listing with invalid municipality returns 404`() {
-        val payload = """
-        {
-            "pet": {
-                "name": "Invalid",
-                "speciesCode": "$speciesCode",
-                "breedCodes": [],
-                "gender": "MALE",
-                "size": "MEDIUM"
-            },
-            "municipalityCode": "INVALID"
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "pet": {
+                    "name": "Invalid",
+                    "speciesCode": "$speciesCode",
+                    "breedCodes": [],
+                    "gender": "MALE",
+                    "size": "MEDIUM"
+                },
+                "municipalityCode": "INVALID"
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -447,24 +460,26 @@ class ListingControllerTest {
             statusCode(200)
         }
 
-        val petId = Given {
-            header("Authorization", "Bearer $ownerToken")
-        } When {
-            get("/api/listings/$firstListingId")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getLong("pet.id")
-        }
+        val petId =
+            Given {
+                header("Authorization", "Bearer $ownerToken")
+            } When {
+                get("/api/listings/$firstListingId")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getLong("pet.id")
+            }
 
-        val payload = """
-        {
-            "petId": $petId,
-            "municipalityCode": "$municipalityCode",
-            "title": "Duplicate listing",
-            "saveAsDraft": true
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "petId": $petId,
+                "municipalityCode": "$municipalityCode",
+                "title": "Duplicate listing",
+                "saveAsDraft": true
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -552,13 +567,14 @@ class ListingControllerTest {
     fun `update listing as owner while draft succeeds`() {
         val listingId = createListing(ownerToken, draft = true)
 
-        val updatePayload = """
-        {
-            "title": "Updated Title",
-            "description": "New description",
-            "adoptionFee": 75.00
-        }
-        """.trimIndent()
+        val updatePayload =
+            """
+            {
+                "title": "Updated Title",
+                "description": "New description",
+                "adoptionFee": 75.00
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -585,11 +601,12 @@ class ListingControllerTest {
             statusCode(200)
         }
 
-        val updatePayload = """
-        {
-            "title": "Active Updated"
-        }
-        """.trimIndent()
+        val updatePayload =
+            """
+            {
+                "title": "Active Updated"
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -876,22 +893,38 @@ class ListingControllerTest {
 
     @Test
     fun `search listings near location returns only active listings within radius ordered by distance`() {
-        val nearId = createListing(
-            ownerToken, petName = "Near", draft = false,
-            latitude = "42.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal()
-        )
-        val withinRadiusId = createListing(
-            ownerToken, petName = "WithinRadius", draft = false,
-            latitude = "42.0500".toBigDecimal(), longitude = "21.4000".toBigDecimal()
-        )
-        val farId = createListing(
-            ownerToken, petName = "Far", draft = false,
-            latitude = "43.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal()
-        )
-        val draftNearbyId = createListing(
-            ownerToken, petName = "DraftNear", draft = true,
-            latitude = "42.0000".toBigDecimal(), longitude = "21.4000".toBigDecimal()
-        )
+        val nearId =
+            createListing(
+                ownerToken,
+                petName = "Near",
+                draft = false,
+                latitude = "42.0000".toBigDecimal(),
+                longitude = "21.4000".toBigDecimal(),
+            )
+        val withinRadiusId =
+            createListing(
+                ownerToken,
+                petName = "WithinRadius",
+                draft = false,
+                latitude = "42.0500".toBigDecimal(),
+                longitude = "21.4000".toBigDecimal(),
+            )
+        val farId =
+            createListing(
+                ownerToken,
+                petName = "Far",
+                draft = false,
+                latitude = "43.0000".toBigDecimal(),
+                longitude = "21.4000".toBigDecimal(),
+            )
+        val draftNearbyId =
+            createListing(
+                ownerToken,
+                petName = "DraftNear",
+                draft = true,
+                latitude = "42.0000".toBigDecimal(),
+                longitude = "21.4000".toBigDecimal(),
+            )
 
         Given {
             queryParam("lat", "42.0000")
@@ -911,14 +944,24 @@ class ListingControllerTest {
 
     @Test
     fun `search listings near location filters by species`() {
-        val dogId = createListing(
-            ownerToken, petName = "NearbyDog", draft = false, speciesCodeOverride = "DOG",
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
-        val catId = createListing(
-            ownerToken, petName = "NearbyCat", draft = false, speciesCodeOverride = "CAT",
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
+        val dogId =
+            createListing(
+                ownerToken,
+                petName = "NearbyDog",
+                draft = false,
+                speciesCodeOverride = "DOG",
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
+        val catId =
+            createListing(
+                ownerToken,
+                petName = "NearbyCat",
+                draft = false,
+                speciesCodeOverride = "CAT",
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
 
         Given {
             queryParam("lat", "42.0")
@@ -937,24 +980,35 @@ class ListingControllerTest {
 
     @Test
     fun `search listings near location still applies the municipality filter`() {
-        val otherMunicipalityCode = Given {
-            accept(ContentType.JSON)
-        } When {
-            get("/api/lookups/municipalities")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getList<String>("code").first { it != municipalityCode }
-        }
+        val otherMunicipalityCode =
+            Given {
+                accept(ContentType.JSON)
+            } When {
+                get("/api/lookups/municipalities")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getList<String>("code").first { it != municipalityCode }
+            }
 
-        val inMunicipalityId = createListing(
-            ownerToken, petName = "InMunicipality", draft = false, municipality = municipalityCode,
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
-        val otherMunicipalityId = createListing(
-            ownerToken, petName = "OtherMunicipality", draft = false, municipality = otherMunicipalityCode,
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
+        val inMunicipalityId =
+            createListing(
+                ownerToken,
+                petName = "InMunicipality",
+                draft = false,
+                municipality = municipalityCode,
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
+        val otherMunicipalityId =
+            createListing(
+                ownerToken,
+                petName = "OtherMunicipality",
+                draft = false,
+                municipality = otherMunicipalityCode,
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
 
         Given {
             queryParam("lat", "42.0")
@@ -1028,15 +1082,16 @@ class ListingControllerTest {
     @Test
     fun `create another listing for same pet after soft-delete succeeds`() {
         val listingId = createListing(ownerToken, "DeletedPet", draft = true)
-        val petId = Given {
-            header("Authorization", "Bearer $ownerToken")
-        } When {
-            get("/api/listings/$listingId")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getLong("pet.id")
-        }
+        val petId =
+            Given {
+                header("Authorization", "Bearer $ownerToken")
+            } When {
+                get("/api/listings/$listingId")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getLong("pet.id")
+            }
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -1046,14 +1101,15 @@ class ListingControllerTest {
             statusCode(204)
         }
 
-        val payload = """
-        {
-            "petId": $petId,
-            "municipalityCode": "$municipalityCode",
-            "title": "New listing after delete",
-            "saveAsDraft": true
-        }
-        """.trimIndent()
+        val payload =
+            """
+            {
+                "petId": $petId,
+                "municipalityCode": "$municipalityCode",
+                "title": "New listing after delete",
+                "saveAsDraft": true
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")

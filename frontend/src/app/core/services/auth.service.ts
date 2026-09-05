@@ -38,11 +38,13 @@ export class AuthService {
   refresh(): Observable<AuthResponse> {
     if (!this.refresh$) {
       const refreshToken = this.getRefreshToken();
-      this.refresh$ = this.http.post<AuthResponse>(`${this.baseUrl}/refresh`, { refreshToken }).pipe(
-        tap((res) => this.storeTokens(res)),
-        finalize(() => (this.refresh$ = null)),
-        share({ resetOnRefCountZero: false, resetOnComplete: true, resetOnError: true }),
-      );
+      this.refresh$ = this.http
+        .post<AuthResponse>(`${this.baseUrl}/refresh`, { refreshToken })
+        .pipe(
+          tap((res) => this.storeTokens(res)),
+          finalize(() => (this.refresh$ = null)),
+          share({ resetOnRefCountZero: false, resetOnComplete: true, resetOnError: true }),
+        );
     }
     return this.refresh$;
   }

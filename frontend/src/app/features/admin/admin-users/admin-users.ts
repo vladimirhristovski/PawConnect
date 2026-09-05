@@ -48,7 +48,6 @@ export class AdminUsers {
             active: active === '' ? undefined : active === 'true',
             role: role || undefined,
             page: pageNum,
-            size: 20,
           })
           .pipe(
             tap(() => this.loading.set(false)),

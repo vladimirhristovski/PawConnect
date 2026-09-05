@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 
 class GeocodingRetryJobTest {
-
     private val municipalityRepository = mockk<MunicipalityRepository>()
     private val businessRepository = mockk<BusinessRepository>()
     private val listingRepository = mockk<ListingRepository>()

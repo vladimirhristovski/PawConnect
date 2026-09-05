@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 
 class ListingExpiryJobTest {
-
     private val listingRepository = mockk<ListingRepository>()
     private val listingStatusRepository = mockk<ListingStatusRepository>()
     private val listingService = mockk<ListingService>()

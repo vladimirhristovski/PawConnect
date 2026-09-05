@@ -20,7 +20,7 @@ data class CreateListingRequest(
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
     @field:Future val expiresAt: Instant? = null,
-    val saveAsDraft: Boolean = false
+    val saveAsDraft: Boolean = false,
 ) {
     @get:AssertTrue(message = "Provide either petId or pet, not both or neither")
     val isPetSourceValid: Boolean

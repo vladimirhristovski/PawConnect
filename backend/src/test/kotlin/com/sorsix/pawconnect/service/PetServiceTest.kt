@@ -1,19 +1,19 @@
 package com.sorsix.pawconnect.service
 
+import com.sorsix.pawconnect.common.ListingStatusCodes
 import com.sorsix.pawconnect.domain.Gender
 import com.sorsix.pawconnect.domain.Pet
 import com.sorsix.pawconnect.domain.PetBreed
 import com.sorsix.pawconnect.domain.PetPhoto
 import com.sorsix.pawconnect.domain.PetSpecies
 import com.sorsix.pawconnect.domain.User
-import com.sorsix.pawconnect.common.ListingStatusCodes
-import com.sorsix.pawconnect.dto.request.CreatePetRequest
-import com.sorsix.pawconnect.dto.request.PetPhotoRequest
-import com.sorsix.pawconnect.dto.request.UpdatePetRequest
 import com.sorsix.pawconnect.domain.result.AddPetPhotoResult
 import com.sorsix.pawconnect.domain.result.CreatePetResult
 import com.sorsix.pawconnect.domain.result.RemovePetPhotoResult
 import com.sorsix.pawconnect.domain.result.UpdatePetResult
+import com.sorsix.pawconnect.dto.request.CreatePetRequest
+import com.sorsix.pawconnect.dto.request.PetPhotoRequest
+import com.sorsix.pawconnect.dto.request.UpdatePetRequest
 import com.sorsix.pawconnect.repository.ListingRepository
 import com.sorsix.pawconnect.repository.PetBreedRepository
 import com.sorsix.pawconnect.repository.PetPhotoRepository
@@ -27,14 +27,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.web.multipart.MultipartFile
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
+import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class PetServiceTest {
-
     private val petRepository = mockk<PetRepository>()
     private val petPhotoRepository = mockk<PetPhotoRepository>()
     private val petSpeciesRepository = mockk<PetSpeciesRepository>()
@@ -45,12 +43,21 @@ class PetServiceTest {
 
     @BeforeEach
     fun setup() {
-        service = PetService(
-            petRepository, petPhotoRepository, petSpeciesRepository, petBreedRepository, listingRepository, blobStorageService
-        )
+        service =
+            PetService(
+                petRepository,
+                petPhotoRepository,
+                petSpeciesRepository,
+                petBreedRepository,
+                listingRepository,
+                blobStorageService,
+            )
     }
 
-    private fun mockUser(id: Long = 1L, admin: Boolean = false): User {
+    private fun mockUser(
+        id: Long = 1L,
+        admin: Boolean = false,
+    ): User {
         val user = mockk<User>(relaxed = true)
         every { user.id } returns id
         every { user.isAdmin() } returns admin
@@ -69,7 +76,12 @@ class PetServiceTest {
         return breed
     }
 
-    private fun mockPhoto(id: Long, url: String = "u$id", primary: Boolean = false, order: Int = 0): PetPhoto {
+    private fun mockPhoto(
+        id: Long,
+        url: String = "u$id",
+        primary: Boolean = false,
+        order: Int = 0,
+    ): PetPhoto {
         val photo = mockk<PetPhoto>(relaxed = true)
         every { photo.id } returns id
         every { photo.url } returns url
@@ -82,7 +94,7 @@ class PetServiceTest {
         name: String = "Rex",
         speciesCode: String = "DOG",
         breedCodes: List<String> = emptyList(),
-        photos: List<PetPhotoRequest> = emptyList()
+        photos: List<PetPhotoRequest> = emptyList(),
     ) = CreatePetRequest(name = name, speciesCode = speciesCode, breedCodes = breedCodes, gender = Gender.MALE, photos = photos)
 
     @Test
@@ -129,7 +141,8 @@ class PetServiceTest {
         every { petRepository.findByIdWithAllAssociations(9L) } answers { petSlot.last() }
 
         service.createPet(
-            request(photos = listOf(PetPhotoRequest(url = "a"), PetPhotoRequest(url = "b"))), mockUser()
+            request(photos = listOf(PetPhotoRequest(url = "a"), PetPhotoRequest(url = "b"))),
+            mockUser(),
         )
 
         val photos = petSlot.last().photos

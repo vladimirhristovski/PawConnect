@@ -24,7 +24,6 @@ import javax.sql.DataSource
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration::class)
 class BusinessControllerTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -58,7 +57,7 @@ class BusinessControllerTest {
                         refresh_tokens, password_reset_tokens, user_roles, users,
                         adoption_applications, businesses, listings, pet_photos, pets
                     RESTART IDENTITY CASCADE
-                    """.trimIndent()
+                    """.trimIndent(),
                 )
                 statement.execute("SET session_replication_role = 'origin'")
             }
@@ -102,7 +101,7 @@ class BusinessControllerTest {
                     "firstName": "Business",
                     "lastName": "Owner"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -111,29 +110,31 @@ class BusinessControllerTest {
             statusCode(201)
         }
 
-        val loginResponse = Given {
-            body("""{"username":"$username","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath()
-        }
+        val loginResponse =
+            Given {
+                body("""{"username":"$username","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath()
+            }
         ownerToken = loginResponse.getString("accessToken")
 
-        val createPayload = """
-        {
-            "name": "Test Business",
-            "typeCode": "$businessTypeCode",
-            "municipalityCode": "$municipalityCode",
-            "address": "123 Main St",
-            "phone": "123456789",
-            "email": "business@test.com",
-            "description": "A test business"
-        }
-        """.trimIndent()
+        val createPayload =
+            """
+            {
+                "name": "Test Business",
+                "typeCode": "$businessTypeCode",
+                "municipalityCode": "$municipalityCode",
+                "address": "123 Main St",
+                "phone": "123456789",
+                "email": "business@test.com",
+                "description": "A test business"
+            }
+            """.trimIndent()
 
         businessId = Given {
             header("Authorization", "Bearer $ownerToken")
@@ -153,24 +154,28 @@ class BusinessControllerTest {
         typeCode: String = businessTypeCode,
         municipality: String = municipalityCode,
         latitude: BigDecimal? = null,
-        longitude: BigDecimal? = null
+        longitude: BigDecimal? = null,
     ): Long {
         val name = "Business_${System.nanoTime()}"
-        val locationFields = if (latitude != null && longitude != null) {
-            """, "latitude": $latitude, "longitude": $longitude"""
-        } else ""
-        val payload = """
-        {
-            "name": "$name",
-            "typeCode": "$typeCode",
-            "municipalityCode": "$municipality",
-            "address": "1 Test St",
-            "phone": "123456789",
-            "email": "$name@test.com",
-            "description": "desc"
-            $locationFields
-        }
-        """.trimIndent()
+        val locationFields =
+            if (latitude != null && longitude != null) {
+                """, "latitude": $latitude, "longitude": $longitude"""
+            } else {
+                ""
+            }
+        val payload =
+            """
+            {
+                "name": "$name",
+                "typeCode": "$typeCode",
+                "municipalityCode": "$municipality",
+                "address": "1 Test St",
+                "phone": "123456789",
+                "email": "$name@test.com",
+                "description": "desc"
+                $locationFields
+            }
+            """.trimIndent()
 
         return Given {
             header("Authorization", "Bearer $token")
@@ -209,14 +214,20 @@ class BusinessControllerTest {
 
     @Test
     fun `search businesses near location filters by type`() {
-        val vetId = createBusiness(
-            ownerToken, typeCode = "VET",
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
-        val groomerId = createBusiness(
-            ownerToken, typeCode = "GROOMER",
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
+        val vetId =
+            createBusiness(
+                ownerToken,
+                typeCode = "VET",
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
+        val groomerId =
+            createBusiness(
+                ownerToken,
+                typeCode = "GROOMER",
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
 
         Given {
             queryParam("lat", "42.0")
@@ -235,24 +246,31 @@ class BusinessControllerTest {
 
     @Test
     fun `search businesses near location still applies the municipality filter`() {
-        val otherMunicipalityCode = Given {
-            accept(ContentType.JSON)
-        } When {
-            get("/api/lookups/municipalities")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getList<String>("code").first { it != municipalityCode }
-        }
+        val otherMunicipalityCode =
+            Given {
+                accept(ContentType.JSON)
+            } When {
+                get("/api/lookups/municipalities")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getList<String>("code").first { it != municipalityCode }
+            }
 
-        val inMunicipalityId = createBusiness(
-            ownerToken, municipality = municipalityCode,
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
-        val otherMunicipalityId = createBusiness(
-            ownerToken, municipality = otherMunicipalityCode,
-            latitude = "42.0".toBigDecimal(), longitude = "21.4".toBigDecimal()
-        )
+        val inMunicipalityId =
+            createBusiness(
+                ownerToken,
+                municipality = municipalityCode,
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
+        val otherMunicipalityId =
+            createBusiness(
+                ownerToken,
+                municipality = otherMunicipalityCode,
+                latitude = "42.0".toBigDecimal(),
+                longitude = "21.4".toBigDecimal(),
+            )
 
         Given {
             queryParam("lat", "42.0")
@@ -298,17 +316,18 @@ class BusinessControllerTest {
 
     @Test
     fun `create business returns 201 and business data`() {
-        val newBusinessPayload = """
-        {
-            "name": "New Business",
-            "typeCode": "$businessTypeCode",
-            "municipalityCode": "$municipalityCode",
-            "address": "456 Oak Ave",
-            "phone": "987654321",
-            "email": "new@business.com",
-            "description": "Brand new business"
-        }
-        """.trimIndent()
+        val newBusinessPayload =
+            """
+            {
+                "name": "New Business",
+                "typeCode": "$businessTypeCode",
+                "municipalityCode": "$municipalityCode",
+                "address": "456 Oak Ave",
+                "phone": "987654321",
+                "email": "new@business.com",
+                "description": "Brand new business"
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -332,15 +351,16 @@ class BusinessControllerTest {
 
     @Test
     fun `create business with invalid data returns 400`() {
-        val invalidPayload = """
-        {
-            "name": "",
-            "typeCode": "$businessTypeCode",
-            "municipalityCode": "$municipalityCode",
-            "address": "",
-            "phone": ""
-        }
-        """.trimIndent()
+        val invalidPayload =
+            """
+            {
+                "name": "",
+                "typeCode": "$businessTypeCode",
+                "municipalityCode": "$municipalityCode",
+                "address": "",
+                "phone": ""
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -409,7 +429,7 @@ class BusinessControllerTest {
             body("totalElements", greaterThan(0))
             body(
                 "content.every { it.typeCode == '$businessTypeCode' && it.municipalityCode == '$municipalityCode' }",
-                equalTo(true)
+                equalTo(true),
             )
         }
     }
@@ -443,17 +463,18 @@ class BusinessControllerTest {
 
     @Test
     fun `update business with valid data returns updated business`() {
-        val updatePayload = """
-        {
-            "name": "Updated Business",
-            "typeCode": "$businessTypeCode",
-            "municipalityCode": "$municipalityCode",
-            "address": "789 New St",
-            "phone": "555555555",
-            "email": "updated@business.com",
-            "description": "Updated description"
-        }
-        """.trimIndent()
+        val updatePayload =
+            """
+            {
+                "name": "Updated Business",
+                "typeCode": "$businessTypeCode",
+                "municipalityCode": "$municipalityCode",
+                "address": "789 New St",
+                "phone": "555555555",
+                "email": "updated@business.com",
+                "description": "Updated description"
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -474,11 +495,12 @@ class BusinessControllerTest {
 
     @Test
     fun `update business with invalid data returns 400`() {
-        val invalidPayload = """
-        {
-            "name": ""
-        }
-        """.trimIndent()
+        val invalidPayload =
+            """
+            {
+                "name": ""
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $ownerToken")
@@ -504,7 +526,7 @@ class BusinessControllerTest {
                     "firstName": "Other",
                     "lastName": "User"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -513,24 +535,26 @@ class BusinessControllerTest {
             statusCode(201)
         }
 
-        val otherToken = Given {
-            body("""{"username":"$otherUsername","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getString("accessToken")
-        }
+        val otherToken =
+            Given {
+                body("""{"username":"$otherUsername","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getString("accessToken")
+            }
 
-        val updatePayload = """
-        {
-            "name": "Hacked Business",
-            "typeCode": "$businessTypeCode",
-            "municipalityCode": "$municipalityCode"
-        }
-        """.trimIndent()
+        val updatePayload =
+            """
+            {
+                "name": "Hacked Business",
+                "typeCode": "$businessTypeCode",
+                "municipalityCode": "$municipalityCode"
+            }
+            """.trimIndent()
 
         Given {
             header("Authorization", "Bearer $otherToken")
@@ -574,7 +598,7 @@ class BusinessControllerTest {
                     "firstName": "Deleter",
                     "lastName": "User"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             )
             contentType(ContentType.JSON)
         } When {
@@ -583,16 +607,17 @@ class BusinessControllerTest {
             statusCode(201)
         }
 
-        val otherToken = Given {
-            body("""{"username":"$otherUsername","password":"Password1!"}""")
-            contentType(ContentType.JSON)
-        } When {
-            post("/api/auth/login")
-        } Then {
-            statusCode(200)
-        } Extract {
-            jsonPath().getString("accessToken")
-        }
+        val otherToken =
+            Given {
+                body("""{"username":"$otherUsername","password":"Password1!"}""")
+                contentType(ContentType.JSON)
+            } When {
+                post("/api/auth/login")
+            } Then {
+                statusCode(200)
+            } Extract {
+                jsonPath().getString("accessToken")
+            }
 
         Given {
             header("Authorization", "Bearer $otherToken")

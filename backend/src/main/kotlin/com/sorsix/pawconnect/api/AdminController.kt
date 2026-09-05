@@ -18,36 +18,37 @@ import org.springframework.web.bind.annotation.*
 class AdminController(
     private val userService: UserService,
     private val listingService: ListingService,
-    private val applicationService: AdoptionApplicationService
+    private val applicationService: AdoptionApplicationService,
 ) {
-
     @GetMapping("/users")
     fun searchUsers(
         @RequestParam(required = false) active: Boolean?,
         @RequestParam(required = false) role: String?,
-        pageable: Pageable
-    ): ResponseEntity<*> {
-        return ResponseEntity.ok(userService.searchUsers(active, role, pageable))
-    }
+        pageable: Pageable,
+    ): ResponseEntity<*> = ResponseEntity.ok(userService.searchUsers(active, role, pageable))
 
     @PatchMapping("/users/{id}/status")
     fun updateUserStatus(
-        @PathVariable id: Long, @Valid @RequestBody request: UpdateUserStatusRequest
-    ): ResponseEntity<*> {
-        return userService.setActive(id, request.active)?.let { ResponseEntity.ok(it) }
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdateUserStatusRequest,
+    ): ResponseEntity<*> =
+        userService.setActive(id, request.active)?.let { ResponseEntity.ok(it) }
             ?: problemResponse(HttpStatus.NOT_FOUND, "User not found: $id")
-    }
 
     @DeleteMapping("/users/{id}")
-    fun deleteUser(@PathVariable id: Long): ResponseEntity<*> {
-        return if (userService.deleteUser(id)) ResponseEntity.noContent().build<Unit>()
-        else problemResponse(HttpStatus.NOT_FOUND, "User not found: $id")
-    }
+    fun deleteUser(
+        @PathVariable id: Long,
+    ): ResponseEntity<*> =
+        if (userService.deleteUser(id)) {
+            ResponseEntity.noContent().build<Unit>()
+        } else {
+            problemResponse(HttpStatus.NOT_FOUND, "User not found: $id")
+        }
 
     @GetMapping("/listings")
     fun searchListings(
         @RequestParam(required = false) status: String?,
-        pageable: Pageable
+        pageable: Pageable,
     ): ResponseEntity<*> {
         val page = listingService.adminSearchListings(status, pageable)
         return ResponseEntity.ok(page.map { ListingResponse.from(it) })
@@ -56,7 +57,7 @@ class AdminController(
     @GetMapping("/applications")
     fun searchApplications(
         @RequestParam(required = false) status: String?,
-        pageable: Pageable
+        pageable: Pageable,
     ): ResponseEntity<*> {
         val page = applicationService.adminListApplications(status, pageable)
         return ResponseEntity.ok(page.map { ApplicationResponse.from(it) })

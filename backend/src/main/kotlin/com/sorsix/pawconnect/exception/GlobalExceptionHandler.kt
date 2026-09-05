@@ -32,8 +32,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         val message =
             "Failed to convert parameter '${ex.name}' with value '${ex.value}' to required type '${ex.requiredType?.simpleName}'"
         return problemResponse(
-            HttpStatus.BAD_REQUEST, message,
-            mapOf("parameter" to ex.name, "value" to ex.value)
+            HttpStatus.BAD_REQUEST,
+            message,
+            mapOf("parameter" to ex.name, "value" to ex.value),
         )
     }
 
@@ -49,12 +50,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         ex: MethodArgumentNotValidException,
         headers: HttpHeaders,
         status: HttpStatusCode,
-        request: WebRequest
+        request: WebRequest,
     ): ResponseEntity<Any>? {
-        val errors = ex.bindingResult.allErrors.map {
-            if (it is FieldError) mapOf("field" to it.field, "message" to it.defaultMessage)
-            else mapOf("message" to it.defaultMessage)
-        }
+        val errors =
+            ex.bindingResult.allErrors.map {
+                if (it is FieldError) {
+                    mapOf("field" to it.field, "message" to it.defaultMessage)
+                } else {
+                    mapOf("message" to it.defaultMessage)
+                }
+            }
         return problemEntity(HttpStatus.BAD_REQUEST, "Validation failed", mapOf("errors" to errors))
     }
 
@@ -62,22 +67,21 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         ex: HttpMessageNotReadableException,
         headers: HttpHeaders,
         status: HttpStatusCode,
-        request: WebRequest
+        request: WebRequest,
     ): ResponseEntity<Any>? = problemEntity(HttpStatus.BAD_REQUEST, "Malformed JSON request")
 
     public override fun handleMaxUploadSizeExceededException(
         ex: MaxUploadSizeExceededException,
         headers: HttpHeaders,
         status: HttpStatusCode,
-        request: WebRequest
+        request: WebRequest,
     ): ResponseEntity<Any>? = problemEntity(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size")
 
     private fun problemEntity(
         status: HttpStatus,
         detail: String,
-        properties: Map<String, Any?> = emptyMap()
-    ): ResponseEntity<Any> =
-        ResponseEntity.status(status).body<Any>(problemResponse(status, detail, properties).body)
+        properties: Map<String, Any?> = emptyMap(),
+    ): ResponseEntity<Any> = ResponseEntity.status(status).body<Any>(problemResponse(status, detail, properties).body)
 
     @ExceptionHandler(BlobStorageException::class)
     fun handleBlobStorage(ex: BlobStorageException): ResponseEntity<ProblemDetail> {

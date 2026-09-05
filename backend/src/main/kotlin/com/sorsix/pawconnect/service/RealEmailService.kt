@@ -12,10 +12,13 @@ import java.nio.charset.StandardCharsets
 @ConditionalOnProperty(name = ["app.mail.enabled"], havingValue = "true", matchIfMissing = true)
 class RealEmailService(
     private val mailSender: JavaMailSender,
-    @Value("\${app.mail.from}") private val fromAddress: String
+    @Value("\${app.mail.from}") private val fromAddress: String,
 ) : EmailService {
-
-    override fun sendEmail(to: String, subject: String, body: String) {
+    override fun sendEmail(
+        to: String,
+        subject: String,
+        body: String,
+    ) {
         val message: MimeMessage = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message, true, StandardCharsets.UTF_8.name())
         helper.setFrom(fromAddress)

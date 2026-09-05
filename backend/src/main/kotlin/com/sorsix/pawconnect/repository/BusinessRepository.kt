@@ -8,9 +8,15 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface BusinessRepository : JpaRepository<Business, Long>, JpaSpecificationExecutor<Business> {
-    @Query("SELECT b FROM Business b JOIN FETCH b.type JOIN FETCH b.municipality LEFT JOIN FETCH b.owner LEFT JOIN FETCH b.photos WHERE b.id = :id")
-    fun findByIdWithAssociations(@Param("id") id: Long): Business?
+interface BusinessRepository :
+    JpaRepository<Business, Long>,
+    JpaSpecificationExecutor<Business> {
+    @Query(
+        "SELECT b FROM Business b JOIN FETCH b.type JOIN FETCH b.municipality LEFT JOIN FETCH b.owner LEFT JOIN FETCH b.photos WHERE b.id = :id",
+    )
+    fun findByIdWithAssociations(
+        @Param("id") id: Long,
+    ): Business?
 
     @Query("SELECT b FROM Business b JOIN FETCH b.municipality WHERE b.addressGeocoded = false AND b.deletedAt IS NULL")
     fun findByAddressGeocodedFalseAndDeletedAtIsNull(): List<Business>
@@ -59,7 +65,7 @@ interface BusinessRepository : JpaRepository<Business, Long>, JpaSpecificationEx
                     ))
                   ) <= :radiusKm
         """,
-        nativeQuery = true
+        nativeQuery = true,
     )
     fun findNearby(
         @Param("lat") lat: Double,
@@ -67,6 +73,6 @@ interface BusinessRepository : JpaRepository<Business, Long>, JpaSpecificationEx
         @Param("radiusKm") radiusKm: Double,
         @Param("typeCode") typeCode: String?,
         @Param("municipalityCode") municipalityCode: String?,
-        pageable: Pageable
+        pageable: Pageable,
     ): Page<Business>
 }

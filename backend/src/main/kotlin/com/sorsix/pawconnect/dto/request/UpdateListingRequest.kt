@@ -13,5 +13,5 @@ data class UpdateListingRequest(
     val municipalityCode: String? = null,
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
-    @field:Future val expiresAt: Instant? = null
+    @field:Future val expiresAt: Instant? = null,
 )

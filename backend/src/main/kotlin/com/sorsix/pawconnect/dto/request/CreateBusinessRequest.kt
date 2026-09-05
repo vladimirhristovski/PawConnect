@@ -16,5 +16,5 @@ data class CreateBusinessRequest(
     @field:NotBlank @field:Size(max = 40) val municipalityCode: String,
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
-    @field:Valid val photos: List<BusinessPhotoRequest> = emptyList()
+    @field:Valid val photos: List<BusinessPhotoRequest> = emptyList(),
 )

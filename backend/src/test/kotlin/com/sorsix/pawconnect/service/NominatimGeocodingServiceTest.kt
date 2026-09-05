@@ -13,7 +13,6 @@ import org.springframework.web.client.RestClient
 import java.math.BigDecimal
 
 class NominatimGeocodingServiceTest {
-
     private fun buildService(): Pair<NominatimGeocodingService, MockRestServiceServer> {
         val builder = RestClient.builder()
         val server = MockRestServiceServer.bindTo(builder).build()
@@ -25,13 +24,14 @@ class NominatimGeocodingServiceTest {
     fun `geocode returns coordinates from the first result`() {
         val (service, server) = buildService()
 
-        server.expect(requestTo(containsString("/search")))
+        server
+            .expect(requestTo(containsString("/search")))
             .andExpect(method(org.springframework.http.HttpMethod.GET))
             .andRespond(
                 withSuccess(
                     """[{"lat": "42.0000", "lon": "21.4000"}, {"lat": "1.0", "lon": "1.0"}]""",
-                    MediaType.APPLICATION_JSON
-                )
+                    MediaType.APPLICATION_JSON,
+                ),
             )
 
         val result = service.geocode("Skopje, North Macedonia")
@@ -45,7 +45,8 @@ class NominatimGeocodingServiceTest {
     fun `geocode returns null when there are no results`() {
         val (service, server) = buildService()
 
-        server.expect(requestTo(containsString("/search")))
+        server
+            .expect(requestTo(containsString("/search")))
             .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON))
 
         val result = service.geocode("Nowhere at all")

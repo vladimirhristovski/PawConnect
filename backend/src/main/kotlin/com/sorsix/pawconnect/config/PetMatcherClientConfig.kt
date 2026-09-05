@@ -14,23 +14,29 @@ import java.time.Duration
 @Configuration
 class PetMatcherClientConfig(
     @Value("\${pet-matcher.base-url}") private val baseUrl: String,
-
     @Value("\${pet-matcher.timeout-ms:20000}") private val timeoutMs: Long,
 ) {
-
     @Bean
     fun petMatcherRestClient(): RestClient {
-        val snakeCaseMapper = JsonMapper.builder().addModule(KotlinModule.Builder().build())
-            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE).build()
+        val snakeCaseMapper =
+            JsonMapper
+                .builder()
+                .addModule(KotlinModule.Builder().build())
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                .build()
 
         val jsonConverter = JacksonJsonHttpMessageConverter(snakeCaseMapper)
 
-        val requestFactory = SimpleClientHttpRequestFactory().apply {
-            setConnectTimeout(Duration.ofMillis(timeoutMs))
-            setReadTimeout(Duration.ofMillis(timeoutMs))
-        }
+        val requestFactory =
+            SimpleClientHttpRequestFactory().apply {
+                setConnectTimeout(Duration.ofMillis(timeoutMs))
+                setReadTimeout(Duration.ofMillis(timeoutMs))
+            }
 
-        return RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory)
+        return RestClient
+            .builder()
+            .baseUrl(baseUrl)
+            .requestFactory(requestFactory)
             .configureMessageConverters { converters ->
                 converters.registerDefaults().withJsonConverter(jsonConverter)
             }.build()
